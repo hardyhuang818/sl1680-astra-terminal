@@ -1,0 +1,74 @@
+/* SPDX-License-Identifier: GPL-2.0-only
+ *
+ * Synaptics TouchComm v2 TDDI (TD7800) touch — I2C @ 0x2C on i2c0 (SL1680 RDK).
+ *
+ * i2c0 is the DSI-panel connector bus on the dolphin RDK: it already carries
+ * rpi_panel_regulator@45, expander0@43, expander1@44. The TD7800 panel's touch
+ * sits on the same FPC I2C, so 0x2C lands on i2c0.
+ *
+ * ----------------------------------------------------------------------------
+ * CRITICAL — TDDI reset (learned on the RK3568 sister project, Case44):
+ *   TD7800 is a TDDI part: TP_RESET resets the WHOLE chip, including the
+ *   display driver. If the touch driver owns TP_RESET (active-low) the panel
+ *   goes dark. Therefore this node has NO synaptics,reset-gpio. Keep the
+ *   panel/adapter TP_RESET line HIGH from power-on (hardware pull-up, or a
+ *   gpio-hog on whatever line actually drives it). Recovery after a
+ *   self-reset is handled in-driver by ENABLE_HELPER.
+ * ----------------------------------------------------------------------------
+ *
+ * TODO before real HW bring-up (needs the MIPI-to-LVDS adapter + panel FPC
+ * wiring — third-party board, not in the RDK schematic):
+ *   - INT: point interrupt at the actual SoC GPIO routed to the panel FPC.
+ *     Placeholder below is <&portc 0>. The DSI connector's spare line
+ *     "GPIO_DSI" is expander0 bit7 (I/O) — an expander pin is a poor IRQ
+ *     source, prefer a real SoC GPIO if the adapter routes one.
+ *   - Confirm 0x2C is not remapped by the adapter.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+    fragment@0 {
+        target-path = "/soc/apb@f7e80000";
+        __overlay__ {
+            i2c0: i2c@1800 {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                status = "okay";
+
+                synaptics_tcm@2c {
+                    compatible = "synaptics,tcm-i2c";
+                    reg = <0x2c>;
+                    status = "okay";
+
+                    /* --- Attention / INT line ---
+                     * <TBD> replace &portc 0 with the real SoC GPIO.
+                     * 0x2008 = IRQF_ONESHOT | IRQF_TRIGGER_LOW
+                     */
+                    interrupt-parent = <&portc>;
+                    interrupts = <0 0x2008>;
+                    synaptics,irq-gpio = <&portc 0 0x2008>;
+                    synaptics,irq-flags = <0x2008>;
+                    synaptics,irq-on-state = <0>;
+
+                    /* NO synaptics,reset-gpio — see CRITICAL note above.
+                     * TP_RESET must be held high externally so the TDDI
+                     * display stays alive.
+                     */
+
+                    synaptics,power-delay-ms = <200>;
+                    synaptics,chunks = <1024 1024>;
+                    synaptics,command-timeout-ms = <3000>;
+                    synaptics,command-polling-ms = <20>;
+                    synaptics,command-turnaround-us = <50 100>;
+                    synaptics,command-retry-ms = <10>;
+                    synaptics,fw-switch-delay-ms = <100>;
+                };
+            };
+        };
+    };
+};

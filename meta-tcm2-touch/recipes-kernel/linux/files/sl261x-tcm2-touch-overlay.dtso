@@ -1,0 +1,74 @@
+/* SPDX-License-Identifier: GPL-2.0-only
+ *
+ * Synaptics TouchComm v2 TDDI (TD7800) touch controller — I2C @ 0x2C on i2c2.
+ *
+ * Board: sl2619-rdk (klamath). i2c2 is already enabled by
+ * sl261x-rdk-common.dtsi at 100kHz with no children — good spot for touch.
+ *
+ * I2C address 0x2C confirmed for the TD7800 part on this board (7-bit).
+ *
+ * TODO before flashing to real HW:
+ *   - Fill in the actual INT/RST GPIO controller & pin numbers (marked <TBD>).
+ *   - If VDD/VIO are gated by GPIO, add synaptics,vdd-* / vio-* nodes
+ *     (see reference example in the driver tarball:
+ *      reference_configuration/kernel/arch/arm64/boot/dts/overlays/
+ *      synaptics-tcm-i2c-r0-overlay.dts).
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+    fragment@0 {
+        target = <&i2c2>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            synaptics_tcm@2c {
+                compatible = "synaptics,tcm-i2c";
+                reg = <0x2c>;
+                status = "okay";
+
+                /* --- Interrupt (attention) line ---
+                 * Change &portc / pin XX to match your schematic.
+                 * Flags 0x2008 = IRQF_ONESHOT | IRQF_TRIGGER_LOW
+                 */
+                interrupt-parent = <&portc>;
+                interrupts = <0 0x2008>;              /* <TBD-pin> */
+                synaptics,irq-gpio = <&portc 0 0x2008>; /* <TBD-pin> */
+                synaptics,irq-flags = <0x2008>;
+                synaptics,irq-on-state = <0>;
+
+                /* --- Reset line ---
+                 * Change &portc / pin YY to match your schematic.
+                 */
+                synaptics,reset-gpio = <&portc 1 GPIO_ACTIVE_LOW>; /* <TBD-pin> */
+                synaptics,reset-on-state = <0>;
+                synaptics,reset-active-ms = <20>;
+                synaptics,reset-delay-ms = <200>;
+
+                /* --- Power sequencing (assumes VDD/VIO hard-tied on) ---
+                 * If VDD/VIO are software-gated, uncomment vdd-* / vio-*
+                 * blocks and set control mode + GPIOs.
+                 */
+                synaptics,power-delay-ms = <50>;
+                synaptics,power-on-state = <1>;
+
+                /* --- Command / transfer tuning (defaults from the
+                 *     driver's reference overlay for TDDI parts) --- */
+                synaptics,chunks = <1024 1024>;
+                synaptics,command-timeout-ms = <3000>;
+                synaptics,command-polling-ms = <20>;
+                synaptics,command-turnaround-us = <50 100>;
+                synaptics,command-retry-ms = <10>;
+                synaptics,fw-switch-delay-ms = <100>;
+                synaptics,flash-access-delay-us = <20000 50 10>;
+            };
+        };
+    };
+};

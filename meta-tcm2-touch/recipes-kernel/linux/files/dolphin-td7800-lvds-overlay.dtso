@@ -1,0 +1,101 @@
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * SL1680 (dolphin) MIPI-DSI -> external MIPI-to-LVDS adapter -> TD7800-TM
+ * 10.5" 1280(RGB)x720 LVDS panel.
+ *
+ * The SoC only emits a 4-lane DSI video stream at the panel's native LVDS
+ * timing; the adapter board converts DSI->LVDS. Timings below are the panel's
+ * native LVDS timing measured/derived on the RK3568 sister project (Case44):
+ *
+ *     pixel clock 65.3 MHz
+ *     H: active 1280  HFP 97  HSW 30  HBP 60   -> HTOTAL 1467
+ *     V: active 720   VFP  7  VSW  2  VBP 14   -> VTOTAL 743
+ *     1467 x 743 x 60Hz ~= 65.4 MHz  (matches 65.3 MHz)
+ *
+ * Power/backlight: the RDK's existing panel0-backlight node already drives
+ * expander0 bit1 (PWR_ON_DSI) high and PWM0 ch1 for backlight — that powers
+ * the adapter + panel, so nothing extra is needed here.
+ *
+ * ASSUMPTION: the adapter is an auto-configuring MIPI-to-LVDS bridge that
+ * derives its LVDS output timing from the incoming DSI video stream (no I2C /
+ * no DCS init). If your adapter uses a chip that needs register setup
+ * (e.g. SN65DSI84/85, LT8912, TC358775), it needs either:
+ *   - a DSI DCS init sequence added as a "command = /bits/ 8 <...>" block, or
+ *   - a proper kernel bridge driver + its own I2C node.
+ * See Astra-SDK-Build-Notes.md §14 for the decision tree.
+ *
+ * LVDS data mapping: panel uses single-link 24-bit. If colors look wrong
+ * (R/B swap or dim), the adapter's VESA/JEIDA strap or the panel's
+ * SPWG-vs-JEIDA mapping is off — that's an adapter-side setting, not DSI.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    /* Force display path to MIPI-DSI (disp2 = type 3) and disable the
+     * HDMI/LT9611 bridge so the DSI stream targets our adapter.
+     */
+    fragment@0 {
+        target-path = "/soc";
+        __overlay__ {
+            drm: drm {
+                /* disp-mode 1 = MIPI only (0=HDMI only, 2=dual PIP).
+                 * Keep 2 (dual) if you also want HDMI; set 1 for LVDS-only.
+                 */
+                disp-mode = <1>;
+
+                dsi_panel {
+                    status = "okay";
+
+                    /* adapter+panel powered via panel0-backlight (expander0.1) */
+                    power-supply = <>;
+                    backlight = <>;
+
+                    ACTIVE_WIDTH  = <1280>;
+                    HFP           = <97>;
+                    HSYNCWIDTH    = <30>;
+                    HBP           = <60>;
+                    ACTIVE_HEIGHT = <720>;
+                    VFP           = <7>;
+                    VSYNCWIDTH    = <2>;
+                    VBP           = <14>;
+                    FREQ          = <65300>;
+                    PIXEL_CLOCK   = <65300>;
+                    HTOTAL        = <1467>;
+
+                    bits_per_pixel = <24>;
+                    busformat = <0>;
+
+                    Lanes               = /bits/ 8 <4>;
+                    Vid_mode            = /bits/ 8 <2>;   /* video burst mode */
+                    virtual_chan        = /bits/ 8 <0>;
+                    Clk_Lane_Polarity   = /bits/ 8 <0>;
+                    Data_Lane_Polarity  = /bits/ 8 <0>;
+                    Recv_ack            = /bits/ 8 <0>;
+                    Loosely_18          = /bits/ 8 <0>;
+                    H_polarity          = /bits/ 8 <0>;   /* HSYNC active low */
+                    V_Polarity          = /bits/ 8 <0>;   /* VSYNC active low */
+                    Data_Polarity       = /bits/ 8 <0>;
+                    Eotp_tx             = /bits/ 8 <1>;
+                    Eotp_rx             = /bits/ 8 <0>;
+                    non-Continuous_clk  = /bits/ 8 <0>;
+                    dpi_lp_cmd          = /bits/ 8 <1>;
+                    Color_coding        = /bits/ 8 <5>;   /* 24-bit RGB888 */
+                    Chunks              = <0>;
+                    Null_Pkt            = <0>;
+
+                    /* Byte_clk = PIXEL_CLOCK * bpp / (Lanes * 8)
+                     *          = 65300 * 24 / 32 = 48975 (kHz) */
+                    Byte_clk = <48975>;
+
+                    /* No DCS init command list: auto-config bridge assumed. */
+                };
+
+                dsi_hdmi_lt9611_bridge {
+                    status = "disabled";
+                };
+            };
+        };
+    };
+};

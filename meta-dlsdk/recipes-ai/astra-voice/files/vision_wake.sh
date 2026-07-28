@@ -50,7 +50,12 @@ trap 'kill -9 $GPID 2>/dev/null; exit 0' INT TERM
 while :; do
   sleep 0.5; F=$(ls -t /tmp/vw_*.jpg 2>/dev/null | head -n 1)
   [ -z "$F" ] && { sleep 0.3; continue; }
-  OUT=$(synap_cli_od -m $MODEL --score-threshold 0.4 "$F" 2>/dev/null)
+  # multifilesink max-files=4 @5fps 让一帧只活 0.8 秒，而 synap_cli_od 启动+加载
+  # 30MB 模型就要接近 1 秒 —— 直接喂原路径会撞上 "Input file not found"，
+  # 检测静默失败(pct 恒为 0，永不触发)。先复制成稳定副本再推理。
+  cp "$F" /tmp/vw_cur.jpg 2>/dev/null || { sleep 0.3; continue; }
+  OUT=$(synap_cli_od -m $MODEL --score-threshold 0.4 /tmp/vw_cur.jpg 2>&1)
+  case "$OUT" in *"not found"*|*Error*) echo "[vwake] 推理失败(跳过): $(echo "$OUT" | tail -n 1)"; continue;; esac
   BH=$(echo "$OUT" | grep -A2 '"size"' | grep '"y"' | head -n 1 | grep -oE "[0-9]+")
   if [ -n "$BH" ]; then
     pct=$((BH * 100 / 480))
@@ -61,7 +66,13 @@ while :; do
   # 心跳日志：每秒左右报一次当前框高(便于观察/标定)
   tick=$((tick+1))
   if [ $((tick % 2)) -eq 0 ]; then
-    if [ "$pct" -gt 0 ]; then echo "[vwake] 框高=${pct}% (阈值${BOX_TH}%, armed=$armed)"; fi
+    if [ "$pct" -gt 0 ]; then
+      echo "[vwake] 框高=${pct}% (阈值${BOX_TH}%, armed=$armed)"
+    elif [ $((tick % 40)) -eq 0 ]; then
+      # 没人时也定期报活 —— 上一版只在 pct>0 时打日志，结果推理静默失败了
+      # 30 分钟都看不出异常。"没检到人"和"根本没跑成"必须能区分开。
+      echo "[vwake] 在跑，当前无人 (armed=$armed)"
+    fi
   fi
 
   if [ "$pct" -ge "$BOX_TH" ]; then
