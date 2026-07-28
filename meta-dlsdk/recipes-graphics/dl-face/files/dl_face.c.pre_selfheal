@@ -1,0 +1,480 @@
+// dl_face.c — Astra 语音助手的 DL7400 对话界面
+//
+// 一块可爱的脸 + 实时字幕，投到 DL7400 接的屏上。
+// 数据来自 astra_voice 写的状态文件(/tmp/astra_status.txt)：
+//   STATE=listening|thinking|speaking
+//   HEARD=你说的话
+//   REPLY=Astra的回复
+//
+// 中英对照：英文译文来自**另一个**文件(/tmp/astra_status_en.txt，翻译守护进程写)：
+//   HEARD_EN=<english of HEARD>
+//   REPLY_EN=<english of REPLY>
+// 为什么分两个文件：astra_voice 每次状态变化都把 astra_status.txt 整份重写，
+// 追加进去的任何东西都会被冲掉。译文文件缺失/为空 = 只显示中文，功能不受影响。
+//
+// 状态 -> 表情/提示：
+//   listening  在听    (・‿・)   底部提示"我在听…"
+//   thinking   在想    (・_・?)  "让我想想…"
+//   speaking   在说    (^‿^)    显示回复字幕
+//
+// 复用 dl_clock 的 DLSDK 脚手架：设备枚举 + pick_mode(不盲从preferred) +
+//   appsink 拉帧 -> dlsdk_display_show 推屏。中文需 wqy-zenhei 字体(已装板上)。
+//
+// 编译: gcc dl_face.c $(pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0) -ldlsdk -lusb-1.0 -lm -o dl_face
+
+#include "dlsdk/dlsdk.h"
+#include <gst/gst.h>
+#include <gst/app/gstappsink.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <unistd.h>
+#include <time.h>
+
+#define MAX_SCREENS 8
+static volatile sig_atomic_t g_stop = 0;
+static void on_sig(int s) { (void)s; g_stop = 1; }
+
+// 热插拔：屏来了/走了就整个退出，交给 systemd Restart 重新枚举全量驱动。
+// 比在跑动中动态加屏简单一个数量级，且效果一样（重启点亮 <3s）。
+static volatile sig_atomic_t g_hotplug = 0;
+static void on_hotplug(dlsdk_hotplug_event_data* d, void* u) {
+  (void)u;
+  if (d->event==DLSDK_HOTPLUG_EVENT_DISPLAY_ARRIVED ||
+      d->event==DLSDK_HOTPLUG_EVENT_DISPLAY_REMOVED) {
+    fprintf(stderr,"[dl_face] 热插拔事件(%s)，重启以重新枚举\n",
+            d->event==DLSDK_HOTPLUG_EVENT_DISPLAY_ARRIVED?"新屏接入":"屏移除");
+    g_hotplug = 1;
+  }
+}
+static const char* FW_DIR = "/usr/share/displaylink/DL-firmware";
+static const char* CJK = "WenQuanYi Zen Hei";   // 中英文都靠它渲染
+
+static double now_sec(void){ struct timespec t; clock_gettime(CLOCK_MONOTONIC,&t); return t.tv_sec+t.tv_nsec/1e9; }
+
+// ---- 读状态文件 ----
+// heard/reply = 中文原文(astra_voice 写)；heard_en/reply_en = 英文译文(翻译守护进程写)。
+// heard_src/reply_src = 译文对应的中文原文(关联键)。两个文件各自独立更新，
+// 中文换了而英文还没跟上时会有几百毫秒窗口，比对不上就只显示中文，绝不错配。
+typedef struct { char state[32], heard[512], reply[512],
+                     heard_en[512], reply_en[512],
+                     heard_src[512], reply_src[512]; } status_t;
+
+static void read_status(const char* path, const char* path_en, status_t* o) {
+  memset(o, 0, sizeof(*o));
+  strcpy(o->state, "listening");
+
+  FILE* f = fopen(path, "r");
+  if (f) {
+    char line[600];
+    while (fgets(line, sizeof line, f)) {
+      char* nl = strchr(line, '\n'); if (nl) *nl = 0;
+      if (!strncmp(line, "STATE=", 6))       snprintf(o->state, sizeof o->state, "%s", line+6);
+      else if (!strncmp(line, "HEARD=", 6))  snprintf(o->heard, sizeof o->heard, "%s", line+6);
+      else if (!strncmp(line, "REPLY=", 6))  snprintf(o->reply, sizeof o->reply, "%s", line+6);
+    }
+    fclose(f);
+  }
+
+  // 译文文件是可选的：不存在/读不了就保持英文字段为空，apply_status 自动退化成纯中文。
+  if (!path_en || !*path_en) return;
+  f = fopen(path_en, "r");
+  if (!f) return;
+  char line[600];
+  while (fgets(line, sizeof line, f)) {
+    char* nl = strchr(line, '\n'); if (nl) *nl = 0;
+    if (!strncmp(line, "HEARD_EN=", 9))       snprintf(o->heard_en, sizeof o->heard_en, "%s", line+9);
+    else if (!strncmp(line, "REPLY_EN=", 9))  snprintf(o->reply_en, sizeof o->reply_en, "%s", line+9);
+    else if (!strncmp(line, "HEARD_SRC=", 10))snprintf(o->heard_src, sizeof o->heard_src, "%s", line+10);
+    else if (!strncmp(line, "REPLY_SRC=", 10))snprintf(o->reply_src, sizeof o->reply_src, "%s", line+10);
+  }
+  fclose(f);
+}
+
+// ---- pick_mode：不盲从 preferred(4K@160Hz 会把链路推到永久阻塞) ----
+static int pick_mode(dlsdk_display_handle d, unsigned max_hz, dlsdk_display_mode* out) {
+  dlsdk_display_mode pref; memset(&pref,0,sizeof pref);
+  if (dlsdk_display_preferred_mode(d,&pref)!=DLSDK_SUCCESS) return -1;
+  *out = pref;
+  if (pref.refreshRateHz <= max_hz) return 0;
+  unsigned mc=0;
+  if (dlsdk_display_modes(d,NULL,&mc)!=DLSDK_SUCCESS || !mc || mc>512) return 0;
+  dlsdk_display_mode* ms = malloc(sizeof(dlsdk_display_mode)*mc);
+  if (!ms) return 0;
+  if (dlsdk_display_modes(d,ms,&mc)==DLSDK_SUCCESS) {
+    int best=-1;
+    for (unsigned k=0;k<mc;++k){
+      if (ms[k].resolution.width!=pref.resolution.width) continue;
+      if (ms[k].resolution.height!=pref.resolution.height) continue;
+      if (ms[k].refreshRateHz>max_hz) continue;
+      if (best<0 || ms[k].refreshRateHz>ms[best].refreshRateHz) best=(int)k;
+    }
+    if (best>=0) *out = ms[best];
+    else {
+      // 同分辨率没有 ≤max_hz 的：退而求其次选任意 ≤max_hz 里面积最大的。
+      // 绝不能原样放行 preferred(160Hz 会把链路推到永久阻塞)。
+      int alt=-1; unsigned best_area=0;
+      for (unsigned k=0;k<mc;++k){
+        if (ms[k].refreshRateHz>max_hz) continue;
+        unsigned area=ms[k].resolution.width*ms[k].resolution.height;
+        if (alt<0 || area>best_area){ alt=(int)k; best_area=area; }
+      }
+      if (alt>=0) *out = ms[alt];
+      else { free(ms); return -1; }   // 全部模式都>max_hz，宁可不点这块屏
+    }
+  }
+  free(ms);
+  return 0;
+}
+
+// 屏幕角色：face=表情脸+字幕(默认)  camera=摄像头实况(看护监控)
+// 角色由 /tmp/astra_screen_mode.txt 控制，格式每行 "屏号=角色"，如 "1=camera"。
+// astra_xiaozhi 的 MCP 工具 set_screen_mode 写这个文件 → 语音就能切换。
+#define ROLE_FACE   0
+#define ROLE_CAMERA 1
+static const char* MODE_FILE = "/tmp/astra_screen_mode.txt";
+static const char* CAM_DEV = "/dev/v4l/by-id/usb-046d_HD_Pro_Webcam_C920-video-index0";
+
+typedef struct {
+  dlsdk_display_handle disp;
+  unsigned w, h;
+  uint32_t* buf;
+  long frames;
+  int role;                 // ROLE_FACE / ROLE_CAMERA
+  double cam_block_until;   // 摄像头起不来(被占用等)时的冷却期，防止错误循环
+  GstElement *pipe;
+  GstElement *e_face, *e_hint, *e_you, *e_astra;   // 4 个可动态改文字的 overlay
+} screen_t;
+
+static void read_roles(int* roles, unsigned n) {
+  for (unsigned i = 0; i < n; ++i) roles[i] = ROLE_FACE;
+  FILE* f = fopen(MODE_FILE, "r");
+  if (!f) return;
+  char line[64];
+  while (fgets(line, sizeof line, f)) {
+    int idx; char r[32];
+    if (sscanf(line, "%d=%31s", &idx, r) == 2 && idx >= 0 && idx < (int)n)
+      roles[idx] = strcmp(r, "camera") == 0 ? ROLE_CAMERA : ROLE_FACE;
+  }
+  fclose(f);
+}
+
+// XML/parse 安全：textoverlay 文本经 g_object_set 设置，不走 gst_parse_launch，
+// 但 ASR/LLM 文本可能含引号/换行，这里做最小清洗。
+static void sanitize(const char* in, char* out, size_t cap) {
+  size_t j=0;
+  for (const char* p=in; *p && j+1<cap; ++p) {
+    unsigned char c=(unsigned char)*p;
+    if (c=='\n'||c=='\r'||c=='\t') { out[j++]=' '; }
+    else out[j++]=*p;
+  }
+  out[j]=0;
+}
+
+// 中英对照：拼出"中文行 \n 英文行"。
+// 关键：sanitize() 会把 \n 吃掉变成空格，所以必须**先分别清洗、再用真正的 \n 拼接**。
+// 顺序反了(先拼后洗)两行就会被压成一行。
+// 英文为空 = 只出中文行，不留空行。
+static void join_bilingual(char* out, size_t cap,
+                           const char* zh_prefix, const char* zh,
+                           const char* en_prefix, const char* en) {
+  char zh_c[512], en_c[512];
+  sanitize(zh, zh_c, sizeof zh_c);
+  if (en && en[0]) {
+    sanitize(en, en_c, sizeof en_c);
+    snprintf(out, cap, "%s%s\n%s%s", zh_prefix, zh_c, en_prefix, en_c);
+  } else {
+    snprintf(out, cap, "%s%s", zh_prefix, zh_c);
+  }
+}
+
+// 每来一帧：推给屏
+static GstFlowReturn on_sample(GstAppSink* sink, gpointer user) {
+  screen_t* s=(screen_t*)user;
+  GstSample* smp=gst_app_sink_pull_sample(sink);
+  if(!smp) return GST_FLOW_EOS;
+  GstBuffer* b=gst_sample_get_buffer(smp);
+  GstMapInfo m;
+  if (b && gst_buffer_map(b,&m,GST_MAP_READ)){
+    size_t need=(size_t)s->w*s->h*4;
+    if (m.size>=need){
+      memcpy(s->buf,m.data,need);
+      if (dlsdk_display_show(s->disp,DLSDK_PIXEL_FORMAT_XRGB,s->buf,s->w*4)==DLSDK_SUCCESS){
+        dlsdk_display_wait_on_show(s->disp);
+        s->frames++;
+      }
+    }
+    gst_buffer_unmap(b,&m);
+  }
+  gst_sample_unref(smp);
+  return GST_FLOW_OK;
+}
+
+// 根据状态更新 4 个 overlay 的文字
+static void apply_status(screen_t* s, const status_t* st) {
+  // 脸只用 wqy-zenhei 确认能渲染的字符：・ ω ▽ ^ _ ? (‿ ◡ 等会变方框)
+  const char *face, *hint;
+  if (!strcmp(st->state,"thinking"))      { face="(・_・)?"; hint="让我想想…"; }
+  else if (!strcmp(st->state,"speaking")) { face="(・▽・)";  hint=""; }
+  else if (!strcmp(st->state,"paused"))   { face="(－ω－)";  hint="已休息，走近可唤醒"; }
+  else if (!strcmp(st->state,"offline"))  { face="(・_・)";  hint="连接服务器中…"; }
+  else                                    { face="(・ω・)";  hint="我在听，请说…"; }
+
+  // 两行字幕(中文 + 英文)，所以缓冲区要放得下两份 512 字节文本 + 前缀。
+  char you[1200]="", astra[1200]="";
+  // 关联键校验：译文必须确实是「当前这句中文」的译文。翻译进程和 astra_voice
+  // 各写各的文件，中文换了而译文还没跟上时(几百毫秒)会对不上 —— 这时宁可只
+  // 显示中文，也绝不把上一句的英文配到这一句下面。
+  const char* h_en = (st->heard_en[0] && !strcmp(st->heard, st->heard_src)) ? st->heard_en : "";
+  const char* r_en = (st->reply_en[0] && !strcmp(st->reply, st->reply_src)) ? st->reply_en : "";
+
+  if (st->heard[0])
+    join_bilingual(you, sizeof you, "你说：", st->heard, "You: ", h_en);
+  if (st->reply[0] && !strcmp(st->state,"speaking"))
+    join_bilingual(astra, sizeof astra, "Astra：", st->reply, "Astra: ", r_en);
+
+  if (s->e_face)  g_object_set(s->e_face,  "text", face,  NULL);
+  if (s->e_hint)  g_object_set(s->e_hint,  "text", hint,  NULL);
+  if (s->e_you)   g_object_set(s->e_you,   "text", you,   NULL);
+  if (s->e_astra) g_object_set(s->e_astra, "text", astra, NULL);
+}
+
+// 拆掉当前管线(屏保持点亮)，按角色建新管线。摄像头起不来自动回落表情脸。
+static int build_pipe(screen_t* s, int role, int fps) {
+  if (s->pipe) {
+    gst_element_set_state(s->pipe, GST_STATE_NULL);
+    if(s->e_face){gst_object_unref(s->e_face);s->e_face=NULL;}
+    if(s->e_hint){gst_object_unref(s->e_hint);s->e_hint=NULL;}
+    if(s->e_you){gst_object_unref(s->e_you);s->e_you=NULL;}
+    if(s->e_astra){gst_object_unref(s->e_astra);s->e_astra=NULL;}
+    gst_object_unref(s->pipe); s->pipe=NULL;
+  }
+
+  GError* err=NULL;
+  gchar* desc;
+  if (role == ROLE_CAMERA) {
+    // C920 720p30 MJPEG -> 硬件缩放到屏分辨率。sync=false 实况源来帧即推。
+    desc = g_strdup_printf(
+      "v4l2src device=%s ! image/jpeg,width=1280,height=720,framerate=30/1 ! "
+      "jpegdec ! synavideoconvertscale ! video/x-raw,format=BGRA,width=%u,height=%u ! "
+      "appsink name=out emit-signals=true max-buffers=2 drop=true sync=false",
+      CAM_DEV, s->w, s->h);
+    s->pipe = gst_parse_launch(desc, &err);
+    g_free(desc);
+    if (!s->pipe) {   // 无硬件缩放插件时的软件兜底
+      if (err) { g_error_free(err); err=NULL; }
+      desc = g_strdup_printf(
+        "v4l2src device=%s ! image/jpeg,width=1280,height=720,framerate=30/1 ! "
+        "jpegdec ! videoconvert ! videoscale ! video/x-raw,format=BGRx,width=%u,height=%u ! "
+        "appsink name=out emit-signals=true max-buffers=2 drop=true sync=false",
+        CAM_DEV, s->w, s->h);
+      s->pipe = gst_parse_launch(desc, &err);
+      g_free(desc);
+    }
+  } else {
+    // 字号按屏高算（auto-resize=false 后 pt 才是真实字号）
+    // 字幕改成"中文行+英文行"两行，占高翻倍，所以字号从 0.05 收到 0.040。
+    int face = (int)(s->h*0.20*0.75);
+    int hint = (int)(s->h*0.055*0.75);
+    // 字幕字号保持 0.05 不动：textoverlay 的 valignment=position 是按文本块
+    // **中心**定位的(ypos*h - text_h/2)，1行变2行只各向上下扩半行，实测
+    // 2880x1800 下两行 208px、块间还留 150px 以上间距，不需要缩字号。
+    // 缩了反而在"翻译没启用/key过期"时白白让中文变小。
+    int sub  = (int)(s->h*0.05*0.75);
+    if (face<24) face=24; if (hint<12) hint=12; if (sub<12) sub=12;
+
+    // 深蓝底 -> 脸(上) -> 提示(中) -> 你说(下) -> Astra(底)
+    // valignment=position 的 ypos 是文本块的**中心**，块变高时上下对称扩张，
+    // 所以两行字幕相对一行只各多占半行高。1800p 上的实际占位见下(单位 px)：
+    //   face  ypos 0.20 -> 中心 360，块高≈419 => 150..570
+    //   hint  ypos 0.42 -> 中心 756，块高≈115 => 698..814   (与脸间距 128)
+    //   you   ypos 0.60 -> 中心1080，两行≈167 => 996..1164  (与提示间距 182)
+    //   astra ypos 0.80 -> 中心1440，两行≈167 =>1356..1524  (与你说间距 192，离底 276)
+    // 留出的余量足够 astra 再折行到 4 行(块高 334)也不压到上一条、不掉出屏幕。
+    desc=g_strdup_printf(
+      "videotestsrc pattern=solid-color foreground-color=0xFF1E2A4A is-live=true ! "
+      "video/x-raw,format=BGRA,width=%u,height=%u,framerate=%d/1 ! "
+      "textoverlay name=face text=\"(・ω・)\" font-desc=\"%s %d\" "
+      "  halignment=center valignment=position ypos=0.20 auto-resize=false wrap-mode=none shaded-background=false ! "
+      "textoverlay name=hint text=\"我在听，请说…\" font-desc=\"%s %d\" "
+      "  halignment=center valignment=position ypos=0.42 auto-resize=false wrap-mode=none shaded-background=false ! "
+      "textoverlay name=you text=\"\" font-desc=\"%s %d\" "
+      "  halignment=center valignment=position ypos=0.60 auto-resize=false wrap-mode=word shaded-background=true ! "
+      "textoverlay name=astra text=\"\" font-desc=\"%s Bold %d\" "
+      "  halignment=center valignment=position ypos=0.80 auto-resize=false wrap-mode=word shaded-background=true ! "
+      "videoconvert ! video/x-raw,format=BGRA ! "
+      "appsink name=out emit-signals=true max-buffers=2 drop=true sync=true",
+      s->w,s->h,fps, CJK,face, CJK,hint, CJK,sub, CJK,sub);
+    s->pipe=gst_parse_launch(desc,&err); g_free(desc);
+  }
+
+  if(!s->pipe){
+    fprintf(stderr,"[dl_face] pipeline 失败(%s): %s\n",
+            role==ROLE_CAMERA?"camera":"face", err?err->message:"?");
+    if (err) g_error_free(err);
+    if (role == ROLE_CAMERA) { s->cam_block_until = now_sec()+30; return build_pipe(s, ROLE_FACE, fps); }
+    return -1;
+  }
+  if (role == ROLE_FACE) {
+    s->e_face =gst_bin_get_by_name(GST_BIN(s->pipe),"face");
+    s->e_hint =gst_bin_get_by_name(GST_BIN(s->pipe),"hint");
+    s->e_you  =gst_bin_get_by_name(GST_BIN(s->pipe),"you");
+    s->e_astra=gst_bin_get_by_name(GST_BIN(s->pipe),"astra");
+  }
+  GstAppSink* sink=GST_APP_SINK(gst_bin_get_by_name(GST_BIN(s->pipe),"out"));
+  GstAppSinkCallbacks cbs={0}; cbs.new_sample=on_sample;
+  gst_app_sink_set_callbacks(sink,&cbs,s,NULL);
+  gst_object_unref(sink);
+  gst_element_set_state(s->pipe,GST_STATE_PLAYING);
+  s->role = role;
+  return 0;
+}
+
+static int start_screen(screen_t* s, int fps, unsigned max_hz, int role) {
+  dlsdk_display_mode mode; memset(&mode,0,sizeof mode);
+  if (pick_mode(s->disp,max_hz,&mode)!=0) return -1;
+  if (dlsdk_display_power_on_with_mode(s->disp,&mode)!=DLSDK_SUCCESS) return -1;
+  dlsdk_rect sz=dlsdk_display_size(s->disp);
+  s->w=sz.width; s->h=sz.height;
+  s->buf=malloc((size_t)s->w*s->h*4);
+  if(!s->buf) return -1;
+  if (build_pipe(s, role, fps)!=0) return -1;
+  printf("[dl_face] 屏点亮 %ux%u @%uHz 角色=%s\n", s->w,s->h,mode.refreshRateHz,
+         s->role==ROLE_CAMERA?"camera":"face");
+  fflush(stdout);
+  return 0;
+}
+
+static void stop_screen(screen_t* s){
+  if(s->pipe){ gst_element_set_state(s->pipe,GST_STATE_NULL);
+    if(s->e_face) gst_object_unref(s->e_face);
+    if(s->e_hint) gst_object_unref(s->e_hint);
+    if(s->e_you)  gst_object_unref(s->e_you);
+    if(s->e_astra)gst_object_unref(s->e_astra);
+    gst_object_unref(s->pipe); s->pipe=NULL; }
+  if(s->disp){ dlsdk_display_clear(s->disp); dlsdk_display_power_off(s->disp); }
+  free(s->buf); s->buf=NULL;
+}
+
+static int acquire(int wait_forever, dlsdk_device_handle* devs, unsigned* nd,
+                   dlsdk_display_handle* ds, unsigned* ndisp){
+  int tries=0;
+  while(!g_stop){
+    *nd=4;
+    if(dlsdk_get_devices(devs,nd)==DLSDK_SUCCESS && *nd>0){
+      *ndisp=MAX_SCREENS;
+      if(dlsdk_device_get_displays(devs[0],ds,ndisp)==DLSDK_SUCCESS && *ndisp>0) return 0;
+    }
+    if(!wait_forever) return -1;
+    if(tries++%12==0) fprintf(stderr,"[dl_face] 等待 DL7400 / 显示器接入... (%ds)\n",tries*5);
+    sleep(5);
+  }
+  return -1;
+}
+
+int main(int argc,char** argv){
+  const char* status_path="/tmp/astra_status.txt";
+  const char* status_en_path="/tmp/astra_status_en.txt";   // 译文文件，缺失则纯中文
+  int only_screen=-1, fps=15, wait_forever=0;   // -1 = 驱动全部屏(默认)
+  unsigned max_hz=60;
+  for(int i=1;i<argc;++i){
+    if(!strcmp(argv[i],"--status")&&i+1<argc) status_path=argv[++i];
+    else if(!strcmp(argv[i],"--status-en")&&i+1<argc) status_en_path=argv[++i];
+    else if(!strcmp(argv[i],"--screen")&&i+1<argc) only_screen=atoi(argv[++i]);
+    else if(!strcmp(argv[i],"--fps")&&i+1<argc) fps=atoi(argv[++i]);
+    else if(!strcmp(argv[i],"--max-hz")&&i+1<argc) max_hz=(unsigned)atoi(argv[++i]);
+    else if(!strcmp(argv[i],"--wait")) wait_forever=1;
+  }
+  if(fps<1)fps=1; if(fps>30)fps=30; if(max_hz<24)max_hz=24;
+
+  signal(SIGINT,on_sig); signal(SIGTERM,on_sig);
+  gst_init(&argc,&argv);
+
+  dlsdk_config cfg; memset(&cfg,0,sizeof cfg);
+  cfg.size=(uint32_t)sizeof cfg; cfg.firmwarePath=FW_DIR; cfg.embeddedMode=0;
+  dlsdk_initialise_with_config(&cfg);
+
+  dlsdk_device_handle devs[4]; unsigned nd=0;
+  dlsdk_display_handle ds[MAX_SCREENS]; unsigned ndisp=0;
+  if(acquire(wait_forever,devs,&nd,ds,&ndisp)!=0){
+    fprintf(stderr,"[dl_face] 找不到 DisplayLink 设备/显示器\n");
+    dlsdk_teardown(); return 2;
+  }
+  printf("[dl_face] 发现 %u 个 display%s\n", ndisp,
+         only_screen>=0 ? "(指定单屏模式)" : "，全部驱动");
+
+  dlsdk_hotplug_callback_handle hp = NULL;
+  dlsdk_register_hotplug_callback(on_hotplug, NULL, &hp);
+
+  // 驱动全部屏(或 --screen 指定的那一块)。某块失败(如全是>60Hz的怪EDID)跳过不拖累别人。
+  // 角色(face/camera)从 MODE_FILE 读取，重启后保持上次语音设置的模式。
+  int roles[MAX_SCREENS];
+  read_roles(roles, MAX_SCREENS);
+  screen_t scr[MAX_SCREENS]; memset(scr,0,sizeof scr);
+  int nrun=0;
+  for(unsigned i=0;i<ndisp;++i){
+    if(only_screen>=0 && (int)i!=only_screen) continue;
+    scr[i].disp=ds[i];
+    if(start_screen(&scr[i],fps,max_hz,roles[i])==0){ nrun++; }
+    else { fprintf(stderr,"[dl_face] 屏 %u 启动失败(无≤%uHz可用模式?)，跳过\n", i, max_hz); scr[i].disp=NULL; }
+  }
+  if(!nrun){ fprintf(stderr,"[dl_face] 没有任何屏点亮\n"); dlsdk_teardown(); return 3; }
+
+  // 主循环：轮询状态文件，变了就更新所有屏的文字
+  status_t last; memset(&last,0,sizeof last);
+  status_t cur;
+  double check=0;
+  while(!g_stop && !g_hotplug){
+    // GStreamer 错误检查：camera 屏出错(如摄像头被占)回落表情脸；face 屏出错才整体退出
+    for(unsigned i=0;i<ndisp && !g_stop;++i){
+      if(!scr[i].pipe) continue;
+      GstBus* bus=gst_element_get_bus(scr[i].pipe);
+      GstMessage* msg=gst_bus_timed_pop_filtered(bus,10*GST_MSECOND,GST_MESSAGE_ERROR);
+      if(msg){ GError* e; gchar* d; gst_message_parse_error(msg,&e,&d);
+        fprintf(stderr,"[dl_face] 屏 %u GStreamer 错误: %s\n",i,e->message);
+        g_error_free(e); g_free(d); gst_message_unref(msg);
+        if(scr[i].role==ROLE_CAMERA){
+          fprintf(stderr,"[dl_face] 屏 %u 摄像头故障，回落表情脸(30s 内不再尝试)\n",i);
+          scr[i].cam_block_until=now_sec()+30;
+          build_pipe(&scr[i],ROLE_FACE,fps);
+          apply_status(&scr[i],&last);
+        } else g_stop=1;
+      }
+      gst_object_unref(bus);
+    }
+
+    double t=now_sec();
+    if(t-check>=0.15){   // 每 150ms 看一次状态文件 + 角色文件
+      check=t;
+
+      // 角色切换(语音 MCP 写 MODE_FILE)
+      read_roles(roles, MAX_SCREENS);
+      for(unsigned i=0;i<ndisp;++i){
+        if(!scr[i].pipe) continue;
+        int want=roles[i];
+        if(want==ROLE_CAMERA && t<scr[i].cam_block_until) want=ROLE_FACE;  // 冷却期
+        if(want!=scr[i].role){
+          printf("[dl_face] 屏 %u 切换角色 %s -> %s\n", i,
+                 scr[i].role==ROLE_CAMERA?"camera":"face", want==ROLE_CAMERA?"camera":"face");
+          fflush(stdout);
+          if(build_pipe(&scr[i],want,fps)==0 && scr[i].role==ROLE_FACE)
+            apply_status(&scr[i],&last);
+        }
+      }
+
+      // 中英两个文件一起读；译文晚到时 memcmp 也会检测到变化，字幕自动补上英文行
+      read_status(status_path,status_en_path,&cur);
+      if(memcmp(&cur,&last,sizeof cur)!=0){
+        for(unsigned i=0;i<ndisp;++i) if(scr[i].pipe) apply_status(&scr[i],&cur);
+        last=cur;
+      }
+    }
+  }
+  printf("\n[dl_face] 退出，清理中...\n");
+  if(hp) dlsdk_unregister_hotplug_callback(hp);
+  for(unsigned i=0;i<ndisp;++i) if(scr[i].disp||scr[i].pipe) stop_screen(&scr[i]);
+  for(unsigned i=0;i<nd;++i) dlsdk_free_device(devs[i]);
+  dlsdk_teardown();
+  return g_hotplug ? 0 : 0;   // 热插拔退出也算正常，systemd Restart=always 会拉起
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Astra 视觉唤醒 (C920 检测到人靠近 → 唤醒语音助手)
+# 不要写 Wants=astra-voice！双模时代 vision_wake.sh 自己找"谁在跑就唤醒谁"；
+# Wants 会连带拉起 astra-voice，经 Conflicts 把云端客户端 astra-xiaozhi 杀掉（实测踩过）。
+
+[Service]
+Type=simple
+# 参数: 框高阈值%  持续帧数
+ExecStart=/bin/sh /usr/bin/vision_wake.sh 45 2
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

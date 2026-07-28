@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# Astra 云端 LLM 助手 —— astra_voice 用 popen 调它。
+# 输入：argv[1] = 用户说的话；可选 --stream 走流式(边生成边按句输出)
+# 输出：
+#   非流式(默认)：stdout 打印整段回复；退出码 0=成功 非0=失败(调用方回落本地)
+#   流式(--stream)：每【一句话】(遇到 。！？.!? 边界)打印一行并 flush，
+#                    让 astra_voice 立刻拿去合成播放，不等整段 —— 降感知延迟。
+# API key 从环境变量 DEEPSEEK_API_KEY 读，绝不写进代码。只用标准库 urllib。
+import sys, os, json, urllib.request
+
+SYS_PROMPT = ("你是Astra语音助手，用一到两句简短的中文口语回答，不要表情符号不要换行。"
+              "不确定或需要实时数据的问题直接说不知道，绝不编造具体数字或事实。")
+HARD_ENDS = "。！？!?"   # 强句子边界(总是切)
+MIN_SENT  = 4            # 太短的碎片不单独吐(如"1.")，继续累积
+
+# 找 buf 里第一个"可切"的句末位置，找不到返回 -1
+def find_boundary(buf):
+    for i, ch in enumerate(buf):
+        if ch in HARD_ENDS:
+            return i
+        # ASCII 句点：只有【前一个非空字符不是数字】才算句末(避免 1. 2. 3.14 被切)
+        if ch == '.':
+            j = i - 1
+            while j >= 0 and buf[j] == ' ':
+                j -= 1
+            if j >= 0 and buf[j].isdigit():
+                continue
+            return i
+    return -1
+
+def build_req(text, stream):
+    key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
+    if not key:
+        sys.stderr.write("no api key"); sys.exit(2)
+    url   = os.environ.get("LLM_URL",   "https://api.deepseek.com/v1/chat/completions")
+    model = os.environ.get("LLM_MODEL", "deepseek-chat")
+    body = {"model": model, "stream": stream, "max_tokens": 150, "temperature": 0.3,
+            "messages": [{"role":"system","content":SYS_PROMPT},
+                         {"role":"user","content":text}]}
+    return urllib.request.Request(url,
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type":"application/json","Authorization":"Bearer "+key})
+
+def run_plain(text):
+    try:
+        with urllib.request.urlopen(build_req(text, False), timeout=8) as r:
+            data = json.load(r)
+        msg = data["choices"][0]["message"]["content"].strip().replace("\n"," ")
+        if not msg: sys.exit(1)
+        print(msg)
+    except SystemExit: raise
+    except Exception as e:
+        sys.stderr.write(str(e)); sys.exit(1)
+
+def run_stream(text):
+    buf = ""       # 当前累积、尚未成句的片段
+    got = False
+    try:
+        with urllib.request.urlopen(build_req(text, True), timeout=12) as r:
+            for raw in r:                      # 逐行读 SSE
+                line = raw.decode("utf-8","ignore").strip()
+                if not line.startswith("data:"): continue
+                payload = line[5:].strip()
+                if payload == "[DONE]": break
+                try:
+                    obj = json.loads(payload)
+                    delta = obj["choices"][0].get("delta",{}).get("content","")
+                except Exception:
+                    continue
+                if not delta: continue
+                delta = delta.replace("\n"," ")
+                buf += delta
+                # 出现句末标点就吐成句部分；太短(如"1.")的继续攒着
+                while True:
+                    idx = find_boundary(buf)
+                    if idx < 0: break
+                    cand = buf[:idx+1]
+                    alnum = sum(1 for c in cand if c.isalnum())
+                    if alnum < MIN_SENT:
+                        # 太短，不切，把这个边界并入后文继续攒
+                        # 用一个占位避免死循环：把边界符之后的内容拼回去等更长
+                        nxt = find_boundary(buf[idx+1:])
+                        if nxt < 0: break
+                        idx = idx + 1 + nxt
+                        cand = buf[:idx+1]
+                    sent = cand.strip()
+                    buf = buf[idx+1:]
+                    if sent:
+                        print(sent, flush=True); got = True
+        tail = buf.strip()
+        if tail:
+            print(tail, flush=True); got = True
+        if not got: sys.exit(1)
+    except SystemExit: raise
+    except Exception as e:
+        sys.stderr.write(str(e)); sys.exit(1)
+
+def main():
+    args = [a for a in sys.argv[1:]]
+    stream = "--stream" in args
+    args = [a for a in args if a != "--stream"]
+    text = args[0] if args else ""
+    if not text.strip(): sys.exit(3)
+    if stream: run_stream(text)
+    else:      run_plain(text)
+
+if __name__ == "__main__":
+    main()

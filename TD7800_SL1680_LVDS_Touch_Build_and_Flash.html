@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD7800-TM LVDS + 触摸 @ SL1680 — Build & 烧录总结</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1a1f2b; --sub:#5a6472; --line:#e2e6ec;
+    --accent:#2563eb; --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --code-bg:#f2f4f7; --code-ink:#0f172a; --chip:#eef2ff; --chip-ink:#3730a3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0e1117; --card:#161b22; --ink:#e6edf3; --sub:#9aa4b2; --line:#2a313c;
+      --accent:#60a5fa; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+      --code-bg:#0b0f16; --code-ink:#d1d9e0; --chip:#1e2540; --chip-ink:#c7d2fe;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1117; --card:#161b22; --ink:#e6edf3; --sub:#9aa4b2; --line:#2a313c;
+    --accent:#60a5fa; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+    --code-bg:#0b0f16; --code-ink:#d1d9e0; --chip:#1e2540; --chip-ink:#c7d2fe;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1a1f2b; --sub:#5a6472; --line:#e2e6ec;
+    --accent:#2563eb; --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --code-bg:#f2f4f7; --code-ink:#0f172a; --chip:#eef2ff; --chip-ink:#3730a3;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif;}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  header.hero{background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;
+    border-radius:16px;padding:26px 28px;margin-bottom:22px}
+  header.hero h1{margin:0 0 6px;font-size:22px;line-height:1.35}
+  header.hero p{margin:3px 0;opacity:.95;font-size:13.5px}
+  .status-ok{display:inline-block;background:rgba(255,255,255,.2);
+    border:1px solid rgba(255,255,255,.5);border-radius:999px;
+    padding:3px 12px;font-size:12.5px;font-weight:600;margin-top:8px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:20px 22px;margin:16px 0}
+  h2{font-size:17px;margin:2px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:14.5px;margin:18px 0 8px;color:var(--accent)}
+  p{margin:8px 0}
+  code{background:var(--code-bg);color:var(--code-ink);border-radius:5px;
+    padding:1.5px 6px;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  pre{background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);
+    border-radius:10px;padding:13px 15px;overflow-x:auto;margin:10px 0}
+  pre code{background:none;padding:0;font-size:12.5px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--code-bg);font-weight:600;white-space:nowrap}
+  .sub{color:var(--sub)}
+  .chip{display:inline-block;background:var(--chip);color:var(--chip-ink);
+    border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600;margin:2px 4px 2px 0}
+  .ok{color:var(--ok);font-weight:700}
+  .warn{color:var(--warn);font-weight:700}
+  .bad{color:var(--bad);font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+  .kv{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .kv .k{font-size:11.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.03em}
+  .kv .v{font-size:15px;font-weight:700;margin-top:3px}
+  .flow{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+    padding:14px;text-align:center;font:13px ui-monospace,Menlo,Consolas,monospace;overflow-x:auto}
+  .arrow{color:var(--accent);font-weight:700;margin:0 6px}
+  .todo{border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);
+    border-radius:0 8px 8px 0;padding:10px 14px;margin:10px 0}
+  ol li,ul li{margin:5px 0}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+    border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;margin-right:8px;flex:0 0 auto}
+  footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:26px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>TD7800-TM 10.5″ LVDS 屏 + 触摸 @ SL1680 — Build &amp; 烧录总结</h1>
+  <p>Synaptics SL1680 (dolphin) · Astra SDK <code style="background:rgba(255,255,255,.18);color:#fff">scarthgap_6.12_v2.3.0</code> · kernel 6.12.62</p>
+  <p>屏：1280(RGB)×720 LVDS，经 <b>MIPI-DSI → MIPI转LVDS 转接板 → panel</b> · 触摸：TD7800 TDDI，TCM2 v1.8.0，I²C@0x2C</p>
+  <span class="status-ok">✅ Build 成功 · SYNAIMG 2.4 GB 已产出 · 2026-07-13</span>
+</header>
+
+<section>
+  <h2>1 · 一句话结论</h2>
+  <p>在 WSL2 + Ubuntu 22.04 上，用独立 layer <code>meta-tcm2-touch</code> 把 <b>TD7800 触摸驱动</b> 和 <b>MIPI-LVDS 1280×720 显示 overlay</b> 集成进 <code>astra-media</code>，
+  <b class="ok">成功 build 出可烧录的 SYNAIMG 镜像</b>。过程中解决了 8 个坑（含 1 个 WSL2 pseudo/openat2 全局阻塞、1 个 Yocto feed 依赖解析）。
+  实机点亮前还需确认<b>转接板芯片型号</b>与<b>触摸 INT/RST 的 GPIO 接线</b>（见 §6）。</p>
+  <div class="grid">
+    <div class="kv"><div class="k">MACHINE</div><div class="v">sl1680 (dolphin)</div></div>
+    <div class="kv"><div class="k">Kernel</div><div class="v">6.12.62</div></div>
+    <div class="kv"><div class="k">触摸驱动</div><div class="v">synaptics_tcm2.ko</div></div>
+    <div class="kv"><div class="k">镜像大小</div><div class="v">2.4 GB</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2 · 与 RK3568 姊妹案的关系</h2>
+  <p>同一块 TD7800-TM 屏此前已在 <b>RK3568 + Android 12</b> 上实测点亮（<code>TD7800_RK3568_LVDS_Touch_Case_Summary.md</code>）。本案搬到 SL1680：</p>
+  <table>
+    <tr><th>维度</th><th>RK3568（已通过）</th><th>SL1680（本案）</th></tr>
+    <tr><td>SoC 显示输出</td><td>原生 LVDS（VP2）</td><td><b>MIPI-DSI 4-lane</b> → 外部转接板 → LVDS</td></tr>
+    <tr><td>内核</td><td>4.19 (Android12)</td><td><b>6.12.62</b> (Yocto)</td></tr>
+    <tr><td>触摸驱动构建</td><td>内建 =y</td><td><b>out-of-tree .ko</b></td></tr>
+    <tr><td>EPROBE_DEFER / drm_bridge 守卫</td><td>需修（4.19 内建）</td><td><span class="ok">不需要</span>（6.12 模块）</td></tr>
+    <tr><td>TDDI TP_RESET 常拉高</td><td>gpio-hog</td><td><b>同样需要</b>（见 §5）</td></tr>
+    <tr><td>触摸 I²C</td><td>0x2C @ i2c3</td><td>0x2C @ <b>i2c0</b>（DSI 面板连接器总线）</td></tr>
+  </table>
+  <p class="sub">结论：触摸驱动 + TDDI 经验复用；显示侧因平台不同重做。RK 案的内核版本相关补丁在 6.12 模块下不需要。</p>
+</section>
+
+<section>
+  <h2>3 · 显示架构 &amp; 1280×720 时序</h2>
+  <div class="flow">
+    [SoC MIPI-DSI 4-lane]<span class="arrow">→</span>[MIPI转LVDS 转接板]<span class="arrow">→</span>[TD7800 LVDS panel 1280×720]
+  </div>
+  <p>SoC 侧用 Synaptics 自定义 <code>dsi_panel</code> 节点按面板原生时序发 DSI 流，转接板负责转换。<code>PWR_ON_DSI</code>（expander0 bit1）供电，touch 走 i2c0。</p>
+  <table>
+    <tr><th>参数</th><th>值</th><th>参数</th><th>值</th></tr>
+    <tr><td>像素时钟</td><td>65.3 MHz</td><td>Lanes</td><td>4</td></tr>
+    <tr><td>H active / FP / SW / BP</td><td>1280 / 97 / 30 / 60</td><td>HTOTAL</td><td>1467</td></tr>
+    <tr><td>V active / FP / SW / BP</td><td>720 / 7 / 2 / 14</td><td>VTOTAL</td><td>743</td></tr>
+  </table>
+  <p class="sub">自检：1467 × 743 × 60Hz ≈ 65.4 MHz ≈ 65.3 MHz ✓</p>
+</section>
+
+<section>
+  <h2>4 · 交付：<code>meta-tcm2-touch</code> layer</h2>
+  <p>不改上游 <code>meta-synaptics</code>，所有定制在独立 layer（同时覆盖 sl2619/klamath 与 sl1680/dolphin）：</p>
+<pre><code>meta-tcm2-touch/
+├── conf/layer.conf                          # BBFILES 匹配 3+4 层深度
+├── recipes-kernel/
+│   ├── linux-drivers/synaptics-tcm2/
+│   │   ├── synaptics-tcm2_1.8.0.bb           # out-of-tree module recipe
+│   │   └── files/synaptics_tcm2_...tar.gz
+│   └── linux/
+│       ├── linux-syna_%.bbappend            # 注入 overlay
+│       └── files/
+│           ├── dolphin-tcm2-touch-overlay.dtso     # 触摸 @ i2c0 0x2C
+│           └── dolphin-td7800-lvds-overlay.dtso    # MIPI-LVDS 1280×720
+└── recipes-core/images/astra-media.bbappend # IMAGE_INSTALL += 模块 + evtest
+                                             # + do_rootfs[depends] 强制 feed</code></pre>
+  <p>module recipe 要点：<span class="chip">inherit module</span><span class="chip">tarball 源</span><span class="chip">COMPATIBLE_MACHINE=(klamath|dolphin)</span><span class="chip">PACKAGES_DYNAMIC += ^kernel-module-.*</span> +
+  <code>do_configure:append</code> 做 6.12 API sed 修复 + Makefile→Kbuild + wrapper Makefile。</p>
+</section>
+
+<section>
+  <h2>5 · ★ 关键：TDDI 的 TP_RESET（沿用 RK3568 教训）</h2>
+  <p>TD7800 是 <b>TDDI（触摸+显示同一颗芯片）</b>。<code>TP_RESET</code> 复位整颗芯片<b>含显示驱动 IC</b> → 若触摸驱动持有 TP_RESET（active-low），显示初始化时被拉低 → <b class="bad">屏黑</b>。</p>
+  <p><b>规则</b>：TP_RESET 必须上电即拉高并保持（硬件上拉，或 DTS <code>gpio-hog</code>）。因此触摸节点<b>不给</b> <code>reset-gpio</code>；复位后恢复交给驱动内 <code>ENABLE_HELPER</code>。</p>
+</section>
+
+<section>
+  <h2>6 · TODO（实机 bring-up 前必须确认）</h2>
+  <div class="todo">这两项取决于<b>第三方 MIPI-LVDS 转接板</b>，不在 SL1680 RDK 原理图内，需实测确认。</div>
+  <table>
+    <tr><th>项</th><th>现状</th><th>待确认</th></tr>
+    <tr><td>转接板芯片型号</td><td>未知</td><td>决定是否需 I²C/DCS 初始化（自动配置型转板可直接用；SN65DSI84/LT8912/TC358775 需 bridge driver 或 DCS 序列）</td></tr>
+    <tr><td>触摸 INT GPIO</td><td>overlay 占位 <code>&lt;&amp;portc 0&gt;</code></td><td>换成实际接到面板 FPC 的 SoC GPIO</td></tr>
+    <tr><td>TP_RESET 接线</td><td>假设外部常高</td><td>实测；否则加 gpio-hog</td></tr>
+    <tr><td>DSI lane 数 / LVDS mapping</td><td>模板用 4-lane / 24bit</td><td>按转接板确认；偏色调 VESA/JEIDA strap</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>7 · ★ Build 踩坑全记录（8 个，全部已解决）</h2>
+  <p>从 0 到产出 SYNAIMG 踩了 8 个坑。<b>最隐蔽的是 #1（pseudo/openat2，strace 才定位）和 #7（feed 依赖解析）</b>。</p>
+  <table>
+    <tr><th>#</th><th>现象</th><th>根因</th><th>修法</th></tr>
+    <tr><td class="bad">1</td><td><code>do_package</code>/<code>do_rootfs</code> 全挂：<code>unknown base path for fd N</code> / <code>Bad address</code></td><td><b>pseudo(LD_PRELOAD fakeroot)拦不住 GNU tar 1.34 的 <code>openat2()</code> 裸系统调用</b>（WSL2 kernel 6.6 支持 openat2）→ 目录 fd 追踪失效</td><td>seccomp launcher 强制 <code>openat2→ENOSYS</code>，tar 回退 <code>openat()</code>；wrapper 走 HOSTTOOLS PATH</td></tr>
+    <tr><td>2</td><td><code>.remove incompatible pointer type</code></td><td>kernel 6.11+ 把 <code>platform_driver.remove</code> 从 int 改成 void</td><td>recipe sed 把 <code>syna_dev_remove</code> 改返回 void</td></tr>
+    <tr><td>3</td><td><code>make: *** No targets. Stop.</code></td><td>驱动 Makefile 是纯 Kbuild 片段，为 in-tree 设计</td><td>Makefile→Kbuild + wrapper Makefile，标准 module 类接管</td></tr>
+    <tr><td>4</td><td><code>LIC_FILES_CHKSUM does not match</code></td><td>md5 占位</td><td>回填正确 md5 <code>ebcf73a…</code></td></tr>
+    <tr><td>5</td><td>wrapper 不生效（用旧 PATH）</td><td><b>bitbake-server daemon 常驻</b>缓存旧环境</td><td>先 <code>pkill -9 -f bitbake-server</code></td></tr>
+    <tr><td class="bad">6</td><td>大 git clone 反复 <code>GnuTLS recv error / early EOF</code></td><td><b>WSL2 MTU 问题</b>：大传输 TLS 被掐断</td><td>MTU 1280 + HTTP/1.1 + <b>浅克隆</b>（SRCREV=分支 tip）放 git2 mirror</td></tr>
+    <tr><td class="bad">7</td><td><code>E: Unable to locate package kernel-module-synaptics-tcm2</code></td><td>① <code>PACKAGES_DYNAMIC</code> 缺 <code>^kernel-module-.*</code>；② 模块 deb 没被硬链接进 rootfs feed</td><td>补 PACKAGES_DYNAMIC + <code>do_rootfs[depends] += "synaptics-tcm2:do_package_write_deb"</code></td></tr>
+    <tr><td>8</td><td><code>torq parse ExpansionError</code></td><td>torq recipe parse 期 AUTOREV <code>ls-remote</code> 偶发网络失败</td><td><code>BB_SRCREV_POLICY=cache</code> + MTU 1280 + parse 重试</td></tr>
+  </table>
+
+  <h3>#1 的 openat2 修复（可复用于任何 WSL2 Yocto）</h3>
+<pre><code># no_openat2.c: 装 seccomp BPF 过滤器(openat2→ENOSYS)后 exec 目标命令
+# ~/toolwrap/{tar,cp,rsync,...}: 包一层走 no_openat2
+# bitbake 前把 ~/toolwrap 加到 PATH 最前 → HOSTTOOLS 的 tar 指向 wrapper
+export PATH="/home/astra/toolwrap:$PATH"</code></pre>
+</section>
+
+<section>
+  <h2>8 · 最终产物</h2>
+  <p><code>~/sdk/build-sl1680/tmp/deploy/images/sl1680/SYNAIMG/</code>（共 <b>2.4 GB</b>）</p>
+  <table>
+    <tr><th>文件</th><th>大小</th><th>说明</th></tr>
+    <tr><td><code>preboot.subimg.gz</code></td><td>451K</td><td>Preboot</td></tr>
+    <tr><td><code>bl.subimg.gz</code></td><td>383K</td><td>Bootloader</td></tr>
+    <tr><td><code>boot.subimg.gz</code></td><td>16M</td><td>Boot（kernel + dtb + <b>dtbo overlay</b>）</td></tr>
+    <tr><td><code>tzk.subimg.gz</code></td><td>1.4M</td><td>TrustZone kernel（含 optee ta_enc）</td></tr>
+    <tr><td><code>rootfs.subimg.gz</code></td><td>737M</td><td>主 rootfs（<b>含 synaptics_tcm2.ko + evtest</b>）</td></tr>
+    <tr><td><code>rootfs_s.subimg.0-5</code></td><td>~1.6G</td><td>分片 rootfs</td></tr>
+    <tr><td><code>home.subimg.gz</code> / <code>fastlogo.subimg.gz</code></td><td>20M / 938K</td><td>/home / 开机 logo</td></tr>
+    <tr><td><code>emmc_image_list</code> / <code>emmc_part_list</code></td><td>—</td><td>烧录顺序 + GPT 分区表</td></tr>
+  </table>
+  <p><b>镜像已集成（manifest 验证）</b>：<span class="chip ok">kernel-module-synaptics-tcm2-6.12.62</span><span class="chip ok">evtest</span><span class="chip ok">dolphin-tcm2-touch-overlay.dtbo</span><span class="chip ok">dolphin-td7800-lvds-overlay.dtbo</span></p>
+</section>
+
+<section>
+  <h2>9 · 烧录 eMMC（3 种方式，来自 Synaptics Confluence）</h2>
+  <div class="todo"><b>关键 jumper/按键</b>：<code>SD_BOOT</code> 接上=U-Boot/SD 启动（方式二/三）、断开=eMMC 启动（方式一）；<code>USB_BOOT</code>+<code>RESET</code> 进 USB Boot；UART 115200 8N1，登录 <code>root</code> 无密码。</div>
+
+  <h3>方式一：USB Boot（★推荐，PC 直连）</h3>
+  <ol>
+    <li><span class="num">1</span>下载 <a href="https://github.com/synaptics-astra/usb-tool" style="color:var(--accent)">usb-tool</a>（含 <code>astra-update</code>）</li>
+    <li><span class="num">2</span>Windows 装 WinUSB 驱动：右键 <code>SYNA_WinUSB.inf</code> → 安装</li>
+    <li><span class="num">3</span>USB-C 接 PC ↔ SL1680 的 USB 2.0 口（靠网口那个）；确认 <code>SD_BOOT</code> 断开</li>
+    <li><span class="num">4</span><code>SYNAIMG/</code> 改名 <code>eMMCimg</code> 放进 usb-tool 目录，运行 <code>update_emmc</code></li>
+    <li><span class="num">5</span>按住 <code>USB_BOOT</code> + 点一下 <code>RESET</code> 进 USB Boot 模式 → 自动烧录 → 重启</li>
+  </ol>
+
+  <h3>方式二：U 盘（U-Boot <code>usb2emmc</code>）</h3>
+  <p>FAT32 U 盘拷 <code>eMMCimg/</code> → 接 UART → 接 <code>SD_BOOT</code> jumper 上电进 U-Boot → <code>usb2emmc eMMCimg</code> → 移除 jumper → <code>reset</code></p>
+
+  <h3>方式三：TFTP（U-Boot <code>tftp2emmc</code>）</h3>
+  <p>PC IP 设 <code>10.10.10.2</code> 开 TFTP → 接 jumper 进 U-Boot → <code>setenv ipaddr 10.10.10.10</code> → <code>tftp2emmc 10.10.10.2:eMMCimg</code> → 移除 jumper → <code>reset</code></p>
+</section>
+
+<section>
+  <h2>10 · 上板验证清单</h2>
+<pre><code># 触摸模块加载
+lsmod | grep synaptics_tcm2
+dmesg | grep -iE 'synaptics|tcm2|td7800|touch'
+#   期望: Device in Application FW, td7800-... / synaptics_tcm ver.: 1.8.0, installed
+
+# input 设备 + 报点
+cat /proc/bus/input/devices | grep -iA3 synaptics
+evtest /dev/input/eventN     # 手指点屏
+
+# 显示分辨率
+cat /sys/class/drm/card0-DSI-1/modes | head    # 期望 1280x720</code></pre>
+  <p class="sub">若屏黑：先查 TP_RESET 是否上电即高（§5）；若花屏/偏色：查转接板 lane 数 / LVDS mapping（§6）。</p>
+</section>
+
+<footer>
+  SL1680 TD7800 LVDS + 触摸集成 · 基于 RK3568 姊妹案复用 · Build 成功 2026-07-13<br>
+  完整命令与脚本见同目录 <code>TD7800_SL1680_LVDS_Touch_Build_and_Flash.md</code> 及 <code>*.sh</code>
+</footer>
+
+</div>
+</body>
+</html>

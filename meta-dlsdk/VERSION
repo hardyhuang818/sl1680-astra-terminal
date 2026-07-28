@@ -1,0 +1,104 @@
+# meta-dlsdk 版本记录
+#
+# 这份 layer 的"真相"是板子，不是仓库 —— 历史上仓库多次落后于板端实际运行版本。
+# 每次同步到 WSL 构建树时在这里追加一条，并跑 tools/export_live.sh 核对 sha256。
+
+v2.7  2026-07-28  ★ TM10.5-TD7800 LVDS 屏点亮（经 LAMTL/TC358775 桥）
+  新增:
+    recipes-kernel/linux/linux-syna.bbappend
+    recipes-kernel/linux/files/0001-dolphin-rdk-td7800-tm10p5-lvds-panel.patch
+      dsi_panel: RPi 配置→TM10.5 1280x720@65.3MHz + TC358775 初始化 command
+      Byte_clk=65300 (DSI 带宽 +33% 余量, 回调 48975 会全屏雪花!)
+      LVCFG=0x41 (PCLKDIV=4, LVDS pclk=261.2/4=65.3MHz)
+      &spi0 + spidev (TD7800 SPI 调试通道) + spi2_data_pmux (夺回 SDO/SDI)
+  五层根因复盘见 SL1680_td7800_boot/README_TD7800屏点亮.md
+  硬件前提: 面板 U5.9 RESX 拉高 3.3V; LAMTL 1.8V 外供, RST/PWR_EN 用 1.8V 电平
+  板端 boot sha256 (boot_a/b 双槽, 分区前 19110288 字节):
+    9a86143dac2f0c7650a6ec8d9e113951898498229445ee5a21ba2528c78a8a9f  boot_td7800_margin.subimg
+  ⚠ 补丁尚未跑过 cleanall→do_patch 全流程验证 (板子当前配置 = 补丁内容,
+    由 work-shared 直接编译产生; 下次干净构建时验证补丁可应用)
+  2026-07-28 追加: 触摸也通了 (补丁重生成为 186 行, 含 tcm2 节点)
+    synaptics_tcm@2c on i2c0, INT=&porta 10 (=J32.12, pad I2S2_DI1 func0,
+    实验法确认: ATTN 锁低, I2C 排空报文后释放), 无 reset-gpio (TDDI!)
+    实测: evtest 报点 0-1279×0-719, 双指多点, ~120Hz, IRQ48 porta10
+    最终板端 boot sha256 (双槽):
+    0aa901725795467ba867e5a11982fadc6a606b7003f89393d327a0fd263dac75  boot_td7800_touch.subimg
+  另: 板端 rootfs 手工配置三件套 (镜像重烧会丢, 待进 Yocto recipe):
+    /usr/share/zoneinfo/Asia/Shanghai + /etc/localtime (镜像无 tzdata)
+    /etc/xdg/weston/weston.ini 追加 [output] DSI-1 transform=rotate-180 (面板倒装)
+    /etc/udev/rules.d/99-td7800-touch-cal.rules (触摸 X 镜像校准矩阵)
+  触摸最终验收: 用户满屏实画轨迹 OK (方向/多点/跟踪全正常)
+
+v2.6  2026-07-24  ★ 出了第一个"烧完即用"的完整镜像
+  bitbake astra-media 成功，产出 SYNAIMG 烧录包 2.5GB，
+  已复制到 D:\Claude code\Case6_Astralash_image_20260723163055
+  新增:
+    recipes-core/packagegroups/packagegroup-astra-terminal.bb
+      只拉 astra-voice + dl-face，具体依赖交给各自 RDEPENDS，避免两处不同步
+    recipes-bsp/alsa-state/alsa-state.bbappend
+      删掉它自带的 32 字节占位 /etc/asound.conf，解除与 astra-voice 的文件冲突
+
+  改:
+    recipes-core/images/astra-media.bbappend
+      加 ASTRA_TERMINAL_PACKAGES(可在 local.conf 置空退回原厂镜像)
+      ⚠️ 合并了重复的 bbappend —— 一度存在两个(recipes-core/ 和 recipes-bsp/)，
+         bitbake 会全部应用，谁加了什么根本看不出来
+    recipes-ai/astra-voice/astra-voice_1.0.bb
+      SYSTEMD_SERVICE 加 vision-wake.service + astra-cleanup.timer(对齐板子实测状态)
+      RDEPENDS 加 synasdk-synap-runtime + synasdk-synap-models
+        (vision_wake.sh 调 synap_cli_od，这两个包碰巧 astra-media 已装，
+         但依赖没声明，换个 image 就静默失效)
+    recipes-graphics/dl-clock/dl-clock_1.0.bb
+      SYSTEMD_AUTO_ENABLE 改 disable —— 会和 dl-face 抢 DL7400(DLSDK 单进程独占)
+
+  镜像实测(debugfs 直接读 ext4，不是看构建清单):
+    自启: astra-voice / astra-translate / dl-face / vision-wake / astra-cleanup.timer
+    未自启(正确): dl-clock / astra-mode / astra-xiaozhi
+    文件: astra_voice, dl_face, libsherpa-onnx-c-api.so, libonnxruntime.so,
+          libdlsdk.so, astra_llm.py, asound.conf, synap_cli_od, wqy-zenhei.ttc
+
+  ⚠️ 仍未闭环: 模型约 2GB 不在镜像里(需单独灌)，且**没有在真板子上实烧验证过**
+     (板子 SSH 自 2026-07-23 晚起不可达)。
+
+v2.5  2026-07-23  ★ sherpa-onnx 首次在 Yocto 里完整构建成功
+  这个 recipe 此前从没编译过 —— do_configure 就挂了，work 目录只有源码没有 image/。
+  修了五个问题后 bitbake sherpa-onnx / astra-voice / dl-face 三个全绿，产出 arm64 deb。
+
+  改 recipes-ai/sherpa-onnx/sherpa-onnx_1.13.4.bb:
+    1. SRC_URI 增加 14 个第三方包(带 sha256/downloadfilename/unpack=0)
+       + do_configure:prepend 拷进 ${S} 命中 possible_file_locations
+       + EXTRA_OECMAKE 加 -DFETCHCONTENT_FULLY_DISCONNECTED=OFF
+       根因: cmake.bbclass 硬关了 FetchContent，症状像断网但根本没联网
+    2. openfst / eigen 各备两个版本(子项目要的版本和 sherpa 要的不同)
+    3. SECURITY_STRINGFORMAT 摘掉 -Werror (espeak-ng 丢了 -Wformat)
+    4. do_install:append 把 sherpa-onnx.pc / cargs.h 挪到标准位置
+    5. RPROVIDES 声明 libonnxruntime.so(VERS_1.27.0)(64bit)
+    另: LICENSE 改为 Apache-2.0 & GPL-3.0-or-later & MIT & BSD-3-Clause
+        (开 TTS 会把 espeak-ng GPLv3 编进库，原来写 Apache-2.0 不准确)
+
+  实测产出:
+    sherpa-onnx_1.13.4-r0_arm64.deb   运行时包含 4 个 .so, -dev 包 0 个(SOLIBS 修复端到端确认)
+      libsherpa-onnx-c-api.so 3.2MB / libonnxruntime.so 17.4MB (strip 后)
+    astra-voice_1.0-r0_arm64.deb      Depends: sherpa-onnx (>= 1.13.4) ✓
+    dl-face_1.0-r0_arm64.deb          Depends: dlsdk, ttf-wqy-zenhei ✓
+    astra_voice / dl_face 均为 ELF 64-bit ARM aarch64
+
+  ⚠️ 仍未闭环: 没有任何 image 把这三个包拉进 rootfs(见 IMAGE_INSTALL)，
+     模型约 2GB 不在 recipe 里，未做整板实烧验证。
+
+v2.4  2026-07-23  麦克风等待守护
+  新增 recipes-ai/astra-voice/files/astra_wait_mic.sh
+  改   recipes-ai/astra-voice/files/astra-voice.service  (ExecStartPre 排第一 + 放宽启动限流)
+  改   recipes-ai/astra-voice/astra-voice_1.0.bb          (SRC_URI + do_install)
+  板端 sha256:
+    4600a0eecc374e74ecb66ded4dcd629b276134cf2960d0dfa6504b58750ff517  /usr/bin/astra_wait_mic.sh
+    17145e68fbc3ddb48e2d0e0bdaa6bc1d0e1b9ec6a73bacb11ffcc82902d7d423  /etc/systemd/system/astra-voice.service
+
+v2.3  2026-07-23  Codex 审阅整改
+  P0  dl_face.c 移除会让所有输出黑屏的 AUX 轮询，危险版本改名留档
+  P1  板端配置全量回灌仓库(11 个文件，其中 5 个仓库里原本不存在)
+  P1  新增 recipes-ai/astra-voice/astra-voice_1.0.bb        (此前只有 files/ 没有 .bb)
+  P1  新增 recipes-graphics/dl-face/dl-face_1.0.bb          (同上)
+  修  recipes-ai/sherpa-onnx/sherpa-onnx_1.13.4.bb          (SOLIBS 修无 SOVERSION 的 .so 被打进 -dev 包)
+  板端 sha256:
+    538511420bda5a9214060f1a0302ba5e8bfd3a8cc9a06ca8df231b249831d747  /usr/bin/dl_face

@@ -1,0 +1,28 @@
+[Unit]
+Description=Astra 实时英文翻译 (中英对照字幕)
+Documentation=man:astra_translate(8)
+After=network-online.target astra-voice.service
+Wants=network-online.target
+# 脚本不在就别反复重启(远端设备没法人工叫停)
+ConditionPathExists=/home/voice/astra_translate.py
+
+[Service]
+Type=simple
+# key/模型/endpoint 与 astra_llm.py 共用同一份配置; 文件不存在也不报错
+EnvironmentFile=-/etc/astra/llm.conf
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /home/voice/astra_translate.py
+# 只写 /tmp/astra_status_en.txt, 优先级让给语音链路
+Nice=5
+Restart=always
+RestartSec=15
+# 进程停掉/被杀时清掉译文文件, 否则 dl_face 会拿这份过期英文一直配在
+# 后面每一句中文下面 —— 看起来不像坏了, 但内容是错的, 最难发现的故障
+ExecStopPost=-/bin/rm -f /tmp/astra_status_en.txt
+KillSignal=SIGTERM
+TimeoutStopSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

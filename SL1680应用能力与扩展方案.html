@@ -1,0 +1,144 @@
+<meta charset="utf-8">
+<title>SL1680 应用能力与扩展方案</title>
+<style>
+  :root{--ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;--rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;--measured:#B06A12;--measured-bg:#FDF3E3;--verified:#1B6E80;--verified-bg:#E4F3F6;--untested:#A8305A;--untested-bg:#FBE9EF;--good:#1F6B4A;--bad:#A8305A;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;}
+  @media (prefers-color-scheme:dark){:root{--ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;--rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;--measured:#E8A33D;--measured-bg:#2B2114;--verified:#4FB3C8;--verified-bg:#132A30;--untested:#E06A92;--untested-bg:#2E151F;--good:#5FBF8F;--bad:#E06A92;}}
+  :root[data-theme="light"]{--ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;--rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;--measured:#B06A12;--measured-bg:#FDF3E3;--verified:#1B6E80;--verified-bg:#E4F3F6;--untested:#A8305A;--untested-bg:#FBE9EF;--good:#1F6B4A;--bad:#A8305A;}
+  :root[data-theme="dark"]{--ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;--rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;--measured:#E8A33D;--measured-bg:#2B2114;--verified:#4FB3C8;--verified-bg:#132A30;--untested:#E06A92;--untested-bg:#2E151F;--good:#5FBF8F;--bad:#E06A92;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px 90px}
+  .mast{border-bottom:2px solid var(--ink);padding:52px 0 22px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px}
+  h1{font-size:clamp(26px,4vw,40px);line-height:1.2;margin:0 0 18px;letter-spacing:-.01em;text-wrap:balance;font-weight:680}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 26px;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .meta b{color:var(--ink-2);font-weight:500}
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 40px}
+  .legend div{background:var(--panel);padding:12px 15px}
+  .legend .lt{font-family:var(--mono);font-size:11.5px;font-weight:600;display:block;margin-bottom:2px}
+  .legend .ld{font-size:12px;color:var(--ink-3)}
+  .l-m .lt{color:var(--measured)} .l-v .lt{color:var(--verified)} .l-u .lt{color:var(--untested)}
+  .c{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 6px;border-radius:2px;white-space:nowrap;display:inline-block;vertical-align:1px}
+  .c-m{color:var(--measured);background:var(--measured-bg)} .c-v{color:var(--verified);background:var(--verified-bg)} .c-u{color:var(--untested);background:var(--untested-bg)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:58px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:19px;margin:30px 0 12px;font-weight:640}
+  h4{font-size:15.5px;margin:22px 0 9px;color:var(--ink-2);font-weight:640}
+  p{margin:0 0 14px;max-width:76ch} ul{margin:0 0 14px;padding-left:22px;max-width:76ch} li{margin-bottom:6px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:14px 16px;overflow-x:auto;margin:0 0 20px;color:var(--ink-2)}
+  pre b{color:var(--accent)}
+  .scroll{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .hi{background:var(--measured-bg)} .yes{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);background:var(--panel);padding:15px 18px;margin:0 0 20px}
+  .note.key{border-left:3px solid var(--accent);background:var(--accent-soft)}
+  .note.warn{border-left:3px solid var(--untested);background:var(--untested-bg)}
+  .note p:last-child{margin-bottom:0}
+  .foot{margin-top:60px;padding-top:22px;border-top:2px solid var(--ink);font-size:13px;color:var(--ink-3)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <p class="kicker">Synaptics Astra SL1680 · 应用能力评估</p>
+  <h1>原生 HDMI 图形界面 + 高价值应用 + GitHub 方案</h1>
+  <div class="meta"><span><b>日期</b> 2026-07-18</span><span><b>板子</b> 192.168.5.126</span></div>
+</header>
+
+<div class="legend">
+  <div class="l-m"><span class="lt">■ 实测</span><span class="ld">板上跑出来的</span></div>
+  <div class="l-v"><span class="lt">■ 已核实</span><span class="ld">一手源码/官方文档</span></div>
+  <div class="l-u"><span class="lt">■ 待验证</span><span class="ld">无可靠数据</span></div>
+</div>
+
+<h2>一 · 原生 HDMI 图形界面：能，实测点亮了</h2>
+<pre>card0-HDMI-A-1: <b>connected  1920x1080</b>
+weston 运行中: DRM head 'HDMI-A-1' connector 47, EDID 'YCT Sculptor'
+Output 'HDMI-A-1' ... backlight 已初始化   <b>← 硬件合成桌面点亮</b>
+gst-ai IC(摄像头→NPU分类→原生HDMI): <b>✅ 跑通</b>(加载模型+1000标签+appsink)</pre>
+
+<h4>显示栈（板上全部现成）<span class="c c-m">实测</span></h4>
+<div class="scroll"><table>
+  <tr><th>组件</th><th>状态</th></tr>
+  <tr><td>DRM/KMS 硬件显示控制器</td><td class="yes">✅ /dev/dri/card0 + renderD128(GPU)</td></tr>
+  <tr><td>Weston(Wayland 合成器)</td><td class="yes">✅ 实测点亮 HDMI 1080p</td></tr>
+  <tr><td>Qt5/QML 全套</td><td class="yes">✅ Quick/Quick3D/Controls2/Particles</td></tr>
+  <tr><td>官方 AI demo</td><td class="yes">✅ gst-ai(IC实测通)、6+个QML</td></tr>
+  <tr><td>HDMI 规格</td><td>🔵 Type-A V2.1 + HDCP2.2，4K60p</td></tr>
+</table></div>
+
+<h4>踩到的坑（诚实标注）<span class="c c-m">实测</span></h4>
+<div class="scroll"><table>
+  <tr><th>现象</th><th>说明</th></tr>
+  <tr><td class="no">gst-ai OD 模式 "Unknown app mode"</td><td>gst-ai 自身 quirk，IC 分类能跑、OD 检测不认</td></tr>
+  <tr><td class="no">syna-ai-player core dump</td><td>Qt "wayland" 插件加载失败，镜像缺 Qt-wayland 集成依赖</td></tr>
+  <tr><td>不支持 X11</td><td>Yocto scarthgap 只有 Wayland，GUI 要 <code>QT_QPA_PLATFORM=wayland</code></td></tr>
+</table></div>
+<div class="note key"><p><b>结论</b>：原生 HDMI 常驻硬件合成 GUI <b>能力确凿</b>(weston+gst-ai IC 实测)。官方两个高级 demo 在当前镜像有 bug，要自研 GStreamer+SyNAP 管线(已熟)或等官方修。一键启动：<code>sh /usr/bin/hdmi_demo.sh gst</code></p></div>
+
+<h4>原生 HDMI vs DL7400</h4>
+<div class="scroll"><table>
+  <tr><th></th><th>原生 HDMI</th><th>DL7400</th></tr>
+  <tr><td>原理</td><td><b>硬件合成(GPU)</b></td><td>USB 推像素(CPU)</td></tr>
+  <tr><td>帧率</td><td class="yes">4K60 满帧</td><td>全屏视频 ~7fps</td></tr>
+  <tr><td>屏数</td><td>1 HDMI + 1 DSI</td><td><b>4 口多屏</b></td></tr>
+  <tr><td>定位</td><td><b>主交互屏</b>(对话脸/视频/AI叠加)</td><td>多屏信息墙/静态看板</td></tr>
+</table></div>
+
+<h2>二 · 高价值应用清单</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>应用</th><th>算力</th><th>叠加已有能力</th><th>契合</th></tr>
+  <tr class="hi"><td>1</td><td><b>智能看护/安防</b>(跌倒/滞留/离岗/遗留物)</td><td>NPU</td><td>已做demo！人体检测+规则+语音告警</td><td>⭐⭐⭐⭐⭐</td></tr>
+  <tr class="hi"><td>2</td><td><b>多模态对话终端</b></td><td>NPU+CPU+云</td><td>四项已完成，差产品化封装</td><td>⭐⭐⭐⭐⭐</td></tr>
+  <tr><td>3</td><td>客流/行为分析</td><td>NPU</td><td>预装YOLOv8+posenet</td><td>⭐⭐⭐⭐</td></tr>
+  <tr><td>4</td><td>工业质检异常检测</td><td>NPU</td><td>算子需验</td><td>⭐⭐⭐⭐</td></tr>
+  <tr><td>5</td><td>边缘隐私家居中枢</td><td>CPU+云</td><td>接 Home Assistant</td><td>⭐⭐⭐⭐</td></tr>
+  <tr><td>8</td><td>门禁/人脸考勤</td><td>NPU</td><td class="no">⚠️人脸线授权全非商用+无SyNAP后端</td><td>⭐⭐</td></tr>
+</table></div>
+
+<h2>三 · GitHub 项目分档 <span class="c c-v">API实测</span></h2>
+<h4>🟢 能用</h4>
+<div class="scroll"><table>
+  <tr><th>Repo</th><th>Star</th><th>License</th><th>一句话</th></tr>
+  <tr class="hi"><td><b>frigate</b></td><td>34k</td><td>MIT</td><td><b>唯一原生支持 SL1680 SyNAP</b>(type:synaptics)。⚠️但 Docker 应用，<b>板子无容器运行时</b>，要加容器或原生移植</td></tr>
+  <tr><td>synaptics-synap/examples</td><td>10</td><td>Apache-2.0</td><td>官方示例(YOLOv8/pose/Moonshine/Piper)</td></tr>
+  <tr><td>llama.cpp</td><td>120k</td><td>MIT</td><td>本地LLM，已在用</td></tr>
+  <tr><td>roboflow/supervision</td><td>48k</td><td>MIT</td><td>纯Python检测计数/热区，客流分析直接用</td></tr>
+</table></div>
+<h4>🟡 需适配</h4>
+<div class="scroll"><table>
+  <tr><th>Repo</th><th>License</th><th>说明</th></tr>
+  <tr><td>ultralytics(YOLO)</td><td class="no">AGPL-3.0</td><td>导出→.synap上NPU；AGPL商用硬约束</td></tr>
+  <tr><td>anomalib</td><td>Apache-2.0</td><td>工业质检，算子需验NPU</td></tr>
+  <tr><td>whisper.cpp</td><td>MIT</td><td>ASR，translate仅→英文</td></tr>
+</table></div>
+<h4>🔴 不现实</h4>
+<p>人脸识别整条线(<b>模型非商用+无SyNAP后端</b>)、RAGflow(16GB+x86)、数字人(全CUDA)、Duix-Mobile(手机SDK非Linux)、多数数字标牌(绑Debian或已归档)、opendatacam(绑Jetson)。</p>
+<div class="note warn">
+  <p><b>★本次板上实测发现的关键约束：</b></p>
+  <p><b>1.</b> 板子<b>无 docker/podman/containerd</b> → 所有 Docker 应用(Frigate/HA/RAGflow)要么加容器要么原生移植。<b>最大落地门槛。</b></p>
+  <p><b>2.</b> NPU 只做视觉，GUI 框架只管渲染，NPU 那半段自己接 SyNAP。<b>3.</b> 人脸识别授权全是雷。</p>
+</div>
+
+<h2>四 · 本次新做的两个 demo <span class="c c-m">实测</span></h2>
+<div class="note key">
+  <p><b>① 智能看护 demo（已跑通）</b> <code>vision_care.sh</code> —— C920+NPU人体检测+规则：<b>滞留过久 / 区域离开 / 疑似跌倒(框宽>高)</b> → 语音告警。机制：SIGUSR2 + <code>/tmp/astra_say.txt</code> 播报任意告警，已实测。<br>运行：<code>systemctl stop vision-wake; sh /usr/bin/vision_care.sh 15 6</code></p>
+</div>
+<div class="note key">
+  <p><b>② 原生 HDMI demo 启动器（已跑通核心）</b> <code>hdmi_demo.sh</code> —— Wayland环境+weston+gst-ai。<br>运行：插屏到<b>主板 HDMI 口</b> → <code>systemctl stop vision-wake; sh /usr/bin/hdmi_demo.sh gst</code></p>
+</div>
+
+<h2>五 · 最推荐的下一步</h2>
+<p>积木(语音AI+视觉+多屏+对话界面+看护)都就位，<b>最高杠杆是合成产品：</b></p>
+<ul>
+  <li><b>🥇 智能看护/安防终端</b> —— demo 已跑通，产品化差：多路摄像头(CSI×2)、事件录像、告警推送、规则细化。自研栈比 Frigate 轻、无容器摩擦。</li>
+  <li><b>🥈 对话设备产品化</b> —— 对话脸迁原生 HDMI(满帧)，封装成开机即用设备。</li>
+  <li><b>🥉 边缘家居中枢</b> —— 接 Home Assistant，但<b>先确认能否上容器</b>(现在没 docker)。</li>
+</ul>
+
+<p class="foot">SL1680 应用能力与扩展方案 · 2026-07-18 · 每个实测数字均板上验证 · 配套 Markdown：<code>SL1680应用能力与扩展方案.md</code></p>
+</div>

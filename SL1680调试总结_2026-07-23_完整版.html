@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 完整工作总结 · 2026-07-23</title>
+<style>
+  :root{
+    --ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;
+    --rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;
+    --good:#1F6B4A;--good-bg:#E5F3EC;--bad:#A8305A;--bad-bg:#FBE9EF;--warn:#B06A12;--warn-bg:#FDF3E3;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;
+    --rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;
+    --good:#5FBF8F;--good-bg:#122A1E;--bad:#E06A92;--bad-bg:#2E151F;--warn:#E8A33D;--warn-bg:#2B2114;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 100px}
+  .mast{border-bottom:2px solid var(--ink);padding:40px 0 20px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(23px,4vw,34px);line-height:1.2;margin:0 0 14px;font-weight:680}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;gap:20px;flex-wrap:wrap}
+  .lead{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;margin-top:16px;font-size:14.5px;color:var(--ink-2)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:46px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:640}
+  h4{font-size:14.5px;margin:18px 0 6px;font-weight:640;color:var(--ink-2)}
+  p{margin:0 0 12px} ul,ol{margin:0 0 12px;padding-left:22px} li{margin-bottom:5px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:13px 15px;overflow-x:auto;margin:0 0 16px;color:var(--ink-2)}
+  .scroll{overflow-x:auto;margin:0 0 16px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:0 0 16px;font-size:14px}
+  .note.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:2px 18px 14px;margin:0 0 16px}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono)}
+  .todo{list-style:none;padding-left:0}
+  .todo li{padding-left:26px;position:relative}
+  .todo li:before{content:"\2610";position:absolute;left:2px;color:var(--accent);font-weight:700}
+  .arch{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);padding:14px 16px;border-radius:4px;overflow-x:auto;margin:0 0 16px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">SL1680 · 小智兼容语音终端 · 完整工作总结</p>
+  <h1>双语字幕 · 联网实时数据 · CPU 优化 · 双屏分工</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-07-23</span>
+    <span><b>设备</b> SL1680 (Synaptics Astra "Dolphin" RDK)</span>
+    <span><b>版本</b> v2.3</span>
+  </div>
+  <div class="lead">本文档用于<strong>后续学习与故障恢复</strong>，含踩坑记录与回滚方法。</div>
+</header>
+
+<h2>结论可信度标注</h2>
+<div class="card">
+<p>初版把<strong>实测到的现象</strong>和<strong>据此推断的原因</strong>混在一起写，读起来都像已证实。经外部审阅后逐条重标，全文统一用：</p>
+<div class="scroll"><table>
+  <tr><th>标记</th><th>含义</th></tr>
+  <tr><td class="ok">✅ <strong>已验证</strong></td><td>直接测到的现象，或改完复测确认生效</td></tr>
+  <tr><td>⚠️ <strong>高概率推断</strong></td><td>现象为真，但因果链是推的；给出还需要什么证据才能坐实</td></tr>
+  <tr><td>❓ <strong>待确认</strong></td><td>需要厂商/更多数据才能定论，当前只是工作假设</td></tr>
+</table></div>
+<div class="note"><strong>为什么值得较真</strong>：本项目已经栽过一次 —— 曾把 DAPM 正常的空闲关断当成故障，围绕一个不存在的问题连编六个假设。推断标成结论，下一个人就会在错误的地基上继续盖楼。</div>
+</div>
+
+<h2>零 · 当日成果一览</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>成果</th><th>状态</th></tr>
+  <tr><td>1</td><td>远程访问链路打通（WireGuard + ProxyJump）</td><td class="ok">✅</td></tr>
+  <tr><td>2</td><td>C920 麦克风崩溃循环修复（换 USB 口）</td><td class="ok">✅</td></tr>
+  <tr><td>3</td><td>vision-wake 摄像头选择加固</td><td class="ok">✅</td></tr>
+  <tr><td>4</td><td><strong>DL7400 中英对照实时字幕</strong></td><td class="ok">✅ 已验收</td></tr>
+  <tr><td>5</td><td><strong>联网层</strong>（真实数据，杜绝幻觉）</td><td class="ok">✅ 已验收</td></tr>
+  <tr><td>6</td><td><strong>CPU 优化 52.5% → 21.7%</strong></td><td class="ok">✅</td></tr>
+  <tr><td>7</td><td><strong>本地设备工具</strong>（时间/温度/内存/屏幕）</td><td class="ok">✅</td></tr>
+  <tr><td>8</td><td><strong>双屏分工 + 语音切监控</strong></td><td class="ok">✅</td></tr>
+  <tr><td>9</td><td>环境噪音门槛调整（止住误触发）</td><td class="ok">✅</td></tr>
+  <tr><td>10</td><td>断电重启恢复验证</td><td class="ok">✅ 通过</td></tr>
+</table></div>
+
+<h2>一 · 远程访问</h2>
+<div class="card">
+<h4>拓扑</h4>
+<div class="arch">PC(192.168.5.166) → 家OpenWrt(192.168.5.1) → wg0(10.0.0.1↔10.0.0.2)
+                  → BE3600(192.168.8.1) → SL1680(192.168.8.186)</div>
+<h4>连接方法（必须 native ssh）</h4>
+<pre>ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL \
+    -J root@192.168.5.1 root@192.168.8.186 "&lt;命令&gt;"</pre>
+<ul>
+  <li><strong>paramiko 连不上跳板</strong>：<code>IncompatiblePeer: no acceptable ciphers</code></li>
+  <li>密码用 <code>SSH_ASKPASS</code> 喂（跳板 / 板子两个密码，脚本按提示里的 IP 分辨）</li>
+  <li>辅助脚本：<code>wgrun.ps1</code>(跑命令) <code>wgsh.ps1</code>(跑脚本) <code>wgput.ps1</code>(传文件)</li>
+</ul>
+<div class="note bad"><strong>三个坑</strong>
+<ol>
+<li><strong>PC 默认网关是 Surge(192.168.5.242) 不是 WG 路由器</strong> → <code>Test-NetConnection 192.168.8.186 -Port 22</code> 会<strong>假阳性返回 True</strong>（Surge 先接受 TCP），真连才报 <code>Error reading SSH protocol banner</code>。<strong>别信这个端口测试。</strong></li>
+<li><strong>必须走 PowerShell 不能用 Git Bash</strong> —— 后者把 <code>/tmp</code> 改写成 Windows 路径</li>
+<li><strong>上传文件会被注入 3 字节 UTF-8 BOM</strong>（.NET StandardInput）：文本没事，<strong>二进制直接废</strong>（<code>Exec format error</code>）。<strong>判据：板上大小 = 本地 +3</strong>，传完剥掉即可</li>
+</ol></div>
+</div>
+
+<h2>二 · C920 麦克风崩溃循环</h2>
+<div class="card">
+<p><strong>现象</strong>：astra-voice <code>NRestarts=31</code>，报 <code>Unable to set hw params for CAPTURE: Protocol error</code></p>
+<p class="ok"><strong>✅ 已验证的现象</strong>：dmesg 里 <code>1-1.3</code> 上 device number 6→7→8→9 连环 <code>new</code>，即该总线上有设备在反复重枚举；C920 音频接口打不开、服务反复重启；<strong>换一个 USB 口后问题消失</strong>，录音峰值 3414/1806/939 全部正常，NRestarts 归 0。</p>
+<p><strong>⚠️ 高概率推断的根因</strong>：重枚举的是 DisplayLink dock，其总线抖动<strong>打断了 USB 等时传输（isochronous）</strong>，导致声卡开不了。</p>
+<p>推断依据是时间相关性 + 换口即好，但<strong>没有直接证据</strong>证明是 isochronous 被打断（而不是带宽被吃满、供电跌落、或 hub 本身的问题）。要坐实需要：<code>lsusb -t</code> 确认换口前后确实跨了不同 root hub；重现时看 <code>/sys/kernel/debug/usb/devices</code> 的等时带宽分配；或故障态下 <code>usbmon</code> 抓包看等时传输错误码。这些当时都没做 —— 问题已经好了，没有再制造故障去验证。</p>
+<div class="note"><strong>教训</strong>：USB 声卡报 <code>Protocol error</code>，先怀疑<strong>同总线上有设备在抖</strong>，换口最快。但"换口有效"只能证明和总线有关，不能证明具体是哪一层出的问题。</div>
+</div>
+
+<h2>三 · DL7400 中英对照实时字幕</h2>
+<div class="card">
+<div class="arch">astra_voice ─写─&gt; /tmp/astra_status.txt (中文, 原封不动)
+                       ↓ 轮询200ms
+        astra_translate.py ─DeepSeek翻译+LRU缓存─&gt; /tmp/astra_status_en.txt
+                       ↓                    (HEARD_EN/HEARD_SRC/REPLY_EN/REPLY_SRC)
+        dl_face ─读两个文件─&gt; 屏幕双语</div>
+<h4>为什么分两个文件</h4>
+<p>astra_voice 每次状态变化<strong>整文件覆盖写</strong>，追加进去必被冲掉；分开还让翻译延迟完全不拖累语音回复。</p>
+<h4>对抗性审查逼出来的关键设计</h4>
+<ol>
+  <li><strong>关联键 <code>HEARD_SRC/REPLY_SRC</code></strong> —— 两文件各自更新有几百 ms 错位窗口，dl_face 必须比对一致才显示英文，<strong>绝不把上一句英文配到这一句下面</strong></li>
+  <li><strong>REPLY 是逐句流式写的</strong>（每合成一句就换成更长前缀）→ <strong>首次 0 去抖立刻翻</strong>（speaking 窗口只有 2-4 秒），之后等停止增长 1.2s 再翻最终版</li>
+  <li><strong>翻译请求 <code>Semaphore(1)</code> 串行</strong> —— 避免和语音主链路抢 key 并发被限流</li>
+  <li><strong><code>ExecStopPost=rm -f</code> 译文文件</strong> —— 否则进程停了残留旧英文一直错配（最难发现的故障）</li>
+  <li><strong>字幕字号保持 0.05 不缩</strong> —— textoverlay 按文本块<strong>中心</strong>定位，1 行变 2 行只上下各扩半行，2880×1800 完全放得下</li>
+</ol>
+<h4>交叉编译</h4>
+<pre>wsl -d Ubuntu-22.04 -- bash "/mnt/d/Claude code/Case6_Astra/astra-xiaozhi/build-dlface-wsl.sh"</pre>
+<p><strong>必须 PowerShell 调</strong>。备份：仓库 <code>dl_face.c.orig</code>、板上 <code>/usr/bin/dl_face.bak</code></p>
+</div>
+
+<h2>四 · 联网层（杜绝幻觉）</h2>
+<div class="card">
+<div class="note bad"><strong>🚨 血泪结论：智谱 chat 接口的 web_search 工具不工作</strong>
+<pre>glm-4-plus 「联网」 → "15到25℃"    搜索结果 0 条   prompt_tokens=21
+glm-4-air  「联网」 → "18到28℃"    搜索结果 0 条   prompt_tokens=21
+真实气温            → 28~36℃</pre>
+两个模型互相矛盾且<strong>都是错的</strong>——它们在<strong>编造</strong>。
+<p style="margin-top:10px" class="ok"><strong>✅ 已验证</strong>：两个模型给出互相矛盾的气温，且<strong>都和真实值差得离谱</strong>（15~25 / 18~28 vs 实际 28~36）。不管内部发生了什么，<strong>这个接口不能用来回答实时问题</strong> —— 这一条是直接测出来的，不依赖任何推断。</p>
+<p><strong>⚠️ 高概率推断：它们在编造，因为压根没搜</strong>。判据是 <code>prompt_tokens=21</code> —— 真联网了搜索结果会注入上下文，token 数应是几百上千，21 大致就是原始问题本身的长度。</p>
+<p>这个判据<strong>单独一条并不足以定案</strong>：也可能搜了但结果不计入 prompt_tokens，或搜索在服务端另行统计。同时看到的旁证是响应里 <code>search_result</code> 为空（0 条），两条合起来才指向"没搜"。真要坐实，得让智谱确认该接口在本账号/本模型下 web_search 是否真正启用。</p>
+<p><strong>不过这不影响决策</strong>：无论根因是"没搜"还是"搜了没用上"，结论都一样 —— 改用独立搜索 API。</p></div>
+<h4>✅ 正确做法：调独立搜索 API</h4>
+<pre>POST https://open.bigmodel.cn/api/paas/v4/web_search
+{"search_engine":"search_std","search_query":"...","count":5,"search_recency_filter":"oneDay"}
+→ 2.3 秒返回 10 条真实网页内容</pre>
+<ul>
+  <li><strong><code>search_std</code>(¥0.01/次) 比 <code>search_pro</code>(¥0.03/次) 更适合天气</strong>：前者给气象站数据，后者返回新闻稿</li>
+  <li><strong>模型免费 ≠ 搜索免费</strong>，搜索按次计费</li>
+</ul>
+<p>实现：关键词命中 → 拿真实结果 → 塞给 DeepSeek 配 <strong>GROUND_PROMPT</strong>（"只根据这些资料回答，找不到就说不知道，<strong>绝对不许编造数字</strong>"）。实测实时问题 5 秒、普通问题 2 秒。</p>
+</div>
+
+<h2>五 · astra_llm.py 四层架构</h2>
+<div class="arch">用户语音 → ASR
+   ↓
+① try_volume()   音量指令  → 本地 amixer 操作真实 AstraVolume   即时
+   ↓ 不命中
+② try_device()   设备/屏幕 → 本地读 /proc /sys、写角色文件       即时
+   ↓ 不命中
+③ needs_search() 实时数据  → 智谱搜索 + DeepSeek 接地           ~5秒
+   ↓ 不命中
+④ DeepSeek                → 普通对话                           ~2秒</div>
+<div class="scroll"><table>
+  <tr><th>层</th><th>触发词</th><th>实测效果</th></tr>
+  <tr><td>音量</td><td>音量/调大/调小/静音</td><td>「音量调到30」→ 真的变 30%</td></tr>
+  <tr><td>时间</td><td>几点/报时</td><td>「现在几点」→ 6点17分 ✓</td></tr>
+  <tr><td>日期</td><td>几号/星期几</td><td>「今天几号」→ 7月23日星期四 ✓</td></tr>
+  <tr><td>温度</td><td>温度（<strong>排除天气/气温/室外</strong>）</td><td>「CPU温度」→ 62度正常 ✓</td></tr>
+  <tr><td>内存</td><td>内存</td><td>→ 1048/3361兆 ✓</td></tr>
+  <tr><td>运行时长</td><td>运行多久/开机多久</td><td>→ 3小时30分钟 ✓</td></tr>
+  <tr><td>屏幕</td><td>摄像头/监控/表情脸</td><td>「打开监控」→ <strong>真的切</strong></td></tr>
+</table></div>
+<div class="note warn"><strong>修掉的两个"假装执行"</strong>：以前问音量它编"50%"、说"打开监控"它答"好的已为您打开"其实啥也没干。</div>
+
+<h2>六 · CPU 优化 52.5% → 21.7%</h2>
+<div class="card">
+<p class="ok"><strong>✅ 已验证</strong>，但这两个数字只在下面这组条件下成立，换条件不可直接引用：</p>
+<div class="scroll"><table>
+  <tr><th>测量条件</th><th>值</th></tr>
+  <tr><td>采样方法</td><td><code>/proc/stat</code> 前后差值，窗口 <strong>10 秒</strong></td></tr>
+  <tr><td>负载场景</td><td><strong>空闲待机</strong>：无人说话、无 ASR/TTS 在跑、屏幕显示表情脸</td></tr>
+  <tr><td>同时运行</td><td>astra-voice、astra-translate、dl-face（双屏）、vision-wake</td></tr>
+  <tr><td>口径</td><td>全系统、4 核合计（100% = 一个核跑满，400% = 四核跑满）</td></tr>
+  <tr><td>采样次数</td><td><strong>各 1 次</strong>，未做多次取中位数</td></tr>
+</table></div>
+<div class="scroll"><table>
+  <tr><th></th><th>优化前</th><th>优化后</th></tr>
+  <tr><td>CPU 占用</td><td>52.5%</td><td class="ok"><strong>21.7%</strong></td></tr>
+  <tr><td>负载</td><td>4.90</td><td class="ok"><strong>3.44</strong></td></tr>
+</table></div>
+<div class="note">⚠️ <strong>没测的场景</strong>：说话时（ASR+TTS 同时跑）的峰值占用没测过，那才是决定会不会丢帧/卡顿的数。负载 4.90→3.44 是 1 分钟平均值，惯性大，10 秒窗口内的变化它反映不全，参考价值低于 CPU 占用那一行。</div>
+<ol>
+  <li><strong>dl_face <code>--fps 15</code></strong> —— 2880×1800 BGRA 每帧 20.7MB × 15fps = <strong>311 MB/s 像素搬运</strong> → 改 <code>--fps 5</code></li>
+  <li><strong>vision_wake.sh 检测循环没节流</strong> —— <code>while :;</code> 里背靠背连跑 <code>synap_cli_od</code>（吃 21% CPU）→ 加 <code>sleep 0.5</code>，采集帧率 15→5</li>
+</ol>
+<h4>正确的 CPU 测量方法（别用 top 单次采样）</h4>
+<pre>def read():
+    v=[int(x) for x in open("/proc/stat").readline().split()[1:]]
+    return sum(v), v[3]+v[4]     # total, idle+iowait
+t0,i0=read(); time.sleep(10); t1,i1=read()
+print(100.0*((t1-t0)-(i1-i0))/(t1-t0))</pre>
+</div>
+
+<h2>七 · 双屏分工</h2>
+<div class="card">
+<div class="arch">屏0 (AOC Q2790R3 2560x1440)      屏1 (2880x1800)
+  对话界面：表情 + 中英字幕          默认表情脸，说"打开监控"→ C920 实时画面
+  （永远在这块）</div>
+<ul>
+  <li>「打开监控」→ 屏1 切摄像头 + 自动停 vision-wake，回复"已在<strong>第二块屏</strong>打开监控画面，视觉唤醒先暂停了"</li>
+  <li>「关闭监控」/「换回表情脸」→ 屏1 变回表情 + <strong>自动恢复 vision-wake</strong></li>
+</ul>
+<div class="note bad"><strong>两个关键限制</strong>
+<ol>
+<li><strong>C920 是独占设备</strong> —— camera 模式和 vision-wake <strong>只能二选一</strong></li>
+<li><strong>摄像头被占时 vision-wake 会静默空转</strong>（日志连错误都不报）—— 排查要看"有没有帧文件/检测心跳"，<strong>不能只看 <code>systemctl is-active</code></strong></li>
+</ol></div>
+<h4>排查要点</h4>
+<ul>
+  <li><strong><code>dl_edid</code> 必须先 <code>systemctl stop dl-face</code></strong>（dlsdk 是 userspace libusb <strong>单进程独占</strong>），否则报"找不到设备"</li>
+  <li><strong>dl_face 只在启动那一刻枚举显示器</strong> → 已加 <code>ExecStartPre=/bin/sleep 20</code>，冷启动实测靠它才认到 2 块</li>
+  <li><strong>视频节点号每次开机会变</strong>（C920 这次 video3、上次 video8）→ <strong>必须用 by-id</strong></li>
+  <li>UVC 相机有<strong>两个节点</strong>：<code>video-index0</code>=采集、<code>index1</code>=元数据（后者不能抓帧）</li>
+</ul>
+</div>
+
+<h2>八 · 环境噪音与误触发</h2>
+<div class="card">
+<pre>6 段采样: 600 / 632 / 646 / 713 / 575 / 592
+底噪 RMS: 575~713, 平均 626</pre>
+<p><strong>原门槛 <code>--min-rms 300</code> 是底噪的一半</strong> → 持续误触发，助手不停把空调声当说话、<strong>白烧 API</strong>。已改 <code>300 → 1150</code>、<code>--min-dur 0.4 → 0.6</code>。静置 40 秒零触发。</p>
+<div class="note warn"><strong>根本矛盾</strong>：用户说话 RMS 约 470~1170，<strong>和底噪 575~713 重叠</strong>——单靠能量门槛无法完美区分。代价：<strong>必须靠近麦克风（30cm 内）说</strong>。根治方案是 KWS 唤醒词。</div>
+</div>
+
+<h2>九 · 断电重启恢复验证</h2>
+<div class="scroll"><table>
+  <tr><th>检查项</th><th>结果</th></tr>
+  <tr><td>五个服务自启</td><td class="ok">✅ 全部 active</td></tr>
+  <tr><td>dl_face 认屏</td><td class="ok">✅ 发现 2 个 display，两块都点亮</td></tr>
+  <tr><td>音量默认</td><td class="ok">✅ 10%</td></tr>
+  <tr><td>麦克风参数</td><td class="ok">✅ min-rms 1150 / min-dur 0.6</td></tr>
+  <tr><td>翻译进程</td><td class="ok">✅ 正常（开场白已译成英文）</td></tr>
+  <tr><td>四层工具</td><td class="ok">✅ 时间/温度/音量/天气/对话全通</td></tr>
+  <tr><td>出网</td><td class="ok">✅</td></tr>
+</table></div>
+<div class="scroll"><table>
+  <tr><th>位置</th><th>内容</th><th>重启后</th></tr>
+  <tr><td><code>/usr/bin/</code> <code>/home/voice/</code> <code>/etc/</code></td><td>二进制、脚本、配置、service</td><td class="ok">✅ 保留</td></tr>
+  <tr><td><code>/tmp/astra_status*.txt</code></td><td>运行时状态</td><td>程序自动重建</td></tr>
+  <tr><td><code>/tmp/astra_screen_mode.txt</code></td><td>屏幕角色</td><td>⚠️ 丢失 → 回到双表情脸（期望的默认）</td></tr>
+</table></div>
+
+<h2>十 · 板上备份清单</h2>
+<div class="scroll"><table>
+  <tr><th>备份文件</th><th>还原的是</th></tr>
+  <tr><td><code>/usr/bin/dl_face.bak</code></td><td>单语版 dl_face</td></tr>
+  <tr><td><code>/usr/bin/vision_wake.sh.pre_opt</code></td><td>CPU 优化前的 vision_wake</td></tr>
+  <tr><td><code>/etc/systemd/system/dl-face.service.pre_opt</code></td><td>优化前的 dl-face 参数</td></tr>
+  <tr><td><code>/home/voice/astra_llm.py.bak</code></td><td>加音量拦截前</td></tr>
+  <tr><td><code>/home/voice/astra_llm.py.pre_search</code></td><td>加联网层前</td></tr>
+  <tr><td><code>/home/voice/astra_llm.py.pre_device</code></td><td>加设备工具前</td></tr>
+  <tr><td><code>/home/voice/astra_llm.py.pre_dual</code></td><td>加双屏切换前</td></tr>
+  <tr><td>仓库 <code>meta-dlsdk/.../dl_face.c.orig</code></td><td>原始 C 源码</td></tr>
+</table></div>
+<pre># 快速回滚 dl_face
+cp /usr/bin/dl_face.bak /usr/bin/dl_face &amp;&amp; systemctl restart dl-face</pre>
+
+<h2>十一 · 当前系统状态</h2>
+<div class="arch">[视觉] C920 → NPU(mobilenet people检测) → 有人走近 → 欢迎语
+[语音] C920麦(min-rms 1150) → SenseVoice ASR(CPU) → 四层处理 → matcha TTS(CPU)
+                            → astraout(softvol 10%) → HT517 喇叭
+[大脑] 本地工具 / 智谱搜索+DeepSeek接地 / DeepSeek
+[显示] 屏0=表情+中英双语字幕   屏1=表情(可语音切监控)</div>
+<p>五个服务全 active + enabled；CPU 21.7%；<strong>完全不用 PC，一台板子有网即可</strong>。</p>
+
+<h2>十二 · 待办</h2>
+<ul class="todo">
+  <li><strong>KWS 唤醒词</strong>（根治嘈杂环境误触发）</li>
+  <li>板载麦 ZTS6672 驱动层问题（i2s-mic1 时钟未使能）→ 需 Synaptics FAE</li>
+  <li><strong>安全</strong>：DeepSeek key 和智谱 key 都在聊天里贴过，<strong>产品化前必须重新生成</strong></li>
+  <li>摄像头被占时让 vision-wake 报错而不是静默空转</li>
+  <li>（可选）Hermes Agent 放 VPS，板子做语音/视觉前端</li>
+  <li>（可选）AEC 回声消除</li>
+</ul>
+
+<div class="foot">生成于 2026-07-23 · SL1680 小智兼容语音终端项目 · v2.3</div>
+</div>
+</body>
+</html>

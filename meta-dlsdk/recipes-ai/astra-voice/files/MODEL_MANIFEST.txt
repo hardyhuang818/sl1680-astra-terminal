@@ -1,0 +1,51 @@
+# Astra 模型清单 (板端 /home/voice)
+# 生成: 2026-07-23 09:49:54 UTC
+# 目录项给的是 tar 内容哈希(顺序固定)，用于校验整份数据是否一致
+# 重新生成: sh tools/model_manifest.sh
+
+## sv/  总计 229.1M
+  c71f0ce00bec95b07744e116345e33d8cbbe08cef896382cf907bf4b51a2cd51   239233841  model.int8.onnx
+  9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6      643854  silero_vad.onnx
+  f449eb28dc567533d7fa59be34e2abca8784f771850c78a47fb731a31429a1dc      315894  tokens.txt
+
+## matcha/  总计 143.6M
+  33b8b80010fd6dacddb0cffed0a91445d729ae9ea04ab6e922b67c59ff552552        2021  README.md
+  eb8aa079ae3cb81d8f4404992f39d61a0cb990947512b5b8d1e54d1f6980e718       59154  date-zh.fst
+  8844ac402b34b2bff1970c8fe2d29b56185115db092b6e35a3556dad251bd3e2    18143203  espeak-ng-data/  (355 个文件, GPLv3 ⚠️)
+  599efdcdaff4df2a123ce988c2cb90abcd59b919ef609ce36eb587d68b7ca2c0     1400278  lexicon.txt
+  524286bf6cf11be74329ae1c682ac69e34d6860c2ea9fd1290319d561540b16a    75717082  model-steps-3.onnx
+  743f402181fcfebf76cc2f0546b71fa26476e626fbe4e460fb7b4c3a7a8bd5bd       64482  number-zh.fst
+  1ac2b6fa56b1442320c4de7db08353bab8963a2b57f365eebcdd3a2d3562f8d7       88630  phone-zh.fst
+  77fee8e5e5dd96b3547119e6159292c648e99e065c54c97777722e3ce710b9a4       21146  tokens.txt
+  b599142a1fb8ff03de3e84ac35ff537c619e56f4267a6fe894851a42844acf9e    53882848  vocos-16khz-univ.onnx
+
+## tts/  总计 233.5M
+  88a50e5a02bbc2a5c2f084dc19da751aa97b1690f5fda76cd8005c8634d1ca70        1053  LICENSE
+  ae6e44dead53dfdbd5b4a77106226f3118eb910222b46cb5533a3860773fc6c7         257  README.md
+  eb8aa079ae3cb81d8f4404992f39d61a0cb990947512b5b8d1e54d1f6980e718       59154  date.fst
+  1ce51537c7c939fe709f3a36c13e6ab0edf8e3f45fb2aff38f8ff9b8ab408632    13750889  dict/  (10 个文件)
+  7236884b02435ac5d10cf69b4be40a61b45aa676b5300f0e412f185748fee528     6837671  lexicon.txt
+  f085f5079e05f039b800aeb542f5253c26a303211b0c6465d0d9387977855a63    53517430  model.int8.onnx
+  bf30582eb1b012250a35b1a4a80e7dfbcf8485e7bb9de0d95efbbeef0e4ad86d   170429550  model.onnx
+  ca14b2127e27baa571664e4bb791e143e7425f56a6bc29db08d74f97e6aa4e29       21974  new_heteronym.fst
+  743f402181fcfebf76cc2f0546b71fa26476e626fbe4e460fb7b4c3a7a8bd5bd       64482  number.fst
+  1ac2b6fa56b1442320c4de7db08353bab8963a2b57f365eebcdd3a2d3562f8d7       88630  phone.fst
+  d18664a7e12bd7ea1022ddaf951e534e136815016c5a809d6b64156bffb4369d         655  tokens.txt
+
+## llm/  总计 1.4G
+                                                                 -   291546144  gemma-3-270m-it-Q8_0.gguf  (未使用)
+                                                                 -   491400032  qwen2.5-0.5b-instruct-q4_k_m.gguf  (未使用)
+  ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e   675710816  qwen2.5-0.5b-instruct-q8_0.gguf  <= astra-voice.service 在用
+
+## bin/  交叉编译产物，不由 recipe 产出 (astra-xiaozhi/build-*.sh)
+     8715624  llama-bench
+     8636696  llama-completion
+    24468472  sherpa-onnx
+    24468568  sherpa-onnx-alsa
+    23288744  sherpa-onnx-keyword-spotter
+    23288856  sherpa-onnx-keyword-spotter-alsa
+    24796152  sherpa-onnx-offline
+    22764448  sherpa-onnx-offline-denoiser
+    24928832  sherpa-onnx-offline-tts
+    24994512  sherpa-onnx-offline-tts-play-alsa
+    24861800  sherpa-onnx-vad-alsa-offline-asr

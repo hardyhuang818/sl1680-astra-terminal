@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 智能交互 — 5 大 AI 功能方案调研</title>
+<style>
+  :root{
+    --bg:#f5f6f8;--card:#fff;--ink:#1a1f2b;--sub:#5a6472;--line:#e2e6ec;
+    --accent:#2563eb;--accent2:#7c3aed;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;
+    --code-bg:#f1f4f8;--code-ink:#0f172a;--chip:#eef2ff;--chip-ink:#3730a3;
+    --c1:#2563eb;--c2:#0891b2;--c3:#7c3aed;--c4:#db2777;--c5:#ea580c;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg:#0e1117;--card:#161b22;--ink:#e6edf3;--sub:#9aa4b2;--line:#2a313c;
+    --accent:#60a5fa;--accent2:#a78bfa;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;
+    --code-bg:#0b0f16;--code-ink:#d1d9e0;--chip:#1e2540;--chip-ink:#c7d2fe;
+    --c1:#60a5fa;--c2:#22d3ee;--c3:#a78bfa;--c4:#f472b6;--c5:#fb923c;}}
+  :root[data-theme="dark"]{--bg:#0e1117;--card:#161b22;--ink:#e6edf3;--sub:#9aa4b2;--line:#2a313c;
+    --accent:#60a5fa;--accent2:#a78bfa;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;
+    --code-bg:#0b0f16;--code-ink:#d1d9e0;--chip:#1e2540;--chip-ink:#c7d2fe;
+    --c1:#60a5fa;--c2:#22d3ee;--c3:#a78bfa;--c4:#f472b6;--c5:#fb923c;}
+  :root[data-theme="light"]{--bg:#f5f6f8;--card:#fff;--ink:#1a1f2b;--sub:#5a6472;--line:#e2e6ec;
+    --accent:#2563eb;--accent2:#7c3aed;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;
+    --code-bg:#f1f4f8;--code-ink:#0f172a;--chip:#eef2ff;--chip-ink:#3730a3;
+    --c1:#2563eb;--c2:#0891b2;--c3:#7c3aed;--c4:#db2777;--c5:#ea580c;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 80px}
+  a{color:var(--accent)}
+  header.hero{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    border-radius:16px;padding:24px 26px;margin-bottom:10px}
+  header.hero h1{margin:0 0 8px;font-size:22px}
+  header.hero p{margin:3px 0;opacity:.95;font-size:13.5px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .toc a{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 13px;
+    font-size:13px;text-decoration:none;font-weight:600}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0}
+  h2{font-size:18px;margin:0 0 6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h2 .badge{width:30px;height:30px;border-radius:9px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
+  .f1 .badge{background:var(--c1)} .f2 .badge{background:var(--c2)} .f3 .badge{background:var(--c3)}
+  .f4 .badge{background:var(--c4)} .f5 .badge{background:var(--c5)}
+  h2 small{font-weight:600;color:var(--sub);font-size:12.5px}
+  h3{font-size:14px;margin:16px 0 7px;color:var(--accent)}
+  p{margin:8px 0}
+  code{background:var(--code-bg);color:var(--code-ink);border-radius:5px;padding:1.5px 6px;
+    font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;word-break:break-word}
+  pre{background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;overflow-x:auto;margin:10px 0;font:12px/1.7 ui-monospace,Menlo,Consolas,monospace;white-space:pre}
+  table{border-collapse:collapse;width:100%;margin:11px 0;font-size:12.8px;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--code-bg);font-weight:600;white-space:nowrap}
+  .sub{color:var(--sub)} .ok{color:var(--ok);font-weight:700} .warn{color:var(--warn);font-weight:700}
+  .chip{display:inline-block;background:var(--chip);color:var(--chip-ink);border-radius:6px;padding:2px 9px;font-size:11.5px;font-weight:600;margin:2px 4px 2px 0}
+  .star{color:#f59e0b;letter-spacing:1px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .meta .m{background:var(--code-bg);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:12.5px}
+  .meta .m b{display:block;font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+  .note{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:0 8px 8px 0;padding:10px 14px;margin:11px 0;font-size:13px}
+  .warnbox{border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 9%,transparent);border-radius:0 8px 8px 0;padding:10px 14px;margin:11px 0;font-size:13px}
+  .cap{border-left:3px solid var(--c1);background:color-mix(in srgb,var(--c1) 7%,transparent);border-radius:0 8px 8px 0;padding:12px 15px;margin:12px 0}
+  ol.steps{margin:8px 0;padding-left:22px} ol.steps li{margin:5px 0}
+  .qbox{background:color-mix(in srgb,var(--accent) 6%,transparent);border:1px solid var(--accent);border-radius:12px;padding:16px 20px}
+  .qbox li{margin:9px 0}
+  .phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:12px 0}
+  .phase .p{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--code-bg)}
+  .phase .p h4{margin:0 0 6px;font-size:14px}
+  .p1{border-top:3px solid var(--ok)} .p2{border-top:3px solid var(--warn)} .p3{border-top:3px solid var(--bad)}
+  footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>SL1680 智能交互产品 — 5 大 AI 功能方案调研</h1>
+  <p>目标产品：<b>智能家居数字人</b> — 检测你走近 → 克隆声音欢迎 → 摄像头追踪 → 光影屏上会说话的数字人</p>
+  <p>平台 Synaptics SL1680（8 TOPS NPU · 四核 A73@2.1G · 已跑通 Yocto/触摸/显示）· 调研 2026-07-13</p>
+</header>
+
+<div class="toc">
+  <a href="#cap">⚙️ 能力边界</a><a href="#f1">① 人物追踪</a><a href="#f2">② 接近+欢迎</a>
+  <a href="#f3">③ 声音克隆</a><a href="#f4">④ 3D+光影</a><a href="#f5">⑤ 会说话数字人</a>
+  <a href="#opt">🔄 二轮优化</a><a href="#hw">🛒 光影硬件采购</a>
+  <a href="#road">🗺️ 分期路线</a><a href="#train">📚 官方培训方案</a><a href="#q">✅ 请你选择</a>
+</div>
+
+<section id="cap">
+  <h2>⚙️ 先认清 SL1680 能力边界</h2>
+  <p><b>核心原则：什么在端侧跑，什么必须离线/云端。</b></p>
+  <div class="cap">
+    <p><span class="ok">✅ 端侧能跑</span>：人物检测/追踪、接近检测、唤醒词、离线 ASR、离线 TTS（含播放克隆音）、播放预渲染 avatar。</p>
+    <p><span class="warn">⚠️ 必须离线/云</span>：<b>声音克隆的"训练"</b>、<b>3D avatar 的"生成"</b>、大模型对话 —— 要 GPU；SL1680 只负责<b>推理/播放</b>。</p>
+  </div>
+  <div class="note"><b>出厂自带 AI 资产</b>（这次 build 已含）：预装 <b>YOLOv8</b> 检测模型、<b>Syna AI Player</b>（物体/人脸检测+姿态估计 GStreamer）、官方 <a href="https://github.com/synaptics-synap/examples">synaptics-synap/examples</a>。→ <b>功能①几乎现成。</b></div>
+</section>
+
+<section id="f1" class="f1">
+  <h2><span class="badge">①</span>摄像头人物追踪 <small>· 检测人 → 跟踪 → 云台/数字跟随</small></h2>
+  <div class="meta">
+    <div class="m"><b>难度</b><span class="star">★★</span>☆☆☆ 低</div>
+    <div class="m"><b>成本</b>摄像头¥50 +（可选云台¥100）</div>
+    <div class="m"><b>推荐</b><span class="star">★★★★★</span></div>
+    <div class="m"><b>端侧</b><span class="ok">全部可端侧</span></div>
+  </div>
+  <h3>GitHub / 现成方案</h3>
+  <table>
+    <tr><th>方案</th><th>说明</th><th>适配</th></tr>
+    <tr><td><a href="https://github.com/synaptics-synap/examples">synaptics-synap/examples</a> ⭐官方</td><td>SL1680 原生 NPU 视觉示例，YOLOv8 检测 pipeline</td><td class="ok">直接用（已预装）</td></tr>
+    <tr><td><a href="https://github.com/FoundationVision/ByteTrack">ByteTrack</a></td><td>高精度多目标跟踪（给框加 ID/轨迹）</td><td>CPU 可跑</td></tr>
+    <tr><td><a href="https://github.com/ozora-ogino/tflite-human-tracking">tflite-human-tracking</a></td><td>TFLite + SORT 边缘人体跟踪</td><td>TFLite→SyNAP</td></tr>
+  </table>
+  <h3>集成路径</h3>
+  <pre>MIPI 摄像头 → GStreamer+synap → YOLOv8(person) → ByteTrack 加 ID
+   → 目标中心 → ①云台舵机(PID)转动  或  ②数字裁剪 ROI 跟随</pre>
+  <h3>实现步骤</h3>
+  <ol class="steps">
+    <li>接 MIPI 摄像头（参考现有 <code>dolphin-csi0</code> overlay），确认 <code>/dev/video*</code> 出图</li>
+    <li>跑官方 YOLOv8 pipeline，过滤 <code>person</code> 类</li>
+    <li>集成 ByteTrack 分配 track ID + 轨迹</li>
+    <li>加跟随逻辑：云台 PID / 数字 ROI</li>
+    <li>（可选）人脸识别区分家人/陌生人 → 联动功能②欢迎语</li>
+  </ol>
+</section>
+
+<section id="f2" class="f2">
+  <h2><span class="badge">②</span>激光/接近检测 + AI 语音欢迎 <small>· 有人靠近 → "欢迎回家"</small></h2>
+  <div class="meta">
+    <div class="m"><b>难度</b><span class="star">★★</span>☆☆☆ 低-中</div>
+    <div class="m"><b>成本</b>传感器¥15-80</div>
+    <div class="m"><b>推荐</b><span class="star">★★★★★</span></div>
+    <div class="m"><b>端侧</b><span class="ok">全部可端侧</span></div>
+  </div>
+  <h3>传感器选型（推荐毫米波雷达，不是激光）</h3>
+  <table>
+    <tr><th>传感器</th><th>型号</th><th>价</th><th>特点</th><th>接口</th></tr>
+    <tr><td><b>毫米波雷达</b> ⭐</td><td>HLK-LD2410 / DFRobot C4001</td><td>¥15-80</td><td><b>静止的人也能测</b>、黑暗/烟雾照常、可测距 8m</td><td>UART/I²C</td></tr>
+    <tr><td>ToF 激光</td><td>VL53L1X</td><td>¥20</td><td>精确测距，但受反光/强光干扰、视角窄</td><td>I²C</td></tr>
+    <tr><td>PIR 热释电</td><td>HC-SR501</td><td>¥5</td><td>最便宜，但<b>人不动测不到</b>、易误触</td><td>GPIO</td></tr>
+  </table>
+  <div class="note">你说的"激光检测"= ToF 也可，但<b>毫米波更适合"欢迎回家"</b>（人站门口不动也能持续检测）。语音用 <a href="https://github.com/k2-fsa/sherpa-onnx">sherpa-onnx</a> 离线 TTS 端侧出声。</div>
+  <h3>集成路径</h3>
+  <pre>mmWave 雷达(UART/I²C) → 守护进程读距离/存在 → 进入阈值(&lt;2m)
+   → sherpa-onnx 播放欢迎语(可用功能③克隆音) → (可选)人脸识别定制称呼</pre>
+</section>
+
+<section id="f3" class="f3">
+  <h2><span class="badge">③</span>声音克隆 <small>· 克隆某人声音说欢迎语/对话</small></h2>
+  <div class="meta">
+    <div class="m"><b>难度</b><span class="star">★★★</span>☆☆ 中</div>
+    <div class="m"><b>成本</b>开源 + 训练用 PC/云 GPU</div>
+    <div class="m"><b>推荐</b><span class="star">★★★★</span>☆</div>
+    <div class="m"><b>端侧</b>推理✅ / 训练⚠️离线</div>
+  </div>
+  <div class="warnbox"><b>关键：分两阶段</b> — <b>训练(克隆)</b> 吃 GPU，在 PC/云做（1 分钟音频即可）；<b>推理(用克隆音说话)</b> 导出轻量 VITS 模型，SL1680 端侧跑。</div>
+  <h3>GitHub 方案</h3>
+  <table>
+    <tr><th>方案</th><th>说明</th><th>适配</th></tr>
+    <tr><td><a href="https://github.com/RVC-Boss/GPT-SoVITS">GPT-SoVITS</a> ⭐59k</td><td>1 分钟克隆，中英日，质量最高；偏重</td><td>PC/云训练，端侧跑导出</td></tr>
+    <tr><td><a href="https://github.com/myshell-ai/OpenVoice">OpenVoice</a></td><td>音色克隆+情感/语速控制，较轻</td><td>同上</td></tr>
+    <tr><td><a href="https://github.com/rhasspy/piper">Piper</a></td><td>轻量快，专为边缘；可训自定义声音</td><td class="ok">端侧首选</td></tr>
+    <tr><td><a href="https://github.com/k2-fsa/sherpa-onnx">sherpa-onnx</a> ⭐</td><td>ARM/NPU 跑 VITS/Piper 推理</td><td class="ok">端侧运行时</td></tr>
+  </table>
+  <h3>推荐路线</h3>
+  <pre>PC/云: GPT-SoVITS/OpenVoice 克隆目标声音 → 导出 VITS 模型
+SL1680: sherpa-onnx 加载 → 端侧实时合成"克隆声音"</pre>
+  <p class="sub">想省事：云端克隆 API（MiniMax/火山/OpenAI），SL1680 联网调用（需网络+隐私考量）。想全离线：Piper 训练 + sherpa-onnx 端侧跑。</p>
+</section>
+
+<section id="f4" class="f4">
+  <h2><span class="badge">④</span>图片 → 3D 人物 + 光影展示 <small>· 照片→数字人→全息/透明屏</small></h2>
+  <div class="meta">
+    <div class="m"><b>难度</b><span class="star">★★★★</span>☆ 高</div>
+    <div class="m"><b>成本</b>硬件¥50-万元 + PC/云 GPU</div>
+    <div class="m"><b>推荐</b><span class="star">★★★</span>☆☆</div>
+    <div class="m"><b>端侧</b>显示✅ / 3D生成⚠️离线</div>
+  </div>
+  <h3>(A) 图片 → 数字人（GitHub）</h3>
+  <table>
+    <tr><th>方案</th><th>类型</th><th>说明</th></tr>
+    <tr><td><a href="https://github.com/KwaiVGI/LivePortrait">LivePortrait</a> ⭐MIT</td><td>2.5D 实时</td><td>单张照片→活人像，表情/口型，快</td></tr>
+    <tr><td><a href="https://github.com/OpenTalker/SadTalker">SadTalker</a> ⭐</td><td>2.5D</td><td>照片+音频→说话头像视频</td></tr>
+    <tr><td><a href="https://github.com/facebookresearch/pifuhd">PIFuHD</a> ⭐Meta</td><td>真 3D</td><td>单张照片→高精度 3D 人体网格</td></tr>
+    <tr><td><a href="https://github.com/Kedreamix/Awesome-Talking-Head-Synthesis">Awesome-Talking-Head</a></td><td>索引</td><td>各类方案大全（选型参考）</td></tr>
+  </table>
+  <div class="warnbox"><b>现实</b>：真 3D 生成+实时驱动对 8 TOPS 太重。可行架构：<b>照片→数字人内容在 PC/云生成一次 → SL1680 播放/驱动口型</b>。</div>
+  <h3>(B) 光影硬件（淘宝/京东现成）</h3>
+  <table>
+    <tr><th>硬件</th><th>价</th><th>效果</th><th>输入</th><th>适用</th></tr>
+    <tr><td><b>全息风扇</b></td><td>¥100-800</td><td>旋转 LED 悬浮 3D，亮吸睛，分辨率低</td><td>USB/WiFi/部分HDMI</td><td>Logo/橱窗</td></tr>
+    <tr><td><b>幻影金字塔</b> ⭐便宜</td><td>¥50-500</td><td>玻璃锥+普通屏，360° 悬浮小人</td><td>普通屏(SL1680 直驱)</td><td>桌面数字人</td></tr>
+    <tr><td><b>透明 OLED</b> ⭐高端</td><td>万元(55")</td><td>透明背景站立数字人，画质细</td><td>HDMI(SL1680 直驱)</td><td>商用透明屏数字人</td></tr>
+    <tr><td>全息纱幕+投影</td><td>视规模</td><td>大场景悬浮投影</td><td>投影(HDMI)</td><td>展厅大屏</td></tr>
+  </table>
+  <p class="sub">桌面家用最省钱：<b>幻影金字塔 + SL1680 屏</b>；商用形象：<b>透明 OLED（HDMI 直接接 SL1680）</b>。参考 <a href="https://www.jd.com/jiage/1318c564d089d9aa26df.html">京东全息风扇</a> · <a href="http://www.qh-oled.com/transparent-oled-screen.html">透明OLED</a>。</p>
+</section>
+
+<section id="f5" class="f5">
+  <h2><span class="badge">⑤</span>光影人物 + 语音复刻 <small>· 会说话、会应答的光影数字人</small></h2>
+  <div class="meta">
+    <div class="m"><b>难度</b><span class="star">★★★★★</span> 最高</div>
+    <div class="m"><b>推荐</b><span class="star">★★★</span>☆☆ 分期做</div>
+    <div class="m"><b>端侧</b>触发/播放/ASR✅ / 实时口型+对话⚠️边缘服务器</div>
+  </div>
+  <h3>整套系统方案</h3>
+  <p><span class="chip"><a href="https://github.com/Kedreamix/Linly-Talker">Linly-Talker</a> ⭐ 完整对话数字人(Whisper+LLM+TTS+SadTalker)</span><span class="chip"><a href="https://github.com/Cyclostone/Talking-AI-Avatar-Generation">Talking-AI-Avatar</a></span></p>
+  <h3>完整架构（把 5 个功能串起来）</h3>
+  <pre>[②mmWave] 有人靠近
+   → [①摄像头] 检测+人脸识别 → 认出是谁
+   → [③克隆声音] 说 "欢迎回家，主人"
+   → (可选对话) 麦克风→ASR→LLM→③克隆TTS→④口型驱动(LivePortrait)
+   → [④光影] 透明屏/全息 上会说话的数字人</pre>
+  <div class="note"><b>轻量版（一期建议）</b>：纯端侧不联网 — 预置几句固定欢迎语 + 预渲染数字人循环动画，触发即播。<b>成本最低、最稳。</b></div>
+</section>
+
+<section id="opt">
+  <h2>🔄 二轮调研：3 个重要优化（补遗）</h2>
+
+  <h3>优化 A：<a href="https://github.com/duixcom/Duix-Mobile">Duix-Mobile</a> — 数字人可能不需要边缘服务器了 ⭐重大</h3>
+  <div class="note">硅基智能开源、全球首个开源 2D 真人级实时数字人：<b>官方标称 4核CPU + 4GB 内存流畅运行</b>、端侧无云依赖、延迟 &lt;1.5s。<b>SL1680 恰好 = 4核 A73@2.1G + 4GB，规格踩线。</b></div>
+  <table>
+    <tr><th>落地路径</th><th>做法</th><th>风险/工作量</th></tr>
+    <tr><td>a. 移植</td><td>核心推理是 C++，移植到 Yocto Linux + GStreamer/DRM 显示</td><td>中等；先在 PC Linux 验证</td></tr>
+    <tr><td>b. 分体 ⭐稳</td><td>SL1680 做传感/语音/逻辑中枢；显示端加一台 ¥200-400 Android 盒跑 Duix，局域网通信</td><td>零移植风险，快速落地</td></tr>
+  </table>
+  <p class="sub">→ 功能⑤结论修正：实时口型<b>有端侧方案候选</b>，三期优先评估 Duix-Mobile（SDK 主打 Android/iOS，这是唯一限制）。</p>
+
+  <h3>优化 B：中文声音克隆首选改为 <a href="https://github.com/FunAudioLLM/CosyVoice">CosyVoice 2</a>（阿里开源）</h3>
+  <p><span class="chip">3 秒克隆</span><span class="chip">9 语种 + 18 中文方言</span><span class="chip">情感标签</span><span class="chip">双向流式合成(首包快)</span></p>
+  <p class="sub">→ 功能③推荐顺序更新：中文场景 <b>CosyVoice 2 &gt; GPT-SoVITS &gt; OpenVoice</b>；端侧运行时仍 sherpa-onnx/Piper；训练/重推理仍在 PC/云。</p>
+
+  <h3>优化 C：复用已有成果</h3>
+  <p class="sub">本项目<b>已点亮的 HDMI 输出（LT9611）</b>可直接驱动幻影金字塔/HDMI全息风扇/透明OLED——显示链路零新增开发；已集成的触摸屏可做数字人交互面板。</p>
+</section>
+
+<section id="hw">
+  <h2>🛒 光影硬件：接口详解 + 采购渠道</h2>
+
+  <h3>1. 全息风扇 — 接口分两类，买前必须确认！</h3>
+  <table>
+    <tr><th>类型</th><th>接口/工作方式</th><th>价位</th><th>能否实时数字人</th></tr>
+    <tr><td><b>普通款(WiFi/SD卡)</b></td><td>手机 App 经 WiFi 上传 <b>MP4/GIF 文件</b>循环播放；部分支持局域网 API 推送</td><td>42-65cm ¥100-800</td><td class="warn">❌ 不能实时；SL1680 生成视频→推送，适合<b>固定欢迎动画</b></td></tr>
+    <tr><td><b>HDMI 实时款</b> ⭐</td><td>HDMI → 专用控制盒 → 光纤 → 风扇，<b>实时取流</b>；可多台拼接</td><td>65cm ¥2000+；100-180cm 数千-万元</td><td class="ok">✅ SL1680 HDMI 直出实时数字人</td></tr>
+  </table>
+  <p class="sub">采购：淘宝/京东搜 <b>“全息风扇 HDMI”“3D全息广告机”</b>；1688/Alibaba 厂家 <a href="https://www.hd-focus.com/hologram-fan/hdmi-input-hologram-fan/">HDFocus</a>、Missyou、GIWOX、衍视。内容要求<b>黑底</b> MP4（黑=透明悬浮）。提醒：风扇分辨率低、近看颗粒感、有风噪，适合远观/橱窗。</p>
+
+  <h3>2. 幻影成像金字塔 — 最便宜、无特殊接口 ⭐一期/二期首选</h3>
+  <div class="note"><b>原理就是"普通显示屏平放 + 亚克力四棱锥反射"（Pepper's Ghost）——没有任何特殊接口</b>，SL1680 已点亮的 HDMI/DSI 屏直接用，零新增硬件开发。内容：黑底 + 单面（或四面对称）人物视图。</div>
+  <table>
+    <tr><th>采购（淘宝关键词）</th><th>价位</th></tr>
+    <tr><td>“全息金字塔 展示柜” 桌面 DIY 款（亚克力锥+支架，屏自备=SL1680 的屏）</td><td>¥50-300</td></tr>
+    <tr><td>“幻影成像柜”“全息展示柜 180度/360度” 成品柜(含 19-32寸屏)——选 <b>180°单面</b>最适合数字人正面形象</td><td>¥1000-5000</td></tr>
+  </table>
+
+  <h3>3. 透明屏（商用高端）</h3>
+  <table>
+    <tr><th>类型</th><th>接口</th><th>价位</th><th>说明</th></tr>
+    <tr><td>透明 OLED（LG 55" 面板一体机）</td><td><b>HDMI/USB</b></td><td>万元级</td><td>自发光 ~45% 透光，数字人"站在玻璃里"效果最佳</td></tr>
+    <tr><td>透明 LCD 展示柜</td><td>HDMI</td><td>¥3000-8000</td><td>需柜体背光，性价比高</td></tr>
+  </table>
+  <p class="sub">淘宝搜“透明OLED屏 55寸”/“透明液晶展示柜”；厂家：起鸿科技、共显盛视等。SL1680 HDMI 直驱当普通显示器。</p>
+
+  <h3>4. 空气成像板（DCT/负折射，前沿）</h3>
+  <p class="sub">画面悬浮空中可交互；接口同样=接普通屏（屏+成像板组合）。淘宝“空气成像 模组”¥2000-8000；视角窄偏贵，三期再看。</p>
+
+  <div class="cap"><b>接口一句话结论</b>：除“普通款全息风扇”（WiFi 推 MP4）外，<b>所有光影硬件对 SL1680 来说都是一块 HDMI 显示器</b>——已点亮的 HDMI 链路直接可用。</div>
+</section>
+
+<section id="road">
+  <h2>🗺️ 推荐分期路线</h2>
+  <div class="phase">
+    <div class="p p1"><h4>一期 · 快速见效 <span class="star">★★</span></h4>
+      <p>摄像头人物追踪 + 毫米波欢迎语（离线固定音）</p>
+      <p class="sub">功能 ①②　·　大部分现成，2-4 周出 demo</p></div>
+    <div class="p p2"><h4>二期 <span class="star">★★★</span></h4>
+      <p>声音克隆接入欢迎语 + 桌面幻影金字塔显示预渲染数字人</p>
+      <p class="sub">功能 ③④(桌面)　·　克隆离线做，端侧播放</p></div>
+    <div class="p p3"><h4>三期 <span class="star">★★★★★</span></h4>
+      <p>会说话数字人 + 对话 + 透明屏/光影</p>
+      <p class="sub">功能 ④(商用)⑤　·　边缘服务器分担，商用硬件</p></div>
+  </div>
+  <h3>每功能"端侧 vs 离线"总结</h3>
+  <table>
+    <tr><th>功能</th><th>端侧(SL1680)</th><th>离线/云</th><th>一期可落地</th></tr>
+    <tr><td>① 人物追踪</td><td class="ok">✅ 全部（YOLOv8 预装）</td><td>—</td><td class="ok">✅ 现成</td></tr>
+    <tr><td>② 接近+欢迎</td><td class="ok">✅ 全部</td><td>—</td><td class="ok">✅</td></tr>
+    <tr><td>③ 声音克隆</td><td>✅ 推理播放</td><td class="warn">⚠️ 克隆训练</td><td>训练在 PC</td></tr>
+    <tr><td>④ 图片→3D+光影</td><td>✅ 显示输出</td><td class="warn">⚠️ 3D 生成</td><td>内容离线生成</td></tr>
+    <tr><td>⑤ 会说话数字人</td><td>✅ 触发/播放/ASR</td><td class="warn">⚠️ 实时口型/对话</td><td>分期</td></tr>
+  </table>
+</section>
+
+<section id="train">
+  <h2>📚 补遗三：Astra 官方培训里的落地方案（视频提炼）</h2>
+  <div class="note">来源：<code>D:\Astra\Training</code> 官方培训 29 视频转录 + 幻灯片。<b>这些是 Synaptics 官方在 SL 平台已跑通的方案</b>，比通用 GitHub 更贴合 SL1680，优先参考。</div>
+
+  <h3>★ 功能① 人物追踪：AI-Zone 三部曲 = 现成落地流程</h3>
+  <pre># ① 跑板上预装模型(固件自带 /usr/share/synap/models/)
+adb push img.jpg /home/root/ ; adb shell
+synap_cli_od img.jpg     # YOLOv8 pose → 62ms, 输出 置信度+class(0=人)+坐标+关键点
+# ② 导入自己模型 + 一条命令编到 NPU
+synap convert --model x.onnx --target sl1680 --out-dir out   # → model.synap → adb push → synap_cli (2-3ms)
+# ③ 混合量化: Netron 看结构 → meta.yaml: backbone INT8 + head INT16 (又快又准)</pre>
+  <p class="sub">功能①从"基本现成"升级为"<b>官方有逐命令 tutorial</b>"，直接抄。</p>
+
+  <h3>★ 功能②③⑤ 语音/数字人：Moonshine + Gemma + RAG（官方端侧方案）</h3>
+  <pre>麦克风 → VAD(按句间隙切分) → Moonshine ASR(跑 ARM,迁 NPU/Torq)
+   → Gemma 270M 小LLM + RAG(喂设备手册防幻觉) → 文本/语音输出</pre>
+  <p><b>比之前通用方案更优</b>：Synaptics 官方选型、已在 SL 跑通、端侧离线低资源。<b>RAG 是关键</b>——小模型单用会幻觉，喂"手册/欢迎语脚本"后做固定应答足够可靠，正合"欢迎回家 + 简单对话"。映射：② 欢迎语、③ 换克隆音、⑤ 加口型+光影。</p>
+
+  <h3>功能② 接近检测：多一个选项 —— WiFi Sensing</h3>
+  <p><b>4612 等模块支持 WiFi Sensing</b>（WiFi 信号感知人存在/移动，无需额外传感器）。若产品本就有 Synaptics WiFi 模块，可省掉毫米波；"有人进房间"级别够用（精度不如毫米波精细）。</p>
+
+  <h3>面向未来：Torq（Transformer NPU）& 备选 SL2610</h3>
+  <p><b>Torq</b> = 下一代基于 Transformer 的 NPU（就是我们 build 里的 torq-runtime/compiler），专为端侧 LLM/语音。现阶段 SL1680 的 8 TOPS 够用；要更强端侧对话再看 Torq。<b>SL2610</b>：若产品重心是语音家电（不要视觉/光影），M52 可当纯 MCU 省成本 + 功能安全 + SR80 远场语音前端，是更低成本选择。</p>
+
+  <div class="note"><b>结论更新</b>：Duix-Mobile(端侧数字人) + Moonshine/Gemma(端侧语音) + Torq(端侧 LLM 趋势) → <b>"会说话数字人"越来越可能纯端侧/轻边缘完成</b>，不一定要重云服务器。</div>
+</section>
+
+<section id="q">
+  <h2>✅ 请你确认这几个选择（我据此出详细落地方案）</h2>
+  <div class="qbox">
+    <ol>
+      <li><b>①追踪</b>：加<b>云台舵机</b>（物理转摄像头）还是<b>纯数字裁剪跟随</b>？</li>
+      <li><b>②传感器</b>：<b>毫米波雷达</b>（推荐）还是 <b>ToF 激光</b>？</li>
+      <li><b>③声音克隆</b>：<b>全离线</b>（端侧）还是可接受<b>云端克隆 API</b>（更省事）？</li>
+      <li><b>④光影硬件</b>：<b>桌面幻影金字塔</b>（便宜验证）/ <b>全息风扇</b> / <b>透明 OLED</b>（商用高端）？</li>
+      <li><b>⑤对话</b>：只要<b>固定欢迎语</b>（纯端侧、稳）还是要<b>智能问答</b>（需 LLM+边缘服务器）？</li>
+      <li><b>整体节奏</b>：先做<b>一期(①②)</b>快速见效，还是直接冲<b>完整数字人</b>？</li>
+    </ol>
+  </div>
+  <p class="sub" style="margin-top:12px">你选完，我针对选中方案出<b>具体 recipe / 接线 / GStreamer pipeline / 代码级实现步骤</b>，并集成进现有 <code>meta-tcm2-touch</code> 式的 SL1680 定制。</p>
+</section>
+
+<footer>SL1680 AI 功能方案调研 · 来源：Synaptics 官方文档/SDK · GitHub 各项目 · 京东/淘宝硬件 · 2026-07-13</footer>
+
+</div>
+</body>
+</html>

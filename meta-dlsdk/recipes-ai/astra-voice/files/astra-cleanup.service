@@ -1,0 +1,6 @@
+[Unit]
+Description=Astra 语音段定时清理（只删录音/临时文件，保留模型）
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/astra-cleanup.sh

@@ -1,0 +1,169 @@
+<meta charset="utf-8">
+<title>SL1680 硬件与能力核查报告</title>
+<style>
+  :root{--ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;--rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;--measured:#B06A12;--measured-bg:#FDF3E3;--verified:#1B6E80;--verified-bg:#E4F3F6;--untested:#A8305A;--untested-bg:#FBE9EF;--good:#1F6B4A;--bad:#A8305A;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;}
+  @media (prefers-color-scheme:dark){:root{--ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;--rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;--measured:#E8A33D;--measured-bg:#2B2114;--verified:#4FB3C8;--verified-bg:#132A30;--untested:#E06A92;--untested-bg:#2E151F;--good:#5FBF8F;--bad:#E06A92;}}
+  :root[data-theme="light"]{--ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;--rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;--measured:#B06A12;--measured-bg:#FDF3E3;--verified:#1B6E80;--verified-bg:#E4F3F6;--untested:#A8305A;--untested-bg:#FBE9EF;--good:#1F6B4A;--bad:#A8305A;}
+  :root[data-theme="dark"]{--ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;--rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;--measured:#E8A33D;--measured-bg:#2B2114;--verified:#4FB3C8;--verified-bg:#132A30;--untested:#E06A92;--untested-bg:#2E151F;--good:#5FBF8F;--bad:#E06A92;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px 90px}
+  .mast{border-bottom:2px solid var(--ink);padding:52px 0 22px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px}
+  h1{font-size:clamp(26px,4vw,40px);line-height:1.2;margin:0 0 18px;letter-spacing:-.01em;text-wrap:balance;font-weight:680}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 26px;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .meta b{color:var(--ink-2);font-weight:500}
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 40px}
+  .legend div{background:var(--panel);padding:12px 15px}
+  .legend .lt{font-family:var(--mono);font-size:11.5px;font-weight:600;display:block;margin-bottom:2px}
+  .legend .ld{font-size:12px;color:var(--ink-3)}
+  .l-m .lt{color:var(--measured)} .l-v .lt{color:var(--verified)} .l-u .lt{color:var(--untested)} .l-t .lt{color:var(--ink-3)}
+  .c{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 6px;border-radius:2px;white-space:nowrap;display:inline-block;vertical-align:1px}
+  .c-m{color:var(--measured);background:var(--measured-bg)} .c-v{color:var(--verified);background:var(--verified-bg)} .c-u{color:var(--untested);background:var(--untested-bg)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:58px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:19px;margin:30px 0 12px;font-weight:640}
+  h4{font-size:15.5px;margin:22px 0 9px;color:var(--ink-2);font-weight:640}
+  p{margin:0 0 14px;max-width:76ch} ul{margin:0 0 14px;padding-left:22px;max-width:76ch} li{margin-bottom:6px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:14px 16px;overflow-x:auto;margin:0 0 20px;color:var(--ink-2)}
+  pre b{color:var(--accent)}
+  .scroll{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .hi{background:var(--measured-bg)} .yes{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);background:var(--panel);padding:15px 18px;margin:0 0 20px}
+  .note.key{border-left:3px solid var(--accent);background:var(--accent-soft)}
+  .note.warn{border-left:3px solid var(--untested);background:var(--untested-bg)}
+  .note p:last-child{margin-bottom:0}
+  .foot{margin-top:60px;padding-top:22px;border-top:2px solid var(--ink);font-size:13px;color:var(--ink-3)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <p class="kicker">Synaptics Astra SL1680 · 硬件与能力核查</p>
+  <h1>代码 + 原理图全面盘点：SL1680 到底能做什么</h1>
+  <div class="meta"><span><b>日期</b> 2026-07-19</span><span><b>板子</b> 192.168.5.126</span><span><b>材料</b> RDK图纸14页 · DSI指南10页 · DL7400图纸21页 · Kbridge2 · 全部源码</span></div>
+</header>
+
+<div class="legend">
+  <div class="l-m"><span class="lt">■ 实测</span><span class="ld">板上跑出来的</span></div>
+  <div class="l-v"><span class="lt">■ 已核实</span><span class="ld">一手原理图/源码</span></div>
+  <div class="l-t"><span class="lt">■ 理论</span><span class="ld">datasheet 推得</span></div>
+  <div class="l-u"><span class="lt">■ 受阻</span><span class="ld">有硬伤未解</span></div>
+</div>
+
+<h2>一 · 原理图告诉我们的硬件底子</h2>
+
+<h3>1.1 关键架构：载板 + 核心板 <span class="c c-v">已核实</span></h3>
+<p>RDK 是两层：<strong>SoC / DRAM / eMMC 全在核心板上</strong>，经 260-pin（DDR4-SODIMM 形态）金手指 J29 插到载板。载板兼容 SL1680/1640/1620 三款核心板。载板暴露什么接口，SL1680 就有什么能力边界。</p>
+
+<h3>1.2 载板接口全清单 <span class="c c-v">已核实</span></h3>
+<div class="scroll"><table>
+  <tr><th>接口</th><th>规格</th><th>页</th><th>意味着</th></tr>
+  <tr><td><strong>HDMI 2.1</strong> J12</td><td>Type-A 母座，含 eARC/CEC/HPD</td><td>p5</td><td>主交互屏；4K60 + HDCP2.2</td></tr>
+  <tr><td><strong>MIPI-DSI 4-lane</strong> J208</td><td>22pin 0.5mm FPC，树莓派 DSI 兼容</td><td>p7</td><td>第二块独立屏（与 HDMI 不能镜像）</td></tr>
+  <tr><td><strong>MIPI-CSI0 4-lane</strong> J206</td><td>22pin FPC</td><td>p6</td><td>主摄像头</td></tr>
+  <tr class="hi"><td><strong>MIPI-CSI1 2-lane</strong> J207</td><td>15pin，树莓派摄像头脚位</td><td>p6</td><td><strong>第二路摄像头</strong>（看护双机位）</td></tr>
+  <tr><td><strong>GbE RJ45</strong> J2</td><td>SoC 内置 PHY + 带磁 RJ45</td><td>p8</td><td>千兆有线</td></tr>
+  <tr><td><strong>PoE 排针</strong> J34</td><td>无源，磁中心抽头引出</td><td>p8</td><td>加外置 PD 模块→一根网线供电+联网</td></tr>
+  <tr><td><strong>USB3 ×4 Type-A</strong></td><td>GL3523 hub 分出（共享一路 SoC USB3）</td><td>p2/p10</td><td>DL7400/摄像头/声卡都挂这</td></tr>
+  <tr><td><strong>USB2 Type-C</strong> J215</td><td>TUSB320 DRP，host/device 双角色</td><td>p11</td><td>烧录/调试口</td></tr>
+  <tr><td><strong>M.2 Key-E</strong> J17</td><td>PCIe ×2 + SDIO + UART + I2S3</td><td>p9</td><td>WiFi/BT；<strong>板上唯一 PCIe 出口</strong></td></tr>
+  <tr><td><strong>40-pin 排针</strong> J32</td><td>I2C/UART0/PWM1/SPI2/I2S1/PDM×2 + GPIO</td><td>p4</td><td>树莓派扩展生态；1.8V→3.3V 已转</td></tr>
+  <tr><td>风扇口 J13</td><td>PWM + TACH</td><td>p12</td><td>产品化散热闭环</td></tr>
+  <tr><td>JTAG / QSPI / 复位 / USB-Boot</td><td>J22 / J1 / SW6 / SW7</td><td>p12</td><td>调试与启动方式齐全</td></tr>
+  <tr><td><strong>电源</strong></td><td>USB-C PD sink（5V/15V 跳线）→ 5V/6A + 3.3V/1.8V buck</td><td>p14</td><td>分立电源树，无单颗 PMIC</td></tr>
+  <tr><td><strong>功耗测量</strong></td><td>INA220 ×2（0x40/0x41）</td><td>p14</td><td>软件可读 3.3V/1.8V 实时电流</td></tr>
+</table></div>
+
+<div class="note key">
+<p><strong>两个此前没写进任何报告的硬结论：</strong></p>
+<p>① <strong>载板没有音频 codec、没有麦阵、没有功放、没有耳机孔</strong>——只有数字 I2S×3 + PDM 排针。现在用 USB 声卡（C920 麦 + USB 耳机）不是将就，<strong>是这块板唯一免焊接路径</strong>；产品化要么加 I2S codec 小板，要么走 HDMI 音频。</p>
+<p>② <strong>载板没有 SD 卡槽、没有 SoC 用的板载 flash</strong>（唯一一颗 SPI-NOR 是 USB hub 的配置芯片）；系统只能在核心板 eMMC 上，外扩存储走 USB。</p>
+</div>
+
+<h3>1.3 显示扩展硬件的真实形态 <span class="c c-v">已核实</span></h3>
+<div class="scroll"><table>
+  <tr><th>路径</th><th>真实形态</th><th>坑</th></tr>
+  <tr><td><strong>J208 直连 DSI 屏</strong></td><td>22pin 里只有 3.3V；触摸 I2C 在 pin2/3；控制线来自 I2C GPIO 扩展器（非 SoC 直出）。官方验证过的直连屏只有 Waveshare 7" 800×480</td><td class="no">无 5V、无背光 PWM——5V 要从 40pin 排针 pin4/6 飞线</td></tr>
+  <tr><td><strong>LVDS 屏（过桥）</strong></td><td>SL1680 无原生 LVDS PHY。LAMTL 板用 TC358775：DSI 4-lane@1Gbps 进，单链 LVDS ≤1600×1200、双链 ≤1920×1200@60（模块标称 1080p60）</td><td class="no">模块输入是 30pin FPC ≠ J208 的 22pin，需换线序转接；官方指南明确不覆盖这种接法</td></tr>
+  <tr><td><strong>DL7400（USB 多屏）</strong></td><td>DisplayLink 四头 USB 图形芯片，自带 LPDDR4x 私有帧缓存（16Gbit）。<strong>每口都是 DP(4-lane)+HDMI 二合一</strong>（GPIO 上拉选模式）。上行 USB3 Gen1 5Gbps。芯片还引出 10G-Eth/RGMII/I2S（本卡未用）</td><td class="no">纯输出芯片，图纸上没有任何视频输入；手头图纸是 PCIe 卡形态，对 SL1680 走的是原生 USB3</td></tr>
+  <tr><td><strong>Kbridge2/TD7800 子板</strong></td><td>SN65DSI85 的 DSI→双链 LVDS 桥 + 触摸 + 背光</td><td>是单屏点亮/触摸固件烧录的<strong>工程台架</strong>，不是多屏扩展器，别和 DL7400 混</td></tr>
+</table></div>
+
+<h2>二 · 代码已实证的能力</h2>
+
+<h3>2.1 全本地语音 AI（astra_voice.c，642 行常驻 C 程序）<span class="c c-m">实测</span></h3>
+<pre>ALSA采集 → Silero VAD → SenseVoice ASR(int8) → 四层回落 → matcha TTS → ALSA播放
+                                                  │
+                              事实接地 → 云Kimi → 本地Qwen0.5B → 规则</pre>
+<div class="scroll"><table>
+  <tr><th>指标</th><th>实测值</th></tr>
+  <tr><td>整轮延迟</td><td><strong>~5-6 秒</strong></td></tr>
+  <tr><td>SenseVoice int8</td><td>RTF 0.197（4 线程，5 倍实时余量）</td></tr>
+  <tr><td>matcha TTS</td><td>RTF ~0.37（常驻热合成；比 melo 快 7 倍）</td></tr>
+  <tr><td>本地 Qwen2.5-0.5B Q8</td><td>19.6 tok/s（断网兜底）</td></tr>
+  <tr><td>模型加载</td><td>启动只加载一次（~10s），干掉每轮 11.1s 冷启动</td></tr>
+</table></div>
+<p>设计要点：SIGUSR1=视觉唤醒播欢迎语；SIGUSR2+<code>/tmp/astra_say.txt</code>=播报任意告警（看护复用）；状态文件原子写给字幕 UI 读；设备寻址用稳定名（<code>CARD=C920</code>），躲开 USB 重启换号。</p>
+
+<h3>2.2 NPU 视觉 <span class="c c-m">实测</span></h3>
+<ul>
+  <li>人体检测 <strong>24ms/帧</strong>（置信度 0.94），常驻 GStreamer synapinfer 管线</li>
+  <li><code>vision_wake.sh</code>：人走近（框高≥45% 持续 N 帧）→ 欢迎语——已部署为服务</li>
+  <li><code>vision_care.sh</code>：滞留 / 区域无人 / 疑似跌倒（框宽&gt;高）→ 语音告警——demo 已跑通</li>
+  <li>预装 YOLOv8 检测/姿态、posenet、mobilenet 等 12 个视觉模型</li>
+</ul>
+
+<h3>2.3 显示三路并存 <span class="c c-m">实测</span></h3>
+<div class="scroll"><table>
+  <tr><th>路</th><th>实测状态</th><th>定位</th></tr>
+  <tr><td><strong>原生 HDMI</strong></td><td class="yes">Weston 硬件合成 1080p 点亮；gst-ai 摄像头→NPU→HDMI 跑通；规格 4K60</td><td>主交互屏（丝滑满帧）</td></tr>
+  <tr><td><strong>DL7400 4 屏</strong></td><td class="yes">2880×1800+4K+1080p+4K 混分辨率同亮</td><td>低刷信息墙/看板（全动态视频仅 ~7fps）</td></tr>
+  <tr><td><strong>DSI/LVDS</strong></td><td class="no">dtbo 已交付但开机不生效（见 §四）</td><td>待打通</td></tr>
+</table></div>
+<p><code>dlsdk.h</code> 全 API 已核实：设备/屏枚举、EDID、模式设定、<code>dlsdk_display_show</code> 推像素、热插拔回调、DP AUX 透传——<strong>纯用户态 libusb，无内核驱动</strong>，scp 上板即用。<code>dl_face</code> 对话脸（颜文字+中文实时字幕）与 astra_voice 状态文件联动。</p>
+
+<h3>2.4 系统工程 <span class="c c-m">实测</span></h3>
+<ul>
+  <li>Yocto scarthgap / kernel 6.12.62，全量构建 9624 任务全过（~1h52m）</li>
+  <li>eMMC A/B 双槽 GPT（rootfs_a/b 各 5120MB + home 4332MB），支持 .swu OTA</li>
+  <li>4 个 systemd 服务开机自启，上电 ~15s 就绪；凌晨 4 点自动清理语音留存</li>
+</ul>
+
+<h2>三 · 组合成产品方向（按就绪度排序）</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>方向</th><th>就绪度</th><th>差什么</th></tr>
+  <tr class="hi"><td>🥇</td><td><strong>智能看护/安防终端</strong></td><td class="yes">demo 已通</td><td>双 CSI 摄像头（硬件支持！）、事件录像、告警推送</td></tr>
+  <tr class="hi"><td>🥈</td><td><strong>多模态对话设备</strong>（视觉唤醒+语音+脸+字幕）</td><td class="yes">四件套全通</td><td>对话脸迁原生 HDMI、产品化封装</td></tr>
+  <tr><td>🥉</td><td>多屏信息墙/数字看板</td><td class="yes">4 屏已通</td><td>内容管理层；只适合低刷内容</td></tr>
+  <tr><td>4</td><td>边缘家居中枢</td><td>astra_voice 就绪</td><td><strong>板上无容器</strong>，HA 要原生移植</td></tr>
+  <tr><td>5</td><td>客流/行为分析</td><td>模型预装</td><td>规则层（supervision 纯 Python 可直接用）</td></tr>
+</table></div>
+
+<h2>四 · 产品化前必须面对的硬边界</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>边界</th><th>细节</th></tr>
+  <tr><td>1</td><td class="no">NPU 只做视觉</td><td>语音/LLM 全跑 A73 CPU；SyNAP 固定 shape、无 KV cache；Synaptics 自家语音示例也全是 CPU</td></tr>
+  <tr><td>2</td><td class="no">A73 无 dotprod</td><td>int8 收益逐模型实测：SenseVoice 快 1.45×，VITS 反而慢 1.9×，别照搬</td></tr>
+  <tr><td>3</td><td class="no">TTS 授权全有雷</td><td>espeak-ng GPLv3 静态穿透、matcha 模型无授权、melo 上游 AGPL；商用前必解</td></tr>
+  <tr><td>4</td><td class="no">DL7400 带宽天花板</td><td>USB3 5Gbps 共享 4 屏；全动态视频 ~7fps；USB2 下 SDK 拒开；<code>preferred_mode</code> 是陷阱（4K@160 EDID 永久卡死链路，必须钳 ≤60Hz）</td></tr>
+  <tr><td>5</td><td class="no">触摸/LVDS 集成缺口</td><td>两个 dtbo 编译进 /boot 但<strong>开机不应用</strong>（FIT image 无 overlay 清单），触摸 probe -22；触摸 INT 还是占位符；MIPI→LVDS 桥型号未定（TC358775 需 I2C 初始化，现在 dtso 假设免配置桥）</td></tr>
+  <tr><td>6</td><td class="no">板上无 docker/podman</td><td>Frigate（唯一原生吃 SyNAP 的成熟方案）、HomeAssistant 进不来，要加容器运行时或原生移植</td></tr>
+  <tr><td>7</td><td class="no">无真唤醒词、无 AEC</td><td>现在"说话就应"+视觉唤醒；回声消除是土办法（播放时不采集）</td></tr>
+  <tr><td>8</td><td>人脸识别整线</td><td>模型全非商用授权 + 无 SyNAP 后端，产品化避开</td></tr>
+  <tr><td>9</td><td>内存预算</td><td>4GB 物理 → 可用 ~2.9GB；语音栈 ~415MB，多屏 UI + 常驻 LLM 要精打细算</td></tr>
+</table></div>
+
+<h2>五 · 一句话总结</h2>
+<div class="note key">
+<p><strong>SL1680 = 视觉 NPU 很强 + 4×A73 够跑本地语音 + 三路显示（HDMI 4K60 / DSI / USB 多屏）+ 双摄输入 + 完整 Yocto 工程链的边缘 AI 盒子。</strong></p>
+<p>它的本命是<strong>多模态对话终端</strong>和<strong>智能看护</strong>；它做不了的是视频墙、云端级大模型、以及任何绕不开授权雷的 TTS/人脸方案。硬件上音频必须外挂（USB/I2S/HDMI），存储只有核心板 eMMC，PCIe 只留给了 WiFi。</p>
+</div>
+
+<div class="foot">🟢 数字均为板上实测；🔵 结论均可回溯到图纸页码/代码行号。材料：SC950-000798-01 RevF（14页）· MIPI-DSI LCM 指南 RevD（10页）· DL7400 NR-152973（21页）· Kbridge2/TD7800 · astra_voice.c / dlsdk.h / meta-dlsdk / delivery_sl1680 · 2026-07-19</div>
+</div>

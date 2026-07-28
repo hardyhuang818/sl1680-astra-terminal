@@ -1,0 +1,34 @@
+[Unit]
+Description=Astra 语音助手 (C920采音 + Razer出声)
+After=sound.target
+Wants=sound.target
+# 默认限流是 10 秒内 5 次，超了 systemd 会把服务永久判死不再拉起。
+# 放宽成 5 分钟内 10 次。⚠️ 这两个键属于 [Unit] 不是 [Service]，放错会被静默忽略。
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=simple
+Environment=TZ=CST-8
+EnvironmentFile=-/etc/astra/llm.conf
+# 必须排在最前：C920 挂的那条 USB 总线会抖，实测掉线 86 秒。
+# 不等的话每 3 秒重拉一次、每次白白加载 14-17 秒模型再死掉（实测连崩 7 次）。
+ExecStartPre=/usr/bin/astra_wait_mic.sh C920 120
+ExecStartPre=-/usr/bin/amixer -c C920 sset Mic 80% unmute
+ExecStartPre=-/usr/bin/astra_setvol.sh 30%
+ExecStart=/usr/bin/astra_voice --tts matcha --cloud --dev-in plughw:CARD=C920,DEV=0 --dev-out astraout \
+  --threads 4 --greet 1 --lang zh --gain 2.0 --min-rms 1150 --min-dur 0.45 \
+  --pad-front 0.5 --pad-back 0.2 \
+  --llm /home/voice/llm/qwen2.5-0.5b-instruct-q8_0.gguf --llm-threads 4 \
+  --status /tmp/astra_status.txt --save-dir /home/voice/segs
+KillSignal=SIGINT
+# 等麦克风最长 120s，别让 systemd 在中途把 ExecStartPre 掐了
+TimeoutStartSec=180
+TimeoutStopSec=10
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

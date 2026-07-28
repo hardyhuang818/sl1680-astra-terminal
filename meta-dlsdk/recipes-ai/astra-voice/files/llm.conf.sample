@@ -1,0 +1,19 @@
+# /etc/astra/llm.conf —— Astra 云端服务凭证
+#
+# 装机后复制成 /etc/astra/llm.conf 并填入自己的 key：
+#     cp /etc/astra/llm.conf.sample /etc/astra/llm.conf
+#     chmod 600 /etc/astra/llm.conf
+#
+# ⚠️ 这个文件是 systemd EnvironmentFile，被 astra-voice.service 和
+#    astra-translate.service 共用。权限必须 0600，且【绝不能提交进 git】。
+#    key 一旦出现在聊天记录、截图、日志里，就当作已泄露，立刻去控制台吊销重发。
+
+# 对话主模型(必填)。缺了会回落到板上的 qwen2.5-0.5b 本地小模型。
+DEEPSEEK_API_KEY=
+LLM_MODEL=deepseek-chat
+LLM_URL=https://api.deepseek.com/v1/chat/completions
+
+# 联网搜索(选填)。缺了不会崩，只是问天气/股价这类"硬实时"问题时
+# 助手会老实说查不到 —— 见 astra_llm.py 里的 SEARCH_KEYS_HARD。
+# 智谱独立 Web Search API，search_std 约 ¥0.01/次。
+ZHIPU_API_KEY=

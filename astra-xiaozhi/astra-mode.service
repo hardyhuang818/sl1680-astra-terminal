@@ -1,0 +1,13 @@
+[Unit]
+Description=Astra dual-mode watchdog (cloud xiaozhi <-> local astra-voice)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/bin/sh /usr/bin/astra_mode.sh 192.168.5.166 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

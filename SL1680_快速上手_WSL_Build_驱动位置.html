@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 快速上手：开 WSL · Build · 驱动在哪</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --ink:#1a1f2b; --sub:#5a6472; --line:#e2e6ec;
+    --accent:#2563eb; --accent2:#7c3aed; --ok:#16a34a; --warn:#d97706;
+    --code-bg:#f2f4f7; --code-ink:#0f172a; --chip:#eef2ff; --chip-ink:#3730a3;
+    --touch:#2563eb; --disp:#0891b2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#0e1117;--card:#161b22;--ink:#e6edf3;--sub:#9aa4b2;--line:#2a313c;
+      --accent:#60a5fa;--accent2:#a78bfa;--ok:#4ade80;--warn:#fbbf24;
+      --code-bg:#0b0f16;--code-ink:#d1d9e0;--chip:#1e2540;--chip-ink:#c7d2fe;
+      --touch:#60a5fa;--disp:#22d3ee;}
+  }
+  :root[data-theme="dark"]{--bg:#0e1117;--card:#161b22;--ink:#e6edf3;--sub:#9aa4b2;--line:#2a313c;
+    --accent:#60a5fa;--accent2:#a78bfa;--ok:#4ade80;--warn:#fbbf24;
+    --code-bg:#0b0f16;--code-ink:#d1d9e0;--chip:#1e2540;--chip-ink:#c7d2fe;--touch:#60a5fa;--disp:#22d3ee;}
+  :root[data-theme="light"]{--bg:#f6f7f9;--card:#fff;--ink:#1a1f2b;--sub:#5a6472;--line:#e2e6ec;
+    --accent:#2563eb;--accent2:#7c3aed;--ok:#16a34a;--warn:#d97706;
+    --code-bg:#f2f4f7;--code-ink:#0f172a;--chip:#eef2ff;--chip-ink:#3730a3;--touch:#2563eb;--disp:#0891b2;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif}
+  .wrap{max-width:920px;margin:0 auto;padding:26px 18px 80px}
+  header.hero{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    border-radius:16px;padding:24px 26px;margin-bottom:8px}
+  header.hero h1{margin:0 0 6px;font-size:21px}
+  header.hero p{margin:2px 0;opacity:.95;font-size:13.5px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+  .toc a{background:var(--card);border:1px solid var(--line);border-radius:999px;
+    padding:5px 13px;font-size:13px;color:var(--accent);text-decoration:none;font-weight:600}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0}
+  h2{font-size:17px;margin:0 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:9px}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;
+    background:var(--accent);color:#fff;font-size:14px;flex:0 0 auto}
+  h3{font-size:14.5px;margin:18px 0 8px;color:var(--accent)}
+  p{margin:8px 0}
+  code{background:var(--code-bg);color:var(--code-ink);border-radius:5px;padding:1.5px 6px;
+    font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all}
+  pre{background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);border-radius:10px;
+    padding:13px 15px;overflow-x:auto;margin:10px 0;position:relative}
+  pre code{background:none;padding:0;font-size:12.5px;word-break:normal}
+  .cmt{color:var(--sub)}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--code-bg);font-weight:600;white-space:nowrap}
+  .sub{color:var(--sub)}
+  .chip{display:inline-block;background:var(--chip);color:var(--chip-ink);border-radius:6px;
+    padding:2px 9px;font-size:12px;font-weight:600;margin:2px 4px 2px 0}
+  .note{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);
+    border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13.5px}
+  .warnbox{border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 9%,transparent);
+    border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:13.5px}
+  .tag-touch{color:var(--touch);font-weight:700}
+  .tag-disp{color:var(--disp);font-weight:700}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:10px 0}
+  .steps>li{position:relative;padding:4px 0 4px 34px;margin:6px 0}
+  .steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:2px;
+    width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;
+    font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  kbd{background:var(--code-bg);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;
+    padding:1px 7px;font:12px ui-monospace,Menlo,Consolas,monospace}
+  footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:26px}
+  .pathbox{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:8px 11px;
+    font:12px/1.7 ui-monospace,Menlo,Consolas,monospace;overflow-x:auto;margin:6px 0;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>SL1680 快速上手 — 开 WSL · Build · 驱动在哪</h1>
+  <p>Synaptics SL1680 (dolphin) · Astra SDK scarthgap_6.12_v2.3.0 · kernel 6.12.62</p>
+  <p>WSL 发行版 <b>Ubuntu-22.04</b>（默认用户 <code style="background:rgba(255,255,255,.18);color:#fff">astra</code>）· SDK 在 <code style="background:rgba(255,255,255,.18);color:#fff">~/sdk</code></p>
+</header>
+
+<div class="toc">
+  <a href="#s1">① 开 WSL</a>
+  <a href="#s2">② Build</a>
+  <a href="#s3">③ 触摸驱动位置</a>
+  <a href="#s4">④ 显示驱动位置</a>
+  <a href="#s5">⑤ 速查表</a>
+</div>
+
+<section id="s1">
+  <h2><span class="n">1</span>怎么打开 WSL</h2>
+  <p>SDK 装在 WSL 的 <b>Ubuntu-22.04</b> 发行版里（不是默认的那个）。任选一种方式进入：</p>
+
+  <h3>方式 A：Windows Terminal / PowerShell（推荐）</h3>
+  <pre><code>wsl -d Ubuntu-22.04
+<span class="cmt"># 进去后自动是 astra 用户，位于 ~ (/home/astra)</span>
+cd ~/sdk            <span class="cmt"># SDK 根目录</span></code></pre>
+
+  <h3>方式 B：开始菜单</h3>
+  <p>开始菜单搜 <b>“Ubuntu 22.04”</b> 直接点开（如果装过图标）；或搜 <b>“Terminal”</b> 打开 Windows Terminal，点标题栏下拉箭头 <kbd>⌄</kbd> 选 <b>Ubuntu-22.04</b>。</p>
+
+  <h3>方式 C：VS Code 远程（看/改代码最舒服）</h3>
+  <pre><code><span class="cmt"># 在 WSL 里执行，需先在 Windows VS Code 装 "WSL" 扩展</span>
+cd ~/sdk && code .</code></pre>
+
+  <h3>方式 D：Windows 资源管理器直接看文件</h3>
+  <p>地址栏粘贴：</p>
+  <div class="pathbox">\\wsl.localhost\Ubuntu-22.04\home\astra\sdk</div>
+
+  <div class="note"><b>小贴士</b>：想让 <code>wsl</code> 不加 <code>-d</code> 也默认进这个发行版，执行一次：<br>
+  <code>wsl --set-default Ubuntu-22.04</code>。关掉 WSL 释放内存：<code>wsl --shutdown</code>。</div>
+</section>
+
+<section id="s2">
+  <h2><span class="n">2</span>怎么 Build</h2>
+
+  <h3>一键构建（推荐，脚本已封装所有修复）</h3>
+  <pre><code><span class="cmt"># 在 WSL(Ubuntu-22.04) 里执行</span>
+bash "/mnt/d/Claude code/Case6_Astra/sl1680-scripts/build-sl1680.sh"</code></pre>
+  <p class="sub">脚本自动做：source 环境 → 复用 sl2619 sstate 缓存 → 加 meta-tcm2-touch layer → 编译 openat2 seccomp wrapper（WSL2 pseudo 修复）→ 设 MTU 1280 → <code>bitbake astra-media</code>（带重试）。</p>
+
+  <h3>手动分步（想理解每步时用）</h3>
+  <pre><code>cd ~/sdk
+export MACHINE=sl1680 ACCEPT_SYNA_EULA=1
+. meta-synaptics/setup/setup-environment      <span class="cmt"># 进入 build-sl1680/</span>
+bitbake-layers add-layer /home/astra/sdk/meta-tcm2-touch
+bitbake astra-media</code></pre>
+
+  <div class="warnbox"><b>WSL2 三个必记的坑</b>（脚本已处理，手动跑时注意）：
+    <ol style="margin:6px 0 0">
+      <li>build 前先 <code>pkill -9 -f bitbake-server</code>（daemon 缓存旧环境）</li>
+      <li>网络：<code>sudo ip link set eth0 mtu 1280</code>（否则大 git clone 会 TLS 断）</li>
+      <li>tar 需走 openat2 wrapper：<code>export PATH="/home/astra/toolwrap:$PATH"</code>（否则 pseudo 报错，do_rootfs 失败）</li>
+    </ol>
+  </div>
+
+  <h3>只改了驱动/overlay 后增量重编（快）</h3>
+  <pre><code>cd ~/sdk
+export MACHINE=sl1680 ACCEPT_SYNA_EULA=1
+. meta-synaptics/setup/setup-environment
+export PATH="/home/astra/toolwrap:$PATH"
+bitbake -c cleansstate synaptics-tcm2 && bitbake synaptics-tcm2   <span class="cmt"># 只重编触摸模块</span>
+bitbake -c cleansstate astra-media && bitbake astra-media          <span class="cmt"># 重新组装镜像</span></code></pre>
+
+  <h3>产物在哪</h3>
+  <div class="pathbox">~/sdk/build-sl1680/tmp/deploy/images/sl1680/SYNAIMG/</div>
+  <p class="sub">= 烧录工具要的 <code>eMMCimg</code> 目录。也已复制到 <code>D:\Claude code\Case6_Astra\delivery_sl1680\SYNAIMG\</code>。</p>
+</section>
+
+<section id="s3">
+  <h2><span class="n">3</span><span class="tag-touch">触摸驱动</span>在哪</h2>
+  <p>触摸驱动是我们从 <code>synaptics_tcm2_touchcomm_tddi_v1.8.0.tar.gz</code> <b>集成的独立内核模块</b>（out-of-tree），编成 <code>synaptics_tcm2.ko</code>。</p>
+
+  <table>
+    <tr><th>用途</th><th>路径</th></tr>
+    <tr><td><b>Recipe</b>（怎么编）</td><td class="pathbox" style="margin:0">~/sdk/meta-tcm2-touch/recipes-kernel/linux-drivers/synaptics-tcm2/synaptics-tcm2_1.8.0.bb</td></tr>
+    <tr><td><b>驱动 C 源码</b>（tarball 解包后）</td><td class="pathbox" style="margin:0">~/sdk/build-sl1680/tmp/work/sl1680-poky-linux/synaptics-tcm2/1.8.0/synaptics_tcm2_touchcomm_tddi_v1.8.0/source/synaptics_tcm2/</td></tr>
+    <tr><td><b>驱动源 tarball</b>（layer 里）</td><td class="pathbox" style="margin:0">~/sdk/meta-tcm2-touch/recipes-kernel/linux-drivers/synaptics-tcm2/files/synaptics_tcm2_touchcomm_tddi_v1.8.0.tar.gz</td></tr>
+    <tr><td><b>编出的 .ko</b></td><td class="pathbox" style="margin:0">~/sdk/build-sl1680/tmp/work/sl1680-poky-linux/synaptics-tcm2/1.8.0/image/usr/lib/modules/6.12.62/updates/synaptics_tcm2.ko</td></tr>
+    <tr><td><b>触摸 DT overlay</b>（i2c0 @ 0x2C）</td><td class="pathbox" style="margin:0">~/sdk/meta-tcm2-touch/recipes-kernel/linux/files/dolphin-tcm2-touch-overlay.dtso</td></tr>
+    <tr><td><b>板子上的位置</b>（烧完后）</td><td class="pathbox" style="margin:0">/usr/lib/modules/6.12.62/updates/synaptics_tcm2.ko<br>（开机 <code>modprobe synaptics_tcm2</code> 自动加载）</td></tr>
+  </table>
+
+  <h3>源码关键文件（在上面的 source/synaptics_tcm2/ 里）</h3>
+  <p><span class="chip">syna_tcm2.c 主驱动</span><span class="chip">syna_tcm2_platform_i2c.c I²C 层</span><span class="chip">tcm/ 协议核心</span><span class="chip">syna_tcm2.h 方向宏/开关</span></p>
+  <div class="note">改<b>方向</b>（左右/上下反）、<b>ENABLE_HELPER</b>（唤醒自愈）等编译期宏 → 改 <code>syna_tcm2.h</code>；改 <b>I²C 地址 / INT / RST GPIO</b> → 改 overlay <code>dolphin-tcm2-touch-overlay.dtso</code>。</div>
+</section>
+
+<section id="s4">
+  <h2><span class="n">4</span><span class="tag-disp">显示驱动</span>在哪</h2>
+  <div class="warnbox"><b>先分清楚</b>：显示驱动 <b>我们没写</b>——它是 Synaptics <b>内核里自带的 <code>syna_drm</code></b> DRM 驱动。我们为这块 LVDS 屏只加了一个 <b>DT overlay</b>（配 1280×720 的 DSI 时序）。</p></div>
+
+  <h3>A. 显示驱动本体（Synaptics 内核树内，已存在）</h3>
+  <table>
+    <tr><th>用途</th><th>路径</th></tr>
+    <tr><td><b>DRM 驱动目录</b></td><td class="pathbox" style="margin:0">~/sdk/build-sl1680/tmp/work-shared/sl1680/kernel-source/drivers/synaptics/soc/berlin/modules/drm/</td></tr>
+    <tr><td>主驱动</td><td class="pathbox" style="margin:0">.../drm/drm_syna_drv.c</td></tr>
+    <tr><td>DSI panel</td><td class="pathbox" style="margin:0">.../drm/panel/panel_dsi.c</td></tr>
+    <tr><td>Bridge 胶水（LT9611 等）</td><td class="pathbox" style="margin:0">.../drm/bridge/syna_bridge.c · lontium-lt9611.c</td></tr>
+  </table>
+
+  <h3>B. 我们加的 LVDS 显示配置（overlay）</h3>
+  <table>
+    <tr><th>用途</th><th>路径</th></tr>
+    <tr><td><b>1280×720 MIPI-LVDS overlay</b></td><td class="pathbox" style="margin:0">~/sdk/meta-tcm2-touch/recipes-kernel/linux/files/dolphin-td7800-lvds-overlay.dtso</td></tr>
+    <tr><td>注入 overlay 的 bbappend</td><td class="pathbox" style="margin:0">~/sdk/meta-tcm2-touch/recipes-kernel/linux/linux-syna_%.bbappend</td></tr>
+    <tr><td><b>base 板级 DTS</b>（含原始 <code>dsi_panel</code> 节点，参考）</td><td class="pathbox" style="margin:0">.../kernel-source/arch/arm64/boot/dts/synaptics/dolphin-rdk.dts</td></tr>
+    <tr><td>编出的 .dtbo</td><td class="pathbox" style="margin:0">~/sdk/build-sl1680/tmp/deploy/images/sl1680/dolphin-td7800-lvds-overlay.dtbo</td></tr>
+  </table>
+
+  <div class="note"><b>显示要改哪里？</b><br>
+  • 改<b>分辨率 / 时序 / DSI lane 数 / 颜色格式</b> → 改 overlay <code>dolphin-td7800-lvds-overlay.dtso</code> 里的 <code>dsi_panel</code> 时序块。<br>
+  • 如果 MIPI转LVDS 转接板芯片<b>需要 I²C/DCS 初始化</b>（如 SN65DSI84 / LT8912 / TC358775）→ 需要在 <code>.../drm/bridge/</code> 加 / 启用对应 bridge driver，并在 overlay 里加 bridge 节点。<b>这取决于你转接板的芯片型号（待确认）。</b></div>
+</section>
+
+<section id="s5">
+  <h2><span class="n">5</span>一页速查表</h2>
+  <table>
+    <tr><th>我想…</th><th>去这里</th></tr>
+    <tr><td>进 WSL</td><td><code>wsl -d Ubuntu-22.04</code> → <code>cd ~/sdk</code></td></tr>
+    <tr><td>一键 build</td><td><code>bash "/mnt/d/Claude code/Case6_Astra/sl1680-scripts/build-sl1680.sh"</code></td></tr>
+    <tr><td>看/改<span class="tag-touch">触摸驱动源码</span></td><td><code>~/sdk/build-sl1680/tmp/work/sl1680-poky-linux/synaptics-tcm2/1.8.0/.../source/synaptics_tcm2/</code></td></tr>
+    <tr><td>改触摸 I²C/INT/RST/方向</td><td>overlay <code>dolphin-tcm2-touch-overlay.dtso</code> + 宏 <code>syna_tcm2.h</code></td></tr>
+    <tr><td>看<span class="tag-disp">显示驱动源码</span></td><td><code>.../kernel-source/drivers/synaptics/soc/berlin/modules/drm/</code></td></tr>
+    <tr><td>改显示分辨率/时序</td><td>overlay <code>dolphin-td7800-lvds-overlay.dtso</code></td></tr>
+    <tr><td>拿刷机镜像</td><td><code>~/sdk/build-sl1680/tmp/deploy/images/sl1680/SYNAIMG/</code></td></tr>
+    <tr><td>Windows 里看文件</td><td><code>\\wsl.localhost\Ubuntu-22.04\home\astra\sdk</code></td></tr>
+    <tr><td>集成定制总目录</td><td><code>~/sdk/meta-tcm2-touch/</code>（触摸 recipe + 触摸/显示 overlay + bbappend）</td></tr>
+  </table>
+  <p class="sub">更详细的构建全过程、8 个坑、烧录方法见同目录 <code>TD7800_SL1680_LVDS_Touch_Build_and_Flash.html / .md</code>。</p>
+</section>
+
+<footer>SL1680 快速上手 · WSL Ubuntu-22.04 · SDK ~/sdk · 2026-07-13</footer>
+
+</div>
+</body>
+</html>

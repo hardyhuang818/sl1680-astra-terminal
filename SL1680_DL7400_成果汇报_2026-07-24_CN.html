@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 + DL7400 成果汇报 · 2026-07-24</title>
+<style>
+  :root{
+    --ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;
+    --rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;
+    --good:#1F6B4A;--good-bg:#E5F3EC;--bad:#A8305A;--bad-bg:#FBE9EF;--warn:#B06A12;--warn-bg:#FDF3E3;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;
+    --rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;
+    --good:#5FBF8F;--good-bg:#122A1E;--bad:#E06A92;--bad-bg:#2E151F;--warn:#E8A33D;--warn-bg:#2B2114;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 100px}
+  .mast{border-bottom:2px solid var(--ink);padding:40px 0 20px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(23px,4vw,34px);line-height:1.2;margin:0 0 14px;font-weight:680}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;gap:20px;flex-wrap:wrap}
+  .lead{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;margin-top:16px;font-size:14.5px;color:var(--ink-2)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:46px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:640}
+  h4{font-size:14.5px;margin:18px 0 6px;font-weight:640;color:var(--ink-2)}
+  p{margin:0 0 12px} ul,ol{margin:0 0 12px;padding-left:22px} li{margin-bottom:5px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:13px 15px;overflow-x:auto;margin:0 0 16px;color:var(--ink-2)}
+  .scroll{overflow-x:auto;margin:0 0 16px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:0 0 16px;font-size:14px}
+  .note.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:2px 18px 14px;margin:0 0 16px}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono)}
+  .arch{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);padding:14px 16px;border-radius:4px;overflow-x:auto;margin:0 0 16px;line-height:1.7;white-space:pre}
+  .big{font-family:var(--mono);font-size:25px;font-weight:700;color:var(--accent);line-height:1.1}
+  .kpi{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 18px}
+  .kpi>div{flex:1 1 158px;background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:14px 16px}
+  .kpi .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+  .kpi .sub{font-size:12px;color:var(--ink-3);margin-top:5px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">SL1680 · DL7400 · 内部成果汇报</p>
+  <h1>本地语音 AI 终端 + 四屏扩展显示</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-07-24</span>
+    <span><b>平台</b> Synaptics SL1680 (Dolphin RDK) + DisplayLink DL7400 EVK</span>
+  </div>
+  <div class="lead"><strong>所有数据均来自真机实测</strong>，非纸面推导。早期基于合成测试图的帧率结论已作废，见 §3.4。</div>
+</header>
+
+<h2>一 · 执行摘要</h2>
+<div class="kpi">
+  <div><div class="lbl">多屏扩展</div><div class="big">4 屏</div><div class="sub">并发实测跑通<br>混合分辨率</div></div>
+  <div><div class="lbl">语音端到端</div><div class="big">5~6 秒</div><div class="sub">ASR + TTS 全本地</div></div>
+  <div><div class="lbl">识别实时率</div><div class="big">RTF 0.197</div><div class="sub">5 倍实时余量</div></div>
+  <div><div class="lbl">CPU 占用</div><div class="big">21.7%</div><div class="sub">优化前 52.5%</div></div>
+</div>
+<div class="scroll"><table>
+  <tr><th>能力</th><th>结论</th></tr>
+  <tr><td><strong>多屏扩展</strong></td><td class="ok">✅ 4 屏并发实测跑通，混合分辨率，无需内核驱动</td></tr>
+  <tr><td><strong>语音交互</strong></td><td class="ok">✅ 板上 ASR + TTS 全本地，云端大脑，端到端 5~6 秒</td></tr>
+  <tr><td><strong>视觉唤醒</strong></td><td class="ok">✅ NPU 人体检测，人走近自动打招呼</td></tr>
+  <tr><td><strong>摄像头上屏</strong></td><td class="ok">✅ C920 实况画面可语音切换到指定屏</td></tr>
+  <tr><td><strong>产品化就绪度</strong></td><td>⚠️ 可做<strong>数字标牌 / 看板 / 交互终端</strong>；<span class="no">❌ 不能做视频墙</span></td></tr>
+</table></div>
+<div class="note"><strong>一句话定位</strong>：这是一台<strong>多屏内容展示 + 语音交互终端</strong>，不是视频播放设备。</div>
+
+<h2>二 · 测试条件（软硬件基础）</h2>
+<div class="note"><strong>这套系统是在极低资源投入下做出来的</strong>：一块借来的开发板、一块 EVK、几个自购配件，软件基于 Synaptics 在 GitHub 的开源 SDK。</div>
+
+<h3>2.1 硬件清单</h3>
+<div class="scroll"><table>
+  <tr><th>项</th><th>型号 / 规格</th><th>数量</th><th>来源</th></tr>
+  <tr><td><strong>主控开发板</strong></td><td>Synaptics SL1680 Astra（Dolphin RDK）<br>4×Cortex-A73 + NPU，4 GB LPDDR4</td><td>1</td><td><strong>借用</strong>（原 Yealink 测试板，已保留出厂镜像可还原）</td></tr>
+  <tr><td><strong>多屏扩展</strong></td><td>DisplayLink DL7400 EVK（Redwood-8Gb Video Dock）<br>USB <code>17e9:7000</code>，固件 12.3.26</td><td>1</td><td><strong>借用</strong></td></tr>
+  <tr><td>摄像头 + 麦克风</td><td>Logitech C920（一个 USB 设备提供音频 + 视频两个接口）</td><td>1</td><td><strong>自购</strong></td></tr>
+  <tr><td>功放</td><td>HT517（I2S 数字功放）</td><td>1</td><td>自购</td></tr>
+  <tr><td>喇叭</td><td>配套扬声器</td><td>1</td><td>自购</td></tr>
+  <tr><td><strong>显示器 ×4</strong></td><td>Sculptor 便携屏 2880×1800 @60（HDMI）<br>Redmi 27 NU 3840×2160 @60<br>Mi Monitor 3840×2160 @60<br>三星 S24D390 1920×1080 @60</td><td>4</td><td><strong>自有</strong></td></tr>
+</table></div>
+<div class="note"><strong>未使用</strong>：GPU、外接 PC、专用 AI 加速卡。语音 AI 全部跑在 SL1680 本身的 CPU 和 NPU 上。</div>
+
+<h3>2.2 软件基础</h3>
+<div class="scroll"><table>
+  <tr><th>组件</th><th>来源</th><th>授权</th><th>说明</th></tr>
+  <tr><td><strong>Astra Yocto SDK</strong></td><td class="ok"><strong>GitHub <code>synaptics-astra</code>（开源）</strong></td><td>开源</td><td>分支 <code>scarthgap_6.12_v2.3.0</code>，提交 <code>a0344af</code>（2026-04-14）</td></tr>
+  <tr><td>Yocto / Poky</td><td>scarthgap 5.0.9</td><td>开源</td><td>内核 6.12.62</td></tr>
+  <tr><td><strong>DLSDK</strong></td><td class="no">⚠️ <strong>不在开源 SDK 里</strong></td><td class="no"><strong>闭源</strong>（<code>LICENSE = CLOSED</code>）</td><td>Synaptics/DisplayLink 单独提供的预编译 <code>libdlsdk.so</code> + 固件包</td></tr>
+  <tr><td>sherpa-onnx</td><td>GitHub k2-fsa</td><td>Apache-2.0</td><td>语音识别/合成推理框架</td></tr>
+  <tr><td>SenseVoice / matcha / silero</td><td>开源预训练模型</td><td>各自协议</td><td>见 §4.2</td></tr>
+  <tr><td>云端对话</td><td>DeepSeek API</td><td>商业 API</td><td>仅对话大脑走云端</td></tr>
+</table></div>
+<div class="note warn">⚠️ <strong>一个必须说清的边界</strong>：Synaptics 在 GitHub 开源的是 <strong>Astra Yocto BSP</strong>（内核、板级支持、多媒体、NPU 运行时）。<strong>DisplayLink 的 DLSDK 不在其中</strong>，是单独提供的闭源二进制，目前需 NDA。据官方应用笔记，<strong>DLSDK（官方名 DisplayLink Direct）计划 2026-08-01 公开发布</strong>，届时这条产品线的开源/产品化门槛会显著降低。</div>
+
+<h3>2.3 我们自己做的部分</h3>
+<div class="scroll"><table>
+  <tr><th>产出</th><th>说明</th></tr>
+  <tr><td><strong><code>meta-dlsdk</code> Yocto layer</strong></td><td>把 DLSDK 打包进 Yocto，含 udev 规则、固件自动升级、依赖收敛</td></tr>
+  <tr><td><strong>4 个显示应用</strong></td><td><code>dl_face</code> / <code>dl_player</code> / <code>dl_clock</code> / <code>dl_edid</code>（全部自研 C 程序）</td></tr>
+  <tr><td><strong>语音终端</strong></td><td><code>astra_voice</code>（C）+ 四层路由（Python）+ 双语字幕守护进程</td></tr>
+  <tr><td><strong>完整可烧录镜像</strong></td><td><code>bitbake astra-media</code> 一条命令产出，沿用原厂烧录流程</td></tr>
+</table></div>
+
+<h3>2.4 测试环境</h3>
+<div class="scroll"><table>
+  <tr><th>项</th><th>说明</th></tr>
+  <tr><td>构建环境</td><td>WSL2 Ubuntu 22.04，Yocto scarthgap</td></tr>
+  <tr><td>交叉编译</td><td>aarch64（<code>gcc-cross</code> 13.3.0）</td></tr>
+  <tr><td>板子连接</td><td>局域网 SSH 直连；外出时经 WireGuard 隧道远程调试</td></tr>
+  <tr><td>测试周期</td><td>2026-07-13 ~ 2026-07-24（约 10 天）</td></tr>
+  <tr><td>数据采集</td><td>帧率取程序内置计数器每 60 s 输出；CPU 用 <code>/proc/stat</code> 前后差值（非 <code>top</code> 单次采样）</td></tr>
+</table></div>
+
+<h2>三 · 多屏能力（重点）</h2>
+
+<h3>3.1 四屏并发实测结果</h3>
+<div class="card">
+<p>DL7400 的 <strong>4 个输出口全部占满</strong>，四路帧数持续增长，无一卡死：</p>
+<div class="scroll"><table>
+  <tr><th>屏</th><th>型号</th><th>厂商 ID</th><th>分辨率</th><th>端口</th><th>实测帧率</th></tr>
+  <tr><td>0</td><td>Sculptor 便携屏（HDMI）</td><td>YCT 0xAC00</td><td>2880×1800 @60</td><td><code>^0</code></td><td><strong>8.7 fps</strong></td></tr>
+  <tr><td>1</td><td>Redmi 27 NU</td><td>XMI 0xB005</td><td>3840×2160 @60</td><td><code>^1</code></td><td><strong>5.8 fps</strong></td></tr>
+  <tr><td>2</td><td>S24D390（三星）</td><td>SAM 0x0B65</td><td>1920×1080 @60</td><td><code>^2</code></td><td class="ok"><strong>15.0 fps</strong>（跑满）</td></tr>
+  <tr><td>3</td><td>Mi Monitor</td><td>XMI 0x27B4</td><td>3840×2160 @60</td><td><code>^3</code></td><td><strong>5.7 fps</strong></td></tr>
+</table></div>
+</div>
+
+<h3>3.2 带宽分摊规律（三屏 → 四屏）</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>配置</th><th>4K 屏帧率</th><th>1080p 屏帧率</th></tr>
+  <tr><td>三屏（4K + 1080p + 4K）</td><td><strong>7.2 fps</strong></td><td>15.0 fps</td></tr>
+  <tr><td>四屏（2880×1800 + 4K + 1080p + 4K）</td><td><strong>5.8 fps</strong></td><td>15.0 fps</td></tr>
+  <tr><td>变化</td><td class="no"><strong>↓ 约 20%</strong></td><td>不变（已跑满设定上限）</td></tr>
+</table></div>
+<p><strong>结论</strong>：USB 3.0（5 Gbps）总吞吐基本恒定，<strong>新增屏只是摊薄每路份额</strong>，不是线性劣化。1080p 屏因像素量小，始终能跑满程序设定的 15 fps 上限。</p>
+</div>
+
+<h3>3.3 视频播放能力（瓶颈定位）</h3>
+<div class="card">
+<p>4K VP9 → 1080p，150 帧实测：</p>
+<div class="scroll"><table>
+  <tr><th>管线阶段</th><th>耗时</th><th>帧率</th><th>说明</th></tr>
+  <tr><td>纯硬件解码 4K VP9</td><td>1.35 s</td><td class="ok"><strong>111 fps</strong></td><td>解码毫无压力</td></tr>
+  <tr><td>＋软件 <code>videoconvert/videoscale</code></td><td>17.55 s</td><td class="no">8.5 fps</td><td>❌ 浪费 94% 时间</td></tr>
+  <tr><td>＋硬件 <code>synavideoconvertscale</code></td><td>5.63 s</td><td class="ok"><strong>31.9 fps</strong></td><td>✅ 快 3.7 倍，管线上限</td></tr>
+  <tr><td>＋<code>appsink sync=true</code></td><td>—</td><td>17.6 fps</td><td>按时间戳节流</td></tr>
+  <tr><td>＋推送到 DL7400</td><td>—</td><td class="no"><strong>7.4 fps</strong></td><td>★ <strong>真正的瓶颈在 DL 推流</strong></td></tr>
+</table></div>
+<p><strong>摄像头实况</strong>：C920 MJPEG 720p30 → 推 4K 屏，实测 <strong>7.0 fps</strong>。</p>
+</div>
+
+<h3>3.4 ⚠️ 一个必须澄清的误导性数据</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>内容类型</th><th>分辨率</th><th>帧率</th></tr>
+  <tr><td><strong>真实视频</strong>（4K VP9 → 1080p）</td><td>1920×1080</td><td><strong>7.4 fps</strong></td></tr>
+  <tr><td>合成测试图（仅一根竖条在动）</td><td>1920×1080</td><td class="no">60.3 fps ⚠️ <strong>不可用于规划</strong></td></tr>
+</table></div>
+<div class="note bad">DisplayLink 的 DL3+ 压缩<strong>只传变化区域</strong>。合成测试图几乎不传数据 → 假高帧率；真实视频每帧全变 → 只有 1/8。<strong>早期基于合成图的 60fps 结论已作废。</strong></div>
+</div>
+
+<h3>3.5 性能定位</h3>
+<div class="scroll"><table>
+  <tr><th>用途</th><th>可行性</th></tr>
+  <tr><td>数字标牌 / 看板 / 仪表盘 / 时钟（低变化内容）</td><td class="ok">✅ <strong>很合适</strong>，DL3+ 压缩优势正好发挥</td></tr>
+  <tr><td>交互界面 / 字幕 / 状态显示</td><td class="ok">✅ 很合适</td></tr>
+  <tr><td>摄像头监控画面</td><td>⚠️ 7 fps，可用但不流畅</td></tr>
+  <tr><td>全屏流畅视频 / 视频墙</td><td class="no">❌ <strong>7.4 fps，不可用</strong></td></tr>
+</table></div>
+
+<h2>四 · 语音交互能力</h2>
+
+<h3>4.1 系统架构</h3>
+<div class="arch">[视觉] C920 摄像头 → NPU 人体检测(25ms/帧) → 人走近 → 自动打招呼
+
+[语音] C920 麦克风 → silero VAD 断句 → SenseVoice ASR (CPU)
+                                            ↓
+                                    四层路由决策
+                                    ① 本地音量指令   → amixer 真的执行
+                                    ② 本地设备指令   → 时间/温度/内存/切屏
+                                    ③ 联网实时搜索   → 搜索 API + 事实接地
+                                    ④ 云端对话       → DeepSeek
+                                            ↓
+                                    matcha TTS (CPU) → 功放播放
+
+[显示] 表情脸 + 中英双语实时字幕 → DL7400 多屏
+       可语音切换某块屏显示摄像头实况</div>
+
+<h3>4.2 端侧模型性能实测</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>环节</th><th>模型</th><th>实测指标</th><th>位置</th></tr>
+  <tr><td>人体检测</td><td>mobilenet224_full1</td><td><strong>25 ms/帧</strong></td><td class="ok">NPU</td></tr>
+  <tr><td>语音断句</td><td>silero VAD</td><td>实时</td><td>CPU</td></tr>
+  <tr><td>语音识别</td><td>SenseVoice <strong>int8</strong></td><td class="ok"><strong>RTF 0.197</strong>（4 线程）= <strong>5 倍实时余量</strong></td><td>CPU</td></tr>
+  <tr><td>语音合成</td><td>matcha + vocos</td><td class="ok"><strong>RTF 0.37</strong>（热合成）</td><td>CPU</td></tr>
+  <tr><td>本地兜底 LLM</td><td>Qwen2.5-0.5B Q8_0</td><td>19.6 tok/s</td><td>CPU</td></tr>
+  <tr><td>云端对话</td><td>DeepSeek</td><td>—</td><td>云端</td></tr>
+</table></div>
+<p><strong>ASR 线程扩展性</strong>：1 线程 RTF 0.626 → 2 线程 0.338 → <strong>4 线程 0.197</strong>（接近线性）。</p>
+<p><strong>量化收益</strong>（SenseVoice fp32 → int8）：速度 <strong>快 1.45×</strong>，内存 <strong>省 3.3×</strong>（1287 MB → 393 MB）。</p>
+<p><strong>TTS 选型迭代</strong>：melo RTF 2.05（不可用）→ matcha RTF 0.37，<strong>提速 5.5 倍</strong>。</p>
+</div>
+
+<h3>4.3 端到端响应时间</h3>
+<div class="scroll"><table>
+  <tr><th>场景</th><th>实测</th></tr>
+  <tr><td>本地指令（时间 / 音量 / 切屏）</td><td class="ok"><strong>即时</strong>（零云端往返）</td></tr>
+  <tr><td>云端对话一轮</td><td><strong>5 ~ 12 秒</strong>（视回答长度）</td></tr>
+  <tr><td>联网实时问题（如天气）</td><td><strong>约 5 秒</strong>（搜索 2.3 s ＋ LLM）</td></tr>
+  <tr><td>TTS 首句发声</td><td>流式播报，<strong>首句约 1 秒</strong>（不等整段生成）</td></tr>
+</table></div>
+
+<h3>4.4 已实现功能清单</h3>
+<div class="scroll"><table>
+  <tr><th>功能</th><th>状态</th><th>实测示例</th></tr>
+  <tr><td>中英双语语音识别</td><td class="ok">✅</td><td>SenseVoice 中英混合</td></tr>
+  <tr><td>云端智能对话</td><td class="ok">✅</td><td>「你是谁」→「我是 Astra 语音助手」</td></tr>
+  <tr><td><strong>联网实时数据</strong></td><td class="ok">✅</td><td>「今天广州天气」→「多云到晴，26℃ 到 35℃」<strong>真实数据</strong></td></tr>
+  <tr><td>本地设备查询</td><td class="ok">✅</td><td>「现在几点」→ 真实系统时钟</td></tr>
+  <tr><td>语音控制音量</td><td class="ok">✅</td><td>「音量调到 20%」→ 实际生效</td></tr>
+  <tr><td>语音切换屏幕内容</td><td class="ok">✅</td><td>「打开摄像头」→ 指定屏切实况画面</td></tr>
+  <tr><td>视觉唤醒</td><td class="ok">✅</td><td>人走近自动播欢迎语</td></tr>
+  <tr><td><strong>中英双语实时字幕</strong></td><td class="ok">✅</td><td>屏上「你说 / Astra」两行中英对照</td></tr>
+  <tr><td>断网兜底</td><td class="ok">✅</td><td>自动回落本地 0.5B 模型</td></tr>
+  <tr><td>断电重启全恢复</td><td class="ok">✅</td><td>含一次非计划断电验证</td></tr>
+</table></div>
+
+<h3>4.5 幻觉抑制（技术亮点）</h3>
+<div class="card">
+<p>实测发现：某国产大模型的"联网搜索"工具<strong>并不真正工作</strong> —— 返回搜索结果 0 条，但模型<strong>照样编造出一个气温</strong>（编 15~25℃ / 18~28℃，真实 28~36℃，且两个模型互相矛盾）。</p>
+<p><strong>我们的做法</strong>：改调独立搜索 API 拿到真实网页内容，再配"只根据这些资料回答，绝对不许编造数字"的接地提示词。搜不到时，天气 / 股价这类<strong>硬实时问题直接说查不到，不回落</strong>。</p>
+<div class="note"><strong>效果</strong>：实时数据问答<span class="ok">零编造</span>。</div>
+</div>
+
+<h2>五 · 资源占用</h2>
+<div class="scroll"><table>
+  <tr><th>场景</th><th>CPU（4 核合计，100% = 单核满载）</th></tr>
+  <tr><td>优化前（3 屏 + 语音待机）</td><td>52.5%</td></tr>
+  <tr><td><strong>优化后</strong>（同配置）</td><td class="ok"><strong>21.7%</strong></td></tr>
+  <tr><td>当前（2×4K + 1×2880×1800 三屏）</td><td>dl_face 167% + astra_voice 110%</td></tr>
+</table></div>
+<p><strong>优化手段</strong>：显示刷新率 15 fps → 5 fps（像素搬运 311 → 104 MB/s）；视觉检测循环加节流（背靠背连跑 → 0.5 s 间隔）。</p>
+<div class="note warn">三块屏含两块 4K 时像素搬运约 436 MB/s，CPU 占用相应升高 —— <strong>屏数和分辨率是主要成本</strong>。</div>
+
+<h2>六 · 工程交付</h2>
+<div class="scroll"><table>
+  <tr><th>交付物</th><th>内容</th></tr>
+  <tr><td><strong>Yocto layer <code>meta-dlsdk</code></strong></td><td>一层搞定：DLSDK + 依赖 + 应用 + 服务 + 字体</td></tr>
+  <tr><td><strong>完整可烧录镜像</strong></td><td>2.5 GB，烧完开机即用（另需灌模型 + 填 API key）</td></tr>
+  <tr><td>显示应用</td><td><code>dl_face</code>（表情+字幕）/ <code>dl_player</code>（视频）/ <code>dl_clock</code>（时钟）/ <code>dl_edid</code>（诊断）</td></tr>
+  <tr><td>语音应用</td><td><code>astra_voice</code>（主程序）+ <code>astra_llm.py</code>（四层路由）+ <code>astra_translate.py</code>（双语字幕）</td></tr>
+  <tr><td>文档</td><td>项目总结、烧录说明、备份恢复手册、DisplayLink 问题报告（中英双语）</td></tr>
+</table></div>
+<p><strong>构建方式</strong>：<code>bitbake astra-media</code> 即产出含全部功能的镜像，沿用原厂烧录流程。</p>
+
+<h2>七 · 关键技术结论（供内部复用）</h2>
+
+<h3>7.1 DL7400 集成</h3>
+<div class="card">
+<ol>
+  <li><strong>DLSDK 是纯用户态 libusb</strong>，无需内核模块，<code>meta-dlsdk</code> 直接编译即可</li>
+  <li><strong>必须 USB 3.0</strong> —— USB 2.0 下 SDK 直接拒绝驱动</li>
+  <li><strong>绝不能盲信 <code>preferred_mode</code></strong> —— 某显示器 EDID 报 4K@160Hz 为首选，DL7400 喂不动，推屏<strong>永久阻塞</strong>。必须钳制 ≤60 Hz</li>
+  <li><strong>DLSDK 单进程独占</strong> —— 一个进程握着设备，第二个进程枚举到 0 个</li>
+  <li><strong>不能把桌面扩展到这些屏</strong> —— DLSDK 是"推像素"API，没有 DRM/KMS 节点，必须自己写程序渲染。对内容墙场景反而更可控</li>
+</ol>
+</div>
+
+<h3>7.2 判断"屏到底通没通"要看帧数，不能靠肉眼</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>现象</th><th>含义</th><th>解法</th></tr>
+  <tr><td>帧数<strong>冻结</strong></td><td>链路卡死</td><td>降刷新率 / USB 深度复位</td></tr>
+  <tr><td>帧数<strong>在涨但屏黑</strong></td><td>链路正常，显示器输入源没切对</td><td>按屏上 OSD 切 Input Source</td></tr>
+</table></div>
+<div class="note bad"><strong>两者原因和解法完全不同，混为一谈会浪费大量时间。</strong></div>
+</div>
+
+<h3>7.3 语音侧</h3>
+<div class="card">
+<ol>
+  <li><strong>NPU 只对视觉有用</strong> —— 语音链路全在 CPU（Synaptics 自己的语音示例也是）</li>
+  <li><strong>量化收益因模型而异</strong>，必须逐个实测（SenseVoice int8 快 1.45×，但 VITS int8 反而慢 1.9×）</li>
+  <li><strong>纯能量门槛无法区分人声和环境噪音</strong> —— 实测办公室底噪 RMS 575~713，人声 470~1170，<strong>两者重叠</strong>。远场场景根治方案是唤醒词</li>
+</ol>
+</div>
+
+<h2>八 · 已知限制与后续计划</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>问题</th><th>影响</th><th>计划</th></tr>
+  <tr><td>1</td><td><strong>环境噪音误触发</strong></td><td>嘈杂环境下需靠近麦（30 cm 内）</td><td>接入 KWS 唤醒词（素材已就绪）</td></tr>
+  <tr><td>2</td><td><strong>显示器断电后不自动重亮</strong></td><td>需语音指令或重启服务恢复</td><td>已提问题报告给 DisplayLink</td></tr>
+  <tr><td>3</td><td><strong>无回声消除（AEC）</strong></td><td>播报时靠丢采集帧规避</td><td>待评估</td></tr>
+  <tr><td>4</td><td><strong>板载麦克风驱动问题</strong></td><td>现用 USB 麦替代</td><td>需 Synaptics FAE 支持</td></tr>
+  <tr><td>5</td><td><strong>TTS 授权</strong></td><td>espeak-ng 为 GPLv3，穿透整条链路</td><td class="no"><strong>产品化前必须解决</strong></td></tr>
+  <tr><td>6</td><td>新镜像未整板实烧验证</td><td>—</td><td>待执行</td></tr>
+</table></div>
+
+<h3>DL7400 断电不自愈问题（已提报厂商）</h3>
+<div class="card">
+<p>实测发现 SDK 三个层面的问题，已写中英双语报告：</p>
+<ol>
+  <li>热插拔回调注册<strong>恒失败</strong>，显示器接入 / 移除事件从未送达</li>
+  <li>EDID / 首选模式 / 显示器数量<strong>全是缓存</strong>，屏断电了照样返回成功</li>
+  <li>唯一能反映现实的 AUX 读取接口，<strong>在并发推帧时会让该设备所有输出一起黑屏</strong></li>
+</ol>
+<div class="note bad"><strong>结论</strong>：SDK 层面目前没有安全的在线检测手段。</div>
+</div>
+
+<h2>九 · 商业化定位建议</h2>
+<div class="card">
+<h4 class="ok">适合</h4>
+<ul>
+  <li>多屏数字标牌 / 商场导购屏 / 展厅内容墙</li>
+  <li>语音交互终端（前台接待、导览、智能看护）</li>
+  <li>低变化内容的多屏仪表盘 / 监控看板</li>
+</ul>
+<h4 class="no">不适合</h4>
+<ul>
+  <li>视频墙 / 多路视频监控回放（帧率不够）</li>
+  <li>需要桌面扩展的办公场景（DLSDK 不提供 DRM/KMS）</li>
+</ul>
+<div class="note"><strong>成本优势</strong>：一颗 SL1680 + 一个 DL7400 即可驱动 4 屏，且语音 AI 全部端侧运行（仅对话大脑走云端），<strong>无需 GPU 或额外 PC</strong>。</div>
+</div>
+
+<div class="foot">生成于 2026-07-24 · SL1680 + DL7400 内部成果汇报 · 中文版</div>
+
+</div>
+</body>
+</html>

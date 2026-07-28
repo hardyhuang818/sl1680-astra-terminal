@@ -1,0 +1,37 @@
+[Unit]
+Description=DL7400 时钟 + 跑马灯 (DisplayLink 自动显示)
+# 等 udev 把 USB 设备枚举好
+After=systemd-udev-settle.service local-fs.target
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=simple
+Environment=LD_LIBRARY_PATH=/usr/lib
+# 时区：镜像里 /usr/share/zoneinfo/Asia/ 是空的（没装完整 tzdata），
+# 所以用 POSIX TZ 字符串。CST-8 = UTC+8（POSIX 里符号是反的）= 北京时间。
+Environment=TZ=CST-8
+# --wait  : 开机时 DL7400 可能还没枚举好，程序内部循环等待，不会直接退出
+# --speed : 跑马灯速度(字/秒)，与帧率解耦。想更慢就调小(如 5)
+# --max-hz: 模式刷新率上限。★关键★ 不能盲从 preferred_mode ——
+#           实测 Mi Monitor 的 preferred 是 4K@160Hz，DL7400+USB3(5Gbps) 喂不动，
+#           会让 wait_on_show 永久阻塞(死卡 7 帧)。限到 60Hz 后正常。
+# 不带 --screen = 【所有】接上的屏一起点亮(1080p/4K 各自按自己分辨率排版)
+ExecStart=/usr/bin/dl_clock --wait --fps 15 --speed 15 --max-hz 60
+
+# 干净停止：SIGINT 让程序走 teardown（不 teardown 设备会卡死）
+KillSignal=SIGINT
+TimeoutStopSec=15
+
+# 断线/异常自动重来（拔插 DL7400、显示器热插拔都能自恢复）
+Restart=always
+RestartSec=5
+
+# 万一上一次没干净退出导致设备卡死，起来前先做一次 USB 深度复位
+# （authorized 复位无效，必须 unbind/bind usb 驱动 —— 实测结论）
+ExecStartPre=-/usr/bin/dl-clock-reset.sh
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

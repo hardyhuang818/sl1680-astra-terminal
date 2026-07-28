@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>电容触觉手指方案调研 · SL1680 · 2026-07-24</title>
+<style>
+  :root{
+    --ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;
+    --rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;
+    --good:#1F6B4A;--good-bg:#E5F3EC;--bad:#A8305A;--bad-bg:#FBE9EF;--warn:#B06A12;--warn-bg:#FDF3E3;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;
+    --rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;
+    --good:#5FBF8F;--good-bg:#122A1E;--bad:#E06A92;--bad-bg:#2E151F;--warn:#E8A33D;--warn-bg:#2B2114;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 100px}
+  .mast{border-bottom:2px solid var(--ink);padding:40px 0 20px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(23px,4vw,34px);line-height:1.2;margin:0 0 14px;font-weight:680}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;gap:20px;flex-wrap:wrap}
+  .lead{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;margin-top:16px;font-size:14.5px;color:var(--ink-2)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:46px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:640}
+  h4{font-size:14.5px;margin:18px 0 6px;font-weight:640;color:var(--ink-2)}
+  p{margin:0 0 12px} ul,ol{margin:0 0 12px;padding-left:22px} li{margin-bottom:5px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  a{color:var(--accent)}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:13px 15px;overflow-x:auto;margin:0 0 16px;color:var(--ink-2)}
+  .scroll{overflow-x:auto;margin:0 0 16px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:0 0 16px;font-size:14px}
+  .note.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .note.good{border-left-color:var(--good);background:var(--good-bg)}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:2px 18px 14px;margin:0 0 16px}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono)}
+  .arch{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);padding:14px 16px;border-radius:4px;overflow-x:auto;margin:0 0 16px;line-height:1.7;white-space:pre}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">SL1680 · 电容触觉手指 · 方案调研</p>
+  <h1>用 Synaptics 现成 Touch IC 做机器人手指触觉皮肤</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-07-24</span>
+    <span><b>目标</b> 电容触碰 + Force Touch 压力 · 识别物体与手指压力</span>
+  </div>
+  <div class="lead"><strong>结论：可行，且对我们有独家顺风。</strong>"电容+力"一体的 Synaptics 现成器件存在（ForcePad / S788x / ClearForce）；开源界早就用"电容阵列+硅胶皮肤"做机器手指（iCub，层叠可直接抄，<strong>原论文中文整理见 Finger 目录</strong>）；我们镜像里已带 <code>kernel-module-synaptics-tcm2</code> 驱动——同厂 SoC + 同厂 touch IC，FAE 一条线打通。</div>
+</header>
+
+<h2>一 · 需求拆解：三种感知，一套电极</h2>
+<div class="scroll"><table>
+  <tr><th>要什么</th><th>电容学上是什么</th><th>谁来做</th></tr>
+  <tr><td><strong>摸到物体</strong>（接触检测/定位）</td><td>互电容矩阵扫描，触点坐标 + 接触面形状</td><td>任何投射电容 touch IC 的本职工作</td></tr>
+  <tr><td><strong>物体识别</strong>（轮廓/材质线索）</td><td>原始电容图（heatmap）→ 触觉图像</td><td>IC 的 raw report 模式 + NPU 分类</td></tr>
+  <tr><td><strong>手指压力</strong>（force touch）</td><td>三条实现路，见第三节</td><td>ForcePad/ClearForce 类器件，或结构设计实现</td></tr>
+  <tr><td>（白送）<strong>接近感应</strong></td><td>自电容 hover，接触前几 mm 可探测</td><td>S788x 明确带；手机 IC 的 face detect 同原理</td></tr>
+</table></div>
+
+<h2>二 · Synaptics 器件盘点（现成 Touch IC 路线）</h2>
+<div class="scroll"><table>
+  <tr><th>器件/技术</th><th>是什么</th><th>对本方案的价值</th><th>可信度</th></tr>
+  <tr><td><strong>ForcePad / TM 系列模块</strong></td><td>笔记本电容触控板，<strong>5 指独立压力、最高 1000 g、6-bit 力分辨率</strong></td><td class="ok">★最快 PoC：现成模块含力感应，贴指腹直接用</td><td>官方产品页</td></tr>
+  <tr><td><strong>S788x（汽车款）</strong></td><td>车规触屏控制器，<strong>接近感应 + ClearForce 力感应</strong>同芯片</td><td class="ok">★接近+接触+力三合一，正是手指要的全套</td><td>官方新闻稿</td></tr>
+  <tr><td><strong>ClearForce</strong></td><td>第三代力感应技术（60+ 专利），小米 Mi 5s 量产</td><td>力感应<strong>设计方法学</strong>：压缩介电层→电容变化→力</td><td>官方/媒体</td></tr>
+  <tr><td><strong>S3908/S3909</strong>（你点名的）</td><td>ClearPad 旗舰 OLED 屏控制器，<strong>柔性/on-cell</strong>，带 face detect（=接近）、side touch</td><td>柔性 sensor 支持强 → 适合<strong>贴曲面指尖的定制 FPC</strong>；⚠️ 为大面积手机屏优化，小电极阵列属超范围使用，需 FAE 确认</td><td>官方新闻稿</td></tr>
+  <tr><td><strong>TM-1949（ISD 触控板）</strong></td><td>Case41 官方 PoC 在 SL1680 上用的触控板</td><td>证明<strong>同厂触控模块在这块板上已跑通</strong>；是否带力需问 FAE（规格不公开）</td><td>Case41 资料</td></tr>
+  <tr><td>S8800</td><td>Case41 恒温器方案框图里的触控 IC</td><td>家电级触控在 Astra 生态的既有位置</td><td>Case41 资料</td></tr>
+  <tr><td>TD7800</td><td>本项目已跑通的触控+LVDS（<code>meta-tcm2-touch</code>）</td><td class="ok"><strong>驱动栈证据</strong>：TouchComm 内核驱动已在我们镜像里</td><td>本项目实测</td></tr>
+</table></div>
+<div class="note warn">⚠️ <strong>诚实标注</strong>：手机屏 IC（S3908 类）用在指尖小电极阵列上是"超范围使用"，官方支持度、最小 sensor 面积、异形 FPC 设计规则都是未公开信息——正是同厂 FAE 能解的问题（清单见第七节）。选型顺位建议：<strong>ForcePad/TM 模块（现成含力）→ S788x（接近+力）→ S3908（定制柔性 sensor）</strong>。</div>
+
+<h2>三 · 手指传感器 + 皮肤的结构设计</h2>
+
+<h3>3.1 层叠结构（照 iCub 指尖 + ClearForce 原理拼装）</h3>
+<div class="arch">        ┌─ 可选：导电外层（碳黑硅胶/导电织物）= 屏蔽 + force 参考电极
+        ├─ 硅胶"皮肤" 1~3mm（Ecoflex/Dragon Skin/硅胶泡棉）
+        │    = 保护 + 摩擦面 + 【可压缩介电层】← force 的来源
+        ├─ FPC 柔性电极阵列（互电容矩阵，间距 2~4mm）
+        │    卷贴在指尖曲面上（S3908 类 IC 本就为柔性屏设计）
+        ├─ 3D 打印指尖内芯（刚性支撑，兼走线通道）
+        └─ Touch IC 就近放指根/掌部，I2C/SPI 出数</div>
+
+<h3>3.2 力感应的三条实现路（按上手难度排序）</h3>
+<div class="scroll"><table>
+  <tr><th>路线</th><th>原理</th><th>硬件改动</th><th>精度</th></tr>
+  <tr><td><strong>① 伪力：接触面积+信号强度</strong></td><td>软皮肤越压越扁 → 接触斑变大、耦合变强；IC 本来就报 <code>ABS_MT_TOUCH_MAJOR</code>/<code>ABS_MT_PRESSURE</code></td><td class="ok"><strong>零</strong>——现成模块开箱即得</td><td>定性～半定量，抓取控制够用</td></tr>
+  <tr><td><strong>② 真力：压缩介电层（ClearForce 式）</strong></td><td>皮肤下电极对参考层的距离随力压缩 → 基线电容涨幅 ∝ 力</td><td>层叠加导电参考层；需 IC 支持力通道（ForcePad/S788x 原生支持）</td><td>定量（ForcePad 标称到 1000 g）</td></tr>
+  <tr><td><strong>③ 混合三段：接近→接触→力</strong></td><td>hover 自电容（没碰到）→ 互电容触点（碰到了）→ 力通道（多用力）</td><td>同②</td><td>抓取全流程状态机</td></tr>
+</table></div>
+<div class="note">抓取控制其实①就够：<strong>舵机闭合 → 触点出现停止逼近 → 面积/信号达阈值即"捏稳"</strong>。iCub 用 12 电极的定性压力抓了十几年东西。②是产品化再上的台阶。</div>
+
+<h3>3.3 皮肤材料要点（iCub 论文实战配方，详见中文整理）</h3>
+<div class="card">
+<ul>
+  <li>介电层：<strong>硅胶泡棉</strong>（iCub 用 Smooth-On Soma Foama 15，约 2mm）——轻触即压缩=低压高灵敏；泡棉气泡压实后变硬=非线性扩量程</li>
+  <li>外层导电皮：<strong>碳黑掺硅胶</strong>（iCub：CAF4 硅胶 + Vulcan XC72 碳黑，喷涂）——接地，兼做屏蔽（抗杂散电容）和 force 参考电极</li>
+  <li>皮肤厚度是灵敏度/量程的旋钮：越薄越灵敏、越厚量程越大</li>
+  <li>指尖曲率小 → FPC 电极间距 2mm 起步，走线留指背侧</li>
+  <li>⚠️ 泡棉有<strong>迟滞/蠕变</strong>（iCub 实测确认）——做控制阈值没问题，做精确力标定要选低迟滞介电或加补偿</li>
+</ul>
+</div>
+
+<h2>四 · 开源与商用参考（抄谁的作业）</h2>
+<div class="scroll"><table>
+  <tr><th>方案</th><th>类型</th><th>关键信息</th></tr>
+  <tr><td><strong>iCub 指尖</strong>（IIT，开源）</td><td>电容 12 电极/指尖</td><td>flex PCB 卷 3D 打印内芯 + AD7147 CDC（I2C，仅 4 线出指尖）+ 硅泡棉 + 碳黑外层；每手 108 触元。<strong>层叠直接可抄</strong>，把 AD7147 换成 Synaptics IC 即"同构升级"。<a href="Finger/iCub指尖触觉传感器_论文中文整理_2026-07-24.html">→ 原论文中文整理</a></td></tr>
+  <tr><td>Large Scale Capacitive Skin（IIT）</td><td>大面积电容皮肤</td><td>三角形模块化 flex PCB，证明电容皮肤可铺满整机</td></tr>
+  <tr><td><strong>Robotiq TSF-85</strong></td><td>商用电容指尖</td><td>夹爪指尖电容阵列：压力+振动+本体感觉，抓取/滑移检测——商用形态标杆</td></tr>
+  <tr><td>PPS（Pressure Profile Systems）</td><td>商用电容触觉阵列</td><td>RoboTouch/FingerTPS 系列，机器人手指/穿戴手套，量产级（iCub 论文亦引用）</td></tr>
+  <tr><td>前接触接近减速（文献共识）</td><td>电容/光学接近</td><td>接触前降速——电容方案白送的能力，抓鸡蛋场景的关键</td></tr>
+</table></div>
+
+<h2>五 · SL1680 侧软件路径（全部现成）</h2>
+<div class="arch">Touch IC (I2C, J32 pin3/5)
+   │  内核: synaptics tcm2 / rmi4 / hid-multitouch —— tcm2 已在镜像里
+   ▼
+/dev/input/eventX ── 触点坐标 / ABS_MT_PRESSURE / TOUCH_MAJOR
+   │                    └─► 抓取控制环: 舵机(PCA9685,已购)闭合 → 压力阈值 → 停/保持
+   ▼
+TouchComm raw report 模式（诊断接口，FAE 提供文档）
+   └─► 原始电容 heatmap = 触觉图像
+        └─► SyNAP NPU 分类（与视觉人体检测同一条推理路径）
+             = "摸出来这是圆柱/边缘/布料" —— 触觉物体识别</div>
+<div class="card">
+<ul>
+  <li><strong>事件层</strong>：<code>evtest</code> 看 <code>/dev/input/event*</code>；Python 标准库直接读 input 事件结构体（无 pip 依赖）</li>
+  <li><strong>抓取环与语音集成</strong>：<code>astra_llm.py</code> <code>try_device()</code> 加「抓一下/松开/轻一点」分支——与已购 PCA9685A+MG90S 舵机方案拼成闭环：<strong>电容皮肤=传感，舵机=执行，语音/视觉=大脑，全在一块 SL1680 上</strong></li>
+  <li><strong>触觉图像上 NPU</strong>：触觉 heatmap 本质是低分辨率图像，与 Case41 官方 SyNAP 视觉推理同一条路径</li>
+</ul>
+</div>
+
+<h2>六 · 落地三步</h2>
+<div class="scroll"><table>
+  <tr><th>阶段</th><th>做什么</th><th>硬件</th><th>验证目标</th></tr>
+  <tr><td><strong>PoC-0（1 周内）</strong></td><td>现成 Synaptics 触控板模块（TM-1949 同款/任意 TM 模块）平贴"指腹"，I2C 接 J32</td><td>现成模块</td><td>板上读到触点+压力事件；「摸到了/捏多紧」语音播报</td></tr>
+  <tr><td><strong>PoC-1（定制指尖）</strong></td><td>照 iCub 层叠做曲面 FPC 指尖 + 硅胶皮肤，接 Synaptics IC（FAE 选型）</td><td>定制 FPC + 3D 打印 + 硅胶</td><td>曲面触觉图像 + 伪力抓取环</td></tr>
+  <tr><td><strong>产品化</strong></td><td>ClearForce 式真力层（S788x/ForcePad 通道）+ NPU 触觉识别</td><td>定制 sensor + 力参考层</td><td>定量压力 + 物体识别</td></tr>
+</table></div>
+
+<h2>七 · 留给 Synaptics FAE 的问题清单</h2>
+<div class="card">
+<ol>
+  <li><strong>TM-1949 是否带力感应通道</strong>？规格书/评估文档</li>
+  <li><strong>ForcePad TM 模块</strong>能否零售/样片渠道；I2C 协议文档（RMI4/TouchComm？）</li>
+  <li><strong>S788x</strong>（接近+力）评估套件；非车载小批量可行性</li>
+  <li><strong>S3908 用于小面积异形 FPC sensor</strong> 的设计规则：最小电极数/面积、sensor 设计支持</li>
+  <li><strong>TouchComm raw report（电容 heatmap）模式</strong>的接口文档——触觉图像的关键</li>
+  <li>ClearForce 力层的<strong>参考层叠设计</strong>（介电材料/厚度/量程标定方法）</li>
+</ol>
+<div class="note good">沟通抓手：Case41 的 Tony Antonacci 线（官方 PoC 就在 SL1680 上用了 ISD 触控板），加上我们已跑通 TD7800 触控的事实——不是从零开始的对话。</div>
+</div>
+
+<h2>Sources</h2>
+<div class="card" style="font-size:13px">
+<ul>
+  <li><a href="https://www.synaptics.com/products/touchpad-family/forcepad-product">Synaptics ForcePad 产品页</a> · <a href="https://drivers.synaptics.com/products/touchpad-family/forcepad">ForcePad 方案页</a> · <a href="https://patents.google.com/patent/US20110227872A1/en">电容力感应专利 US20110227872A1</a></li>
+  <li><a href="https://www.synaptics.com/company/news/S788x-automotive-touchscreen-controllers">S788x：接近感应+力感应</a> · <a href="https://venturebeat.com/business/synaptics-clearforce-technology-lets-you-press-down-on-smartphone-glass-for-more-control/">ClearForce 发布</a> · <a href="https://www.synaptics.com/company/news/xiaomi-mi5s-tddi-clearforce">小米 Mi 5s ClearForce 量产</a></li>
+  <li><a href="https://www.synaptics.com/company/news/S3908-09">S3908/S3909 官方发布</a> · <a href="https://www.synaptics.com/company/news/juneau-touch-controller-flexible-foldable-oled">折叠屏触控 Juneau</a></li>
+  <li><a href="https://www.researchgate.net/publication/221066631_A_tactile_sensor_for_the_fingertips_of_the_humanoid_robot_iCub">iCub 指尖触觉论文</a>（本地 PDF：<code>Finger/schmitz2010iros.pdf</code>，<a href="Finger/iCub指尖触觉传感器_论文中文整理_2026-07-24.html">中文整理</a>）· <a href="https://cdn.intechopen.com/pdfs/40053/InTech-Large_scale_capacitive_skin_for_robots.pdf">Large Scale Capacitive Skin</a></li>
+  <li><a href="https://robotiq.com/tactile-sensor-fingertips">Robotiq 触觉指尖</a> · <a href="https://pressureprofile.com/tactile-sensor-in-robotics">PPS 机器人触觉</a> · <a href="https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2021.704416/full">触觉传感器实测对比（Frontiers）</a></li>
+</ul>
+</div>
+
+<div class="foot">生成于 2026-07-24 · SL1680 电容触觉手指方案调研 · 配套 MD 同名 · iCub 论文中文整理在 Finger/ 目录</div>
+
+</div>
+</body>
+</html>

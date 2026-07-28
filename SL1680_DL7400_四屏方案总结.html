@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 + DL7400 多屏扩展 · 完整总结</title>
+<style>
+  :root{
+    --bg:#fff; --fg:#1a1d21; --muted:#5c6570; --line:#e3e8ee;
+    --card:#f7f9fc; --accent:#0b6bcb; --ok:#0a7c42; --warn:#b45309; --bad:#c0392b;
+    --code-bg:#f4f6f9;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0f1419; --fg:#e6e9ed; --muted:#9aa5b1; --line:#242b33;
+           --card:#161c23; --accent:#4d9fe8; --ok:#3ecf8e; --warn:#e0a24a; --bad:#f0736a;
+           --code-bg:#131920; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 22px 100px}
+  h1{font-size:1.95rem;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:.9rem;margin-bottom:4px}
+  h2{font-size:1.32rem;margin:46px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:1.06rem;margin:26px 0 10px}
+  p{margin:12px 0}
+  code{background:var(--code-bg);padding:2px 6px;border-radius:4px;
+       font:.87em/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+      padding:14px 16px;overflow-x:auto;margin:14px 0}
+  pre code{background:none;padding:0;font-size:.84rem;line-height:1.6}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:.92rem;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--card);font-weight:600}
+  .verdict{border-radius:10px;padding:18px 22px;margin:24px 0;
+           background:linear-gradient(135deg,rgba(10,124,66,.10),rgba(11,107,203,.08));
+           border:1px solid var(--ok);border-left:5px solid var(--ok)}
+  .verdict .big{font-size:1.2rem;font-weight:700;color:var(--ok)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:18px 0}
+  .key{border-left:5px solid var(--accent)}
+  .warn{border-left:5px solid var(--warn)}
+  .bad{border-left:5px solid var(--bad)}
+  .good{border-left:5px solid var(--ok)}
+  .ok{color:var(--ok);font-weight:600}
+  .no{color:var(--bad);font-weight:600}
+  .wa{color:var(--warn);font-weight:600}
+  ul{padding-left:22px} li{margin:6px 0}
+  ol{padding-left:22px} ol li{margin:8px 0}
+  blockquote{border-left:4px solid var(--warn);margin:14px 0;padding:8px 0 8px 16px;color:var(--muted);
+             background:rgba(180,83,9,.05)}
+  .pit{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--bad);
+       border-radius:8px;padding:14px 18px;margin:16px 0}
+  .pit h3{margin-top:0;color:var(--bad)}
+  hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>SL1680 + DL7400 多屏扩展 · 完整总结</h1>
+<div class="sub">2026-07-17 · 全部结论均来自 <b>DL7400 EVK 真机实测</b>（非纸面推导）</div>
+<div class="sub">硬件：SL1680 (Dolphin RDK) + DL7400 EVK (Redwood-8Gb) + 4 台显示器</div>
+
+<div class="verdict">
+  <div class="big">✅ 4 个屏实测跑通，不需要写任何内核驱动</div>
+  <p style="margin-bottom:0">2880×1800 + 4K + 1080p + 4K 混合分辨率同时点亮。<br>
+  <span class="no">❌ 但别人拿默认 SL1680 镜像 + DL7400 EVK 插上去，什么都不会发生</span> —— 见 §2。</p>
+</div>
+
+<h2>1. 实测结果（四屏并发）</h2>
+<p>DL7400 的 <b>4 个输出口全部占满</b>，四路帧数持续增长，无一卡死：</p>
+<table>
+<thead><tr><th>屏</th><th>型号</th><th>厂商</th><th>分辨率</th><th>端口</th><th>帧率</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Sculptor（便携屏，HDMI）</td><td>YCT 0xAC00</td><td>2880×1800 @60</td><td><code>^0</code></td><td class="ok"><b>8.7 fps</b></td></tr>
+<tr><td>1</td><td>Redmi 27 NU</td><td>XMI 0xB005</td><td>3840×2160 @60</td><td><code>^1</code></td><td class="ok"><b>5.8 fps</b></td></tr>
+<tr><td>2</td><td>S24D390（三星）</td><td>SAM 0x0B65</td><td>1920×1080 @60</td><td><code>^2</code></td><td class="ok"><b>15.0 fps</b> 跑满</td></tr>
+<tr><td>3</td><td>Mi Monitor</td><td>XMI 0x27B4</td><td>3840×2160 @60</td><td><code>^3</code></td><td class="ok"><b>5.7 fps</b></td></tr>
+</tbody>
+</table>
+<p><b>带宽分摊观察</b>：三屏→四屏后，两个 4K 从 7.2 → 5.8 fps（掉 ~20%），1080p 始终跑满 15fps。USB3(5Gbps) 总吞吐基本恒定，新增屏摊薄每路份额。</p>
+
+<h3>性能定位：多屏内容展示，不是视频墙</h3>
+<table>
+<thead><tr><th>用途</th><th>可行性</th></tr></thead>
+<tbody>
+<tr><td>数字标牌 / 看板 / 时钟 / 仪表盘（低变化内容）</td><td class="ok">✅ 很好，DL3+ 只压变化区域</td></tr>
+<tr><td>全屏流畅视频</td><td class="no">❌ 7.4 fps（4K VP9→1080p 实测），不可用</td></tr>
+</tbody>
+</table>
+<blockquote>⚠️ 早期用"合成测试图"测出的 60fps 是<b>误导性数据</b> —— 那图只有一根竖条在动，DisplayLink 几乎不用传数据。真实视频每帧全变，只有 1/8。<b>别用它做规划。</b></blockquote>
+
+<h2>2. ★别人能直接用吗？—— 不能，缺三样★</h2>
+<div class="card bad">
+<p style="margin-top:0"><b>默认 astra-media 镜像 + DL7400 EVK 插上去 = 什么都不会发生。</b><br>
+系统不会多出 4 个显示器，<code>weston</code> 桌面也扩展不过去。</p>
+<table>
+<thead><tr><th>缺什么</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><b><code>libusb</code></b></td><td>默认镜像<b>没有</b>（实测 <code>find / -name "libusb*"</code> 为空）。这是 DLSDK 唯一的外部依赖</td></tr>
+<tr><td><b>DLSDK</b></td><td>不在 Yocto 里，是 Synaptics 单独发布的 zip（需 NDA）。要自己打包进镜像</td></tr>
+<tr><td><b>应用程序</b></td><td><b>DLSDK 是"推像素"API，不是显卡驱动</b> —— 没有 DRM/KMS 节点。必须自己写程序渲染并调 <code>display_show()</code>，否则屏永远黑</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card key">
+<h3 style="margin-top:0">关键架构认知</h3>
+<pre><code>dlsdk_display_show(display, DLSDK_PIXEL_FORMAT_XRGB, pixels, stride);
+                                                      ↑
+                                          你自己准备好的像素 buffer</code></pre>
+<ul style="margin-bottom:0">
+  <li><span class="no">❌ 不能</span>把 Weston/Wayland 桌面扩展到这些屏（那需要 evdi 内核模块，且只支持 2 屏）</li>
+  <li><span class="ok">✅</span> 每个屏画什么，<b>由你的应用完全掌控</b> —— 对多屏内容墙反而正合适</li>
+  <li><b>程序退出 = 释放显示 = 屏幕变黑</b>（设计如此）。生产环境必须做成常驻服务</li>
+</ul>
+</div>
+
+<h2>3. ★本 Case 的价值：趟平了 6 个会卡住好几天的坑★</h2>
+<p>价值<b>不在"证明能接"</b>（datasheet 早写了 4 口），而在<b>这些只有真机才会暴露、且极难自行定位的问题</b>：</p>
+
+<div class="pit">
+<h3>坑① 绝不能盲信 <code>dlsdk_display_preferred_mode()</code> ← 最坑的一个</h3>
+<p>Mi Monitor 的 EDID 把 <b>3840x2160@160Hz</b> 报成"首选模式"。DL7400 + USB3(5Gbps) <b>根本喂不动</b> → <code>wait_on_show</code> <b>永久阻塞</b>（确定性死卡：7 帧 / 18 帧，每次一模一样）。</p>
+<p><b>为什么极难排查</b>：EDID 是<b>显示器的属性</b>，所以故障会<b>"跟着屏走"</b> —— 换线、换端口、换到另一台机器，问题都跟着那台屏跑。<b>这会让人 100% 误判成"这台屏坏了"或"这根线不行"。</b></p>
+<blockquote style="border-left-color:var(--bad)">📌 <b>我自己就误判了</b>：一度断言"Mi Monitor 的 HDMI 有问题"，还换过 4K HDMI 线（没用）、对调过端口。直到限制 60Hz 后瞬间正常 —— 同一台屏、同一根线、同一个口。<b>HDMI 从来就没问题。</b></blockquote>
+<p style="margin-bottom:0"><b>修复</b>（<code>pick_mode()</code>）：从 <code>dlsdk_display_modes()</code> 里挑<b>「与 preferred 同分辨率、刷新率 ≤ 60Hz 的最高刷新率」</b>，找不到才退回 preferred。</p>
+</div>
+
+<div class="pit">
+<h3>坑② 进程被硬杀 → 设备卡死，且只有一种复位有效</h3>
+<p>没干净 <code>teardown</code> 就被杀 → <code>dlsdk_get_devices()</code> 一直返回 <b>0 个设备</b>。</p>
+<table>
+<thead><tr><th>复位方式</th><th>效果</th></tr></thead>
+<tbody>
+<tr><td><code>echo 0/1 &gt; authorized</code></td><td class="no">❌ 救不回来</td></tr>
+<tr><td><b><code>usb</code> 驱动 unbind/bind</b></td><td class="ok">✅ 能救回来</td></tr>
+</tbody>
+</table>
+<pre><code>echo -n "2-1.4.1" &gt; /sys/bus/usb/drivers/usb/unbind; sleep 3
+echo -n "2-1.4.1" &gt; /sys/bus/usb/drivers/usb/bind</code></pre>
+<p style="margin-bottom:0">不知道这条，会以为 EVK 坏了。设备路径会变（实测 2-1.4.1 → 2-1.2.1），所以复位脚本要<b>按 VID 17e9 动态查找</b>。</p>
+</div>
+
+<div class="pit">
+<h3>坑③ 同一台屏别同时接 DP + HDMI</h3>
+<p style="margin-bottom:0">会被枚举成<b>两个独立 display（EDID 完全相同）</b>，其中一个还报出<b>虚假的 160Hz</b>，同时驱动互相打架。<b>一台屏只接一根线。</b></p>
+</div>
+
+<div class="pit">
+<h3>坑④ <code>auto-resize</code> 默认开启 → 字体被放大 3 倍</h3>
+<p style="margin-bottom:0">overlay 以 640×480 为基准自动缩放：1920 宽 → <b>×3</b>。写 216pt 实际渲染成 648pt，<b>直接撑爆屏幕</b>。→ 必须 <code>auto-resize=false</code>，此后 <code>px = pt × 96/72</code>。</p>
+</div>
+
+<div class="pit">
+<h3>坑⑤ 镜像里没有任何 CJK 字体</h3>
+<p style="margin-bottom:0"><code>fc-list :lang=zh</code> 为空，只有 Liberation。中文被 Pango 渲染成 <b>Unicode 码点方框</b>（591A=多、5C4F=屏…），<b>看起来就是乱码</b>。→ 加 <code>ttf-wqy-zenhei</code>（~14MB，meta-oe 现成）。</p>
+</div>
+
+<div class="pit">
+<h3>坑⑥ 软件缩放白吃 94% 的时间</h3>
+<p>4K→1080p 实测（150 帧）：</p>
+<table>
+<thead><tr><th>管线</th><th>耗时</th><th>帧率</th></tr></thead>
+<tbody>
+<tr><td>纯硬解 4K VP9</td><td>1.35s</td><td class="ok"><b>111 fps</b> ← 解码毫无压力</td></tr>
+<tr><td>+ 软件 <code>videoconvert/videoscale</code></td><td><b>17.55s</b></td><td class="no"><b>8.5 fps</b> ← ❌ 浪费 94%</td></tr>
+<tr><td>+ 硬件 <code>synavideoconvertscale</code></td><td>5.63s</td><td class="ok"><b>31.9 fps</b> ← ✅ 快 3.7 倍</td></tr>
+</tbody>
+</table>
+<p style="margin-bottom:0">注意：<code>synavideoconvertscale</code> 只输出 RGB/BGRA/NV12/I420/YUY2 —— <b>没有 BGRx</b>，用 BGRA（32bpp 布局与 <code>DLSDK_PIXEL_FORMAT_XRGB</code> 一致）。</p>
+</div>
+
+<h2>4. ★方法论：判断"屏到底通没通"要看帧数，不能靠肉眼★</h2>
+<div class="card good">
+<p style="margin-top:0">这是本 case 最有价值的一条经验。<code>dl_clock</code> 每 60s 打印各屏帧数：</p>
+<table>
+<thead><tr><th>现象</th><th>含义</th><th>解法</th></tr></thead>
+<tbody>
+<tr><td>帧数<b>冻结</b></td><td><b>链路卡死</b></td><td>降 Hz（坑①）/ USB 深度复位（坑②）</td></tr>
+<tr><td>帧数<b>在涨但屏黑</b></td><td>链路正常，<b>显示器输入源没切对</b></td><td>按屏上 OSD 切 Input Source</td></tr>
+</tbody>
+</table>
+<p><b>两者原因和解法完全不同，混为一谈会浪费大量时间。</b></p>
+<p style="margin-bottom:0">另两个坑：看日志要<b>认准 PID</b>（卡死的旧进程会留下误导性统计）；<b>屏数和模式号会变</b>（实测 2→3→4），动线后必须重新 <code>dl_edid</code>。</p>
+</div>
+
+<h2>5. 交付物（可直接复用）</h2>
+<table>
+<thead><tr><th>产出</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td><b><code>meta-dlsdk</code></b> Yocto 层</td><td>一层搞定：SDK + 依赖 + 服务 + 字体</td></tr>
+<tr><td>├ <code>dlsdk_1.5.0.bb</code></td><td>打包 aarch64 <code>libdlsdk.so</code> + 头文件 + 固件 spkg + udev 规则(VID 17e9)</td></tr>
+<tr><td>├ <code>dl-clock</code></td><td><b>时钟+跑马灯，开机自启，多屏，每屏显示自己的 EDID 身份</b></td></tr>
+<tr><td>├ <code>dl-player</code></td><td>GStreamer 硬解 → 硬件缩放 → 推屏（视频/图片/测试图）</td></tr>
+<tr><td>├ <code>dl-edid</code></td><td>读各口 EDID + 全部模式（排查"无信号"必备）</td></tr>
+<tr><td>└ <code>dl-multiscreen-demo</code></td><td>枚举/点亮/实测 fps</td></tr>
+<tr><td>镜像集成 <code>astra-media.bbappend</code></td><td><code>IMAGE_INSTALL</code> 含 dlsdk/播放器/时钟/<b>libusb1</b>/<b>ttf-wqy-zenhei</b></td></tr>
+</tbody>
+</table>
+<p><b>烧完即用</b>：重编镜像后开机自动点亮所有接上的屏。</p>
+
+<h3>快速上手</h3>
+<pre><code># 所有屏显示时钟(默认限 60Hz，每屏显示自己的 EDID 身份)
+dl_clock --wait --fps 15 --speed 15 --max-hz 60
+
+# 播放视频(硬解+硬件缩放)
+dl_player video.mp4
+
+# 排查"无信号"：读 EDID 和支持的模式
+dl_edid
+
+# 设备卡死时复位(按 VID 动态查找，不怕换 USB 口)
+/usr/bin/dl-clock-reset.sh</code></pre>
+
+<h2>6. 硬件前提（缺一不可）</h2>
+<table>
+<thead><tr><th>项</th><th>要求</th><th>实测</th></tr></thead>
+<tbody>
+<tr><td><b>USB 3.0</b></td><td><b>必需</b>。USB2 下 SDK 直接不驱动</td><td>EVK 实测 <code>speed=5000</code> SuperSpeed ✅</td></tr>
+<tr><td>固件</td><td>12.3.26（SDK 配套）</td><td><b>SDK 自动升级</b>：<code>cfg.firmwarePath</code> 指向 spkg 目录即可，无需手动刷</td></tr>
+<tr><td>glibc</td><td>≥ 2.30</td><td>板子 2.39 ✅</td></tr>
+<tr><td>DRAM</td><td>8Gb 支持三屏(5K2K+4K+4K)、四屏(4×4K)</td><td>Datasheet Table 3</td></tr>
+</tbody>
+</table>
+<blockquote>⚠️ 早期用<b>零售 Anker 坞</b>测试时，经 USB-C→USB-A 线只协商到 <b>USB 2.0</b>（多数 C-to-A 线只有 USB2），SDK 拒绝驱动 → 白折腾很久。<b>EVK 是原生 USB3 上行，没这问题。</b></blockquote>
+
+<h2>7. 扩展性</h2>
+<ul>
+  <li><b>一颗 DL7400 = 4 屏</b>（已全部验证）</li>
+  <li><b>多颗可同时挂</b>：<code>dlsdk_get_devices()</code> 支持枚举多颗（C++ 封装自动扩容），无设备数硬上限（唯一上限 255 surface）</li>
+  <li>→ 更多屏 = <b>N 颗 × 4 屏</b>，天花板是 <b>USB3 带宽 + A73 CPU 跑 DL3+ 压缩</b>，不是 SDK</li>
+</ul>
+
+</div>
+</body>
+</html>

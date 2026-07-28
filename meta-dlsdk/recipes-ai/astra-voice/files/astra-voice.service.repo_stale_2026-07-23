@@ -1,0 +1,21 @@
+[Unit]
+Description=Astra 语音助手 (VAD + SenseVoice ASR + matcha TTS，模型常驻)
+After=sound.target
+Wants=sound.target
+
+[Service]
+Type=simple
+Environment=TZ=CST-8
+# 模型加载约 10 秒，之后常驻不再加载
+ExecStartPre=-/usr/bin/amixer -c 2 sset Speaker 80% unmute
+ExecStartPre=-/usr/bin/amixer -c 2 sset Mic 100% unmute
+ExecStart=/usr/bin/astra_voice --tts matcha --dev plughw:2,0 --threads 4 --greet 1
+KillSignal=SIGINT
+TimeoutStopSec=10
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

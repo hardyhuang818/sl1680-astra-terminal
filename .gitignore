@@ -1,0 +1,46 @@
+# ============ 密钥/凭据（永不入库） ============
+tools/askpass_wg.cmd
+BE3600/
+xiaozhi-server/
+SL1680调试总结_2026-07-23_完整版.md
+
+# ============ NDA / 第三方厂商资料（不可再分发） ============
+TD7800/
+DL7400/
+MIPI to LVDS board-1/
+MIPI to LVDS board-2/
+SL1680/
+Wifi/
+Kbridge2/
+CES2026/
+BOX2/
+ESP32 EVK/
+usb-tool-astra-update-v2.0.1/
+NR-157812-AN-LATEST.pdf
+DL-7xxx and Astra SL1680 AI Dock Integration Application Note.docx
+Finger/*.pdf
+meta-dlsdk/recipes-graphics/dlsdk/files/
+meta-dlsdk/**/*.spkg
+meta-dlsdk/**/*.so
+
+# ============ 大二进制 / 镜像 / 备份（仓库只留清单与sha256） ============
+flash_image_*/
+delivery_sl1680/
+测试结果/
+SL1680_boardmic_fix/
+backups/*
+!backups/CHANGELOG.md
+*.subimg
+*.img
+*.mp4
+*.zip
+*.gguf
+*.onnx
+
+# ============ 杂项 ============
+__pycache__/
+*.log
+tools/_wslout/*.log
+NUL
+*.mkv
+.claude/

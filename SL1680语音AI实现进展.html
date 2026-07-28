@@ -1,0 +1,212 @@
+<meta charset="utf-8">
+<title>SL1680 语音 AI + 视觉唤醒 — 实现进展</title>
+<style>
+  :root{
+    --ground:#FAF9FB; --panel:#FFFFFF; --panel-2:#F3F1F6;
+    --ink:#1C1826; --ink-2:#4A4458; --ink-3:#7A7391;
+    --rule:#E2DEEA; --rule-2:#CFC9DC;
+    --accent:#C4571A; --accent-soft:#FBEDE3;
+    --measured:#B06A12; --measured-bg:#FDF3E3;
+    --verified:#1B6E80; --verified-bg:#E4F3F6;
+    --inferred:#6B5E8C; --inferred-bg:#EFEBF7;
+    --untested:#A8305A; --untested-bg:#FBE9EF;
+    --good:#1F6B4A; --bad:#A8305A;
+    --mono: ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans: system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#14111A; --panel:#1C1826; --panel-2:#241F2F;
+      --ink:#EDEAF3; --ink-2:#B5AEC6; --ink-3:#847C99;
+      --rule:#2E2840; --rule-2:#413954;
+      --accent:#E8873D; --accent-soft:#2A1E14;
+      --measured:#E8A33D; --measured-bg:#2B2114;
+      --verified:#4FB3C8; --verified-bg:#132A30;
+      --inferred:#A594CC; --inferred-bg:#211B30;
+      --untested:#E06A92; --untested-bg:#2E151F;
+      --good:#5FBF8F; --bad:#E06A92;
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#FAF9FB; --panel:#FFFFFF; --panel-2:#F3F1F6; --ink:#1C1826; --ink-2:#4A4458; --ink-3:#7A7391;
+    --rule:#E2DEEA; --rule-2:#CFC9DC; --accent:#C4571A; --accent-soft:#FBEDE3;
+    --measured:#B06A12; --measured-bg:#FDF3E3; --verified:#1B6E80; --verified-bg:#E4F3F6;
+    --inferred:#6B5E8C; --inferred-bg:#EFEBF7; --untested:#A8305A; --untested-bg:#FBE9EF; --good:#1F6B4A; --bad:#A8305A;
+  }
+  :root[data-theme="dark"]{
+    --ground:#14111A; --panel:#1C1826; --panel-2:#241F2F; --ink:#EDEAF3; --ink-2:#B5AEC6; --ink-3:#847C99;
+    --rule:#2E2840; --rule-2:#413954; --accent:#E8873D; --accent-soft:#2A1E14;
+    --measured:#E8A33D; --measured-bg:#2B2114; --verified:#4FB3C8; --verified-bg:#132A30;
+    --inferred:#A594CC; --inferred-bg:#211B30; --untested:#E06A92; --untested-bg:#2E151F; --good:#5FBF8F; --bad:#E06A92;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px 96px}
+  .mast{border-bottom:2px solid var(--ink);padding:56px 0 24px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 18px}
+  h1{font-size:clamp(27px,4.2vw,42px);line-height:1.2;margin:0 0 20px;letter-spacing:-.01em;text-wrap:balance;font-weight:680}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 28px;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .meta b{color:var(--ink-2);font-weight:500}
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:32px 0 48px}
+  .legend div{background:var(--panel);padding:14px 16px}
+  .legend .lt{font-family:var(--mono);font-size:12px;font-weight:600;display:block;margin-bottom:3px}
+  .legend .ld{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+  .l-m .lt{color:var(--measured)} .l-v .lt{color:var(--verified)} .l-i .lt{color:var(--inferred)} .l-u .lt{color:var(--untested)}
+  .c{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:2px;white-space:nowrap;display:inline-block;vertical-align:2px;line-height:1.5}
+  .c-m{color:var(--measured);background:var(--measured-bg);border:1px solid color-mix(in srgb,var(--measured) 30%,transparent)}
+  .c-v{color:var(--verified);background:var(--verified-bg);border:1px solid color-mix(in srgb,var(--verified) 30%,transparent)}
+  .c-i{color:var(--inferred);background:var(--inferred-bg);border:1px solid color-mix(in srgb,var(--inferred) 30%,transparent)}
+  .c-u{color:var(--untested);background:var(--untested-bg);border:1px solid color-mix(in srgb,var(--untested) 30%,transparent)}
+  .thesis{background:var(--panel);border:1px solid var(--rule-2);border-left:4px solid var(--accent);padding:26px 30px;margin:0 0 56px}
+  .thesis p{margin:0 0 12px;font-size:17px;line-height:1.7}
+  .thesis p:last-child{margin-bottom:0}
+  .thesis strong{color:var(--accent)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:68px 0 0;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+  h3{font-size:22px;margin:38px 0 14px;letter-spacing:-.005em;text-wrap:balance;font-weight:640}
+  h4{font-size:16px;margin:26px 0 10px;color:var(--ink-2);font-weight:640}
+  p{margin:0 0 16px;max-width:74ch} ul,ol{margin:0 0 16px;padding-left:22px;max-width:74ch} li{margin-bottom:7px}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  .scroll{overflow-x:auto;margin:0 0 24px;border:1px solid var(--rule)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.6}
+  tr:last-child td{border-bottom:none}
+  .num td:not(:first-child){font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .hi{background:var(--measured-bg)} .yes{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .flow{font-family:var(--mono);font-size:12.5px;line-height:1.9;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:16px 18px;overflow-x:auto;margin:0 0 24px;color:var(--ink-2)}
+  .flow b{color:var(--accent)}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--rule-2);padding:14px 16px;overflow-x:auto;margin:0 0 22px;color:var(--ink-2)}
+  .note{border:1px solid var(--rule-2);background:var(--panel);padding:16px 20px;margin:0 0 22px}
+  .note.key{border-left:3px solid var(--accent);background:var(--accent-soft)}
+  .note.warn{border-left:3px solid var(--untested);background:var(--untested-bg)}
+  .note p:last-child{margin-bottom:0}
+  hr{border:none;border-top:1px solid var(--rule);margin:52px 0}
+  .foot{margin-top:68px;padding-top:24px;border-top:2px solid var(--ink);font-size:13px;color:var(--ink-3)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">Synaptics Astra SL1680 · 实现进展报告</p>
+  <h1>本地语音 AI 全链路跑通，NPU 视觉唤醒进行中</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-07-18</span>
+    <span><b>板子</b> dolphin RDK @ 192.168.5.126</span>
+    <span><b>定性</b> 内部 POC / demo，不出货</span>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="l-m"><span class="lt">■ 实测</span><span class="ld">板上跑出的数字，可复现</span></div>
+  <div class="l-v"><span class="lt">■ 已核实</span><span class="ld">一手源码／官方文档确认</span></div>
+  <div class="l-i"><span class="lt">■ 推断</span><span class="ld">有依据的推理，未直接验证</span></div>
+  <div class="l-u"><span class="lt">■ 待实测</span><span class="ld">没有可靠数据，不当结论</span></div>
+</div>
+
+<div class="thesis">
+  <p><strong>SL1680 上跑通了完整的本地语音 AI</strong>：麦克风 → 语音识别 → 大模型对话 → 语音合成，全部在板子上，一轮对话约 5~6 秒。</p>
+  <p>并验证了 <strong>NPU 做人体检测 24ms/帧</strong> —— 正在把它接成「人走近自动唤醒」。</p>
+</div>
+
+<h2>一 · 完整链路与实测性能</h2>
+<div class="flow">C920麦克风 → <b>Silero VAD</b> → <b>SenseVoice ASR</b> → <b>事实接地/Qwen LLM</b> → <b>matcha TTS</b> → Razer喇叭
+              切句            转文字             生成回复               合成语音</div>
+<p>全部本地运行，一个常驻 C 程序 <code>astra_voice</code> 把四个模型装在一个进程里，<strong>只在启动时加载一次(~10s)，之后零加载</strong>。</p>
+<div class="scroll"><table class="num">
+  <tr><th>环节</th><th>方案</th><th>实测</th><th>证据</th></tr>
+  <tr><td><b>VAD</b></td><td>Silero ONNX</td><td>实时切句</td><td><span class="c c-m">实测</span></td></tr>
+  <tr class="hi"><td><b>ASR</b></td><td>SenseVoice int8</td><td><b>RTF 0.197</b>（4线程，5× 实时余量）</td><td><span class="c c-m">实测</span></td></tr>
+  <tr class="hi"><td><b>LLM</b></td><td>Qwen2.5-0.5B Q8</td><td><b>19.6 tok/s</b> 生成，冷启动 3~4s</td><td><span class="c c-m">实测</span></td></tr>
+  <tr class="hi"><td><b>TTS</b></td><td>matcha-zh-en + vocos-16khz</td><td>热合成 <b>RTF 0.37</b></td><td><span class="c c-m">实测</span></td></tr>
+  <tr><td><b>一轮对话</b></td><td>端到端</td><td><b>~5~6 秒</b>（ASR 0.5 + LLM 3~4 + TTS 1）</td><td><span class="c c-m">实测</span></td></tr>
+</table></div>
+<div class="note key">
+  <p><b>进程常驻是第一优化。</b>之前 CLI 每次合成都重载模型，白扔 11 秒；改成常驻后每轮零加载。这比任何模型级优化都重要。</p>
+</div>
+<p><b>交叉编译链路</b>（可复用）：Yocto 的 gcc-cross-aarch64 + binutils-cross-aarch64 + <code>~/xshim</code> 符号链接层；cmake 用 <code>pip install</code>（Yocto cmake-native 缺 libbz2）；llama.cpp 必须 <code>-DGGML_OPENMP=OFF</code>（板子无 libgomp）。</p>
+
+<h2>二 · 识别错误的排查与修复</h2>
+<p>用户反馈「识别错误」。我建了 6 句标准测试集，用<strong>字错率(CER)</strong> 量化每一步改动，不靠眼睛判断。</p>
+<div class="scroll"><table class="num">
+  <tr><th>配置</th><th>CER</th></tr>
+  <tr><td>baseline（lang=auto，Razer麦）</td><td>48.6%</td></tr>
+  <tr><td>lang=zh</td><td>51.4%</td></tr>
+  <tr><td>lang=zh + 前后补静音 0.2/0.2</td><td>35.1%</td></tr>
+  <tr><td>lang=zh + pad + gain5x</td><td><b>27.0%</b></td></tr>
+  <tr class="hi"><td><b>换 C920 麦 + 正常说话</b></td><td><b class="yes">≈0%（句句全对）</b></td></tr>
+</table></div>
+
+<h4>根因① VAD 削掉句首清辅音 <span class="c c-m">实测</span></h4>
+<p>Silero VAD 把「今」的 j 这类清辅音当静音切掉，SenseVoice 拿到残缺开头就糊字。</p>
+<div class="note key"><p>PC 对照实验：同一段「看这怎么样」→ <b>前面补 0.3s 静音</b> → 「今天天气怎么样」。<b>只前补有效，后补没用；补零(静音)即可，不必真实音频。</b></p></div>
+
+<h4>根因② Razer 耳麦采得太轻 <span class="c c-m">实测</span></h4>
+<p>Razer 的 Mic 已 100%/35 满档(+5dB)，用户「靠近清晰念」采到的仍只有 RMS <b>0.011~0.037</b>（识别需 ~0.04）。</p>
+<div class="note key"><p>换 <b>Logitech C920</b>（增益 0~60/+42dB）→ 采到 RMS <b>0.095~0.159</b>，响一个数量级。实时数据铁律：<b>RMS ≥ 0.04 → 句句全对；&lt; 0.033 → 糊</b>。</p></div>
+
+<div class="note warn"><p><b>顺带修的一个真 bug：</b>C920 是摄像头<b>只有麦没有喇叭</b>，而程序原来用同一个 <code>--dev</code> 管采集和播放 → 直接切 C920 会让回复往没喇叭的设备播，什么都听不到。已拆成 <code>--dev-in</code>（C920采音）/ <code>--dev-out</code>（Razer出声）。</p></div>
+
+<h2>三 · LLM 幻觉 → 接地 (grounding)</h2>
+<p>用户发现回答是错的：问「现在几点」答「12点」（没读时钟瞎编）、问「天气」答「晴朗气温适宜」（没联网瞎编）。<b>根因是回复逻辑顺序反了</b> —— LLM 总能吐出文字，导致报时规则永远轮不到。</p>
+<p>修法（正是官方方案调研 md 说的 RAG/接地）：<strong>事实类问题先用真实数据回答，只有开放闲聊才交给 LLM。</strong></p>
+<div class="scroll"><table>
+  <tr><th>问</th><th>修复前（幻觉）</th><th>修复后（接地）</th></tr>
+  <tr><td>现在几点了</td><td class="no">"现在是12点"（编）</td><td class="yes">"现在是11点13分"（读系统时钟）✅</td></tr>
+  <tr><td>今天星期几</td><td>—</td><td class="yes">"今天是星期六"（真实日期）✅</td></tr>
+  <tr><td>今天天气怎么样</td><td class="no">"晴朗，气温适宜"（编）</td><td class="yes">"没有联网，查不到实时天气"（诚实）✅</td></tr>
+  <tr><td>你是谁 / 讲笑话</td><td>—</td><td class="yes">走 LLM 闲聊 ✅</td></tr>
+</table></div>
+<p>加了 <code>--test-reply "文本"</code> 模式，可离线自测回复逻辑不启动音频 —— 上面结果就是这么验证的。</p>
+
+<h2>四 · 视觉唤醒（进行中）</h2>
+<p><b>目标</b>：人走近 → 摄像头检测 → 自动唤醒语音助手。比喊唤醒词体验好，也真正用上 NPU。</p>
+<div class="scroll"><table>
+  <tr><th>步骤</th><th>结果</th><th>证据</th></tr>
+  <tr><td>板上视觉栈</td><td><code>people</code> 人体检测模型 + <code>synap_cli_od</code> + NPU + GStreamer synapinfer 插件</td><td><span class="c c-v">已核实</span></td></tr>
+  <tr><td>C920 出图</td><td>抓到清晰画面（YUYV/MJPG, /dev/video8）</td><td><span class="c c-m">实测</span></td></tr>
+  <tr class="hi"><td><b>NPU 人体检测</b></td><td><b>23.96ms/帧，person 置信 0.94</b></td><td><span class="c c-m">实测</span></td></tr>
+  <tr class="hi"><td>连续检测节奏</td><td>常驻管道 <b>~0.4s/帧(~2fps)</b>，够「人走近」用</td><td><span class="c c-m">实测</span></td></tr>
+  <tr><td>阈值标定</td><td>用框高%↔距离 定「够近该唤醒」</td><td><span class="c c-u">待用户走位标定</span></td></tr>
+  <tr><td>触发集成</td><td>检测到有人靠近且持续 → 触发 Astra 欢迎语</td><td><span class="c c-u">待实测</span></td></tr>
+</table></div>
+<div class="note key">
+  <p><b>这印证了整个 case 的核心判断</b>：NPU 对视觉真强（人体检测 24ms），对语音帮不上忙（int8 量化在 A73 上还慢）。现在把 NPU 用在了它真正擅长的地方。</p>
+</div>
+<p><b>一个性能坑：</b>spawn-per-frame（每帧重启 gst-launch）要 2.3s/帧（摄像头冷启动）。改成<b>常驻管道持续出帧到文件、检测循环复用 synap_cli_od</b>，降到 0.4s/帧，且不用写 C。</p>
+
+<h2>五 · 方法论：这一段我犯的错与纠正</h2>
+<p>这一段的价值不只在结果，也在<strong>排查纪律</strong>。我犯了不少错，但每个都用实测纠正了 —— 记下来避免重蹈。</p>
+<div class="scroll"><table>
+  <tr><th>我的错误假设</th><th>实测纠正</th></tr>
+  <tr><td>"A73 无 dotprod ⇒ int8 量化都是负优化"</td><td><b>过度泛化</b>。VITS int8 慢 1.9×，但 <b>SenseVoice int8 快 1.45×</b>、llama Q4 比 Q8 还慢。<b>逐模型实测</b></td></tr>
+  <tr><td>"RMS 归一化能救糊字"</td><td>A/B 证伪：SenseVoice 前端带 <b>CMVN 对电平不敏感</b>，三档归一化结果完全一样</td></tr>
+  <tr><td>"开 Razer 的 Auto Gain Control 能提麦克风"</td><td>它是<b>播放控件</b>，对麦克风无用</td></tr>
+  <tr><td>"xiaozhi 有神奇的音频前端要抄"</td><td>源码级核实：<b>py-xiaozhi 的 WebRTC APM 是死代码，0 次调用</b>。能抄的只有 lang=zh + 别削波</td></tr>
+  <tr><td>构建脚本打印"✅编译成功"</td><td>它靠"文件是否存在"判断，<b>旧文件冒充成功</b>。改成看编译退出码</td></tr>
+  <tr><td>采集播放用同一 <code>--dev</code></td><td>C920 无喇叭，回复播不出 → 拆 <code>--dev-in/--dev-out</code></td></tr>
+</table></div>
+<div class="note key">
+  <p><b>核心纪律：先拿地面真相，再建理论。</b>之前排查麦克风时，我为一个不存在的故障连续编了六个假设（低通/削波/混叠/端点/声道抵消/数字伪影），全错 —— 根因只是用户说的是生造词「astra」。</p>
+  <p>教训贯穿这一段：任何「只有一个来源能证明」的结论，都要用独立方法交叉验证；改 ASR 参数必须用<b>内容已知的固定录音 + CER 数字</b>比较，不靠眼睛/耳朵判断。</p>
+</div>
+
+<h2>六 · 产品化前必须解决的（POC 阶段可先放）</h2>
+<div class="scroll"><table>
+  <tr><th>缺口</th><th>说明</th><th>证据</th></tr>
+  <tr class="hi"><td><b>TTS 授权</b></td><td>所有开源 TTS 都有硬伤：<b>espeak-ng 是 GPLv3 且无条件静态链进二进制</b>；matcha 模型<b>查不到 license</b>（= 版权保留）；melo 上游 Bert-VITS2 是 AGPL。产品化前必解，走商业 TTS 授权最干净</td><td><span class="c c-v">已核实</span></td></tr>
+  <tr><td><b>真唤醒词 / 视觉唤醒</b></td><td>现在是 VAD 触发（一说话就响应）。视觉唤醒进行中</td><td>—</td></tr>
+  <tr><td><b>AEC 回声消除</b></td><td>现在靠"放音时丢弃采集"的权宜之计，没有真正的 AEC</td><td><span class="c c-i">推断</span></td></tr>
+  <tr><td><b>LLM 常驻</b></td><td>现在每轮冷启动 3~4s。产品化应上常驻 llama-server，降到 1~2s</td><td><span class="c c-u">待实测</span></td></tr>
+  <tr><td><b>输出设备</b></td><td>现在走 Razer 耳机（还偶尔 USB 掉线）。kiosk 应该外放喇叭/HDMI 音频</td><td>—</td></tr>
+</table></div>
+
+<div class="note key" style="margin-top:32px">
+  <p style="font-size:16px"><b>当前状态一句话：</b>麦克风(C920) → VAD → SenseVoice → 事实接地/Qwen LLM → matcha TTS → Razer 喇叭：<b>全链路本地跑通</b>。正常说话识别准确、时间/日期答真实数据、天气诚实说不知道、闲聊走 LLM。NPU 人体检测 24ms 已验证，视觉唤醒集成进行中。</p>
+</div>
+
+<p class="foot">SL1680 语音 AI 实现进展 · 2026-07-18 · 每个 <span class="c c-m">实测</span> 数字都可在板子上复现 · 配套 Markdown：<code>SL1680语音AI实现进展.md</code></p>
+
+</div>

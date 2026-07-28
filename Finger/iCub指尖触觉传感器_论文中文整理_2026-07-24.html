@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iCub 指尖电容触觉传感器 · 论文中文整理</title>
+<style>
+  :root{
+    --ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;
+    --rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;
+    --good:#1F6B4A;--good-bg:#E5F3EC;--bad:#A8305A;--bad-bg:#FBE9EF;--warn:#B06A12;--warn-bg:#FDF3E3;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;
+    --rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;
+    --good:#5FBF8F;--good-bg:#122A1E;--bad:#E06A92;--bad-bg:#2E151F;--warn:#E8A33D;--warn-bg:#2B2114;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 100px}
+  .mast{border-bottom:2px solid var(--ink);padding:40px 0 20px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(23px,4vw,34px);line-height:1.2;margin:0 0 14px;font-weight:680}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;gap:20px;flex-wrap:wrap}
+  .lead{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;margin-top:16px;font-size:14.5px;color:var(--ink-2)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:46px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:640}
+  p{margin:0 0 12px} ul,ol{margin:0 0 12px;padding-left:22px} li{margin-bottom:5px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  a{color:var(--accent)}
+  .scroll{overflow-x:auto;margin:0 0 16px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:0 0 16px;font-size:14px}
+  .note.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .note.good{border-left-color:var(--good);background:var(--good-bg)}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:2px 18px 14px;margin:0 0 16px}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono)}
+  .arch{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);padding:14px 16px;border-radius:4px;overflow-x:auto;margin:0 0 16px;line-height:1.7;white-space:pre}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">论文中文整理 · 工程视角</p>
+  <h1>iCub 人形机器人指尖的电容触觉传感器</h1>
+  <div class="meta">
+    <span><b>原文</b> Schmitz, Maggiali, Natale, Bonino, Metta — IROS 2010</span>
+    <span><b>机构</b> 意大利技术研究院 IIT</span>
+    <span><b>本地 PDF</b> schmitz2010iros.pdf</span>
+  </div>
+  <div class="lead">本文是对原论文的<strong>中文工程整理</strong>（按设计→制造→集成→实测重组，非逐句翻译），并附「对本项目的启示」标注。原文由欧盟 RoboSKIN / Poeticon 项目资助。整理日期 2026-07-24。</div>
+</header>
+
+<h2>一 · 一句话概括</h2>
+<div class="card">
+<p>一枚 <strong>14.5 mm × 13 mm</strong>、外形接近人类指尖的传感指尖：柔性 PCB 上 <strong>12 个圆形电极</strong>构成电容压力阵列，电容数字转换芯片（ADI <strong>AD7147</strong>）直接焊在指尖里，<strong>只用 4 根线</strong>（I2C×2 + 电源×2）把 12 路 16-bit 电容值送出去；介电层是软硅胶泡棉，所以指尖本身是<strong>柔顺的</strong>。已批量装上 iCub 双手（每手 5 指尖 + 掌部模块共 108 触元）。</p>
+</div>
+
+<h2>二 · 背景与相关工作（为什么做）</h2>
+<div class="card">
+<ul>
+  <li><strong>触觉是抓取/操作的刚需</strong>：人若失去触觉，连稳定握持都困难；触觉还能获得视觉/听觉拿不到的属性——重量、滑度、纹理、硬度</li>
+  <li><strong>手指里空间极小</strong>，是设计的核心约束。既有方案的通病：太大（牺牲灵巧性）、慢、脆、缺乏弹性和机械柔顺性</li>
+  <li>相关工作点评：GIFU III 手有 859 个感应点但皮肤<strong>不柔顺</strong>且信号调理远离感应区；Shadow 手指尖用 QTC；DLR-HIT 用 6 轴力传感器；商用方面 <strong>Pressure Profile Systems</strong> 有 FingerTPS（导电莱卡手套，每手 6 点，无线）和 RoboTouch（已用于多款机器手）；iPod touch 被引为电容技术的商用例证</li>
+  <li>同一电容技术当时正被扩展为 iCub 的<strong>全身分布式皮肤</strong>（后来的 Large Scale Capacitive Skin）</li>
+</ul>
+</div>
+
+<h2>三 · 相比第一版（2008）改了什么</h2>
+<div class="scroll"><table>
+  <tr><th></th><th>v1（2008 原型）</th><th>v2（本文，已装机）</th></tr>
+  <tr><td>电极载体</td><td>刚性 PCB + 内芯上<strong>导电墨水涂画</strong>感应区 + 飞线连接</td><td class="ok"><strong>柔性 PCB</strong>，电极印制其上，直接卷贴内芯</td></tr>
+  <tr><td>触元形状</td><td>矩形</td><td>圆形 ×12</td></tr>
+  <tr><td>生产</td><td>费工、易错</td><td class="ok">更快、更省事、成品更耐用</td></tr>
+  <tr><td>代价</td><td>泡棉厚度均匀（2mm）</td><td class="no">泡棉厚度不再完全均匀（差异很小）</td></tr>
+</table></div>
+
+<h2>四 · 指尖结构与工作原理（核心章节）</h2>
+
+<h3>4.1 层叠结构（由内到外）</h3>
+<div class="arch">① 3D 打印内芯（Objet Eden 打印机）—— 刚性支撑
+② 柔性 PCB 卷贴其上 —— 12 个圆形电极 + AD7147 芯片直接焊在 FPC 上
+③ 硅胶泡棉 ~2mm（Smooth-On "Soma Foama 15"）—— 可压缩介电层
+④ 导电硅胶喷涂层 —— 接地的"第二极板"，兼电磁屏蔽
+⑤ 硅胶胶水薄喷层 —— 保护导电层</div>
+
+<h3>4.2 工作原理</h3>
+<div class="card">
+<p>电容 = 两块导体夹一层介电，电容量随极板间距变化。这里 <strong>FPC 上的 12 个电极是 12 个电容的"下极板"</strong>，接地的导电硅胶外皮是共用的"上极板"，泡棉是可压缩介电。<strong>按压 → 泡棉压缩 → 极距变小 → 电容上升</strong>，电容变化量即压力估计值——一次扫描得到 12 点压力分布。</p>
+</div>
+
+<h3>4.3 关键工艺与材料（可照抄的配方）</h3>
+<div class="scroll"><table>
+  <tr><th>部件</th><th>材料/器件</th><th>工艺与要点</th></tr>
+  <tr><td>内芯</td><td>3D 打印（Objet Eden）</td><td>指尖形状，含与末指节配合的孔位</td></tr>
+  <tr><td>电极+电子</td><td>柔性 PCB + <strong>AD7147</strong>（ADI CapTouch CDC）</td><td>12×16-bit 电容测量；<strong>片上环境补偿</strong>；I2C 输出——就近数字化提升信噪比，指尖只出 4 根线</td></tr>
+  <tr><td>介电层</td><td><strong>Soma Foama 15</strong> 硅胶泡棉（Smooth-On），约 2mm</td><td><strong>模具浇注</strong>：内芯+PCB 放进指尖形模具，泡棉浇入空隙，固化后去余料。轻触即压缩 → 低压灵敏；<strong>气泡压实后整体变硬 → 非线性天然扩大量程</strong></td></tr>
+  <tr><td>导电外皮</td><td>自配：<strong>CAF4 硅胶（Rhodia）+ Vulcan XC72 碳黑（Cabot）</strong></td><td>四氢呋喃作溶剂<strong>喷涂</strong>；高弹、与硅胶粘接好、导电够用（指尖最远两点约 10 kΩ）；<strong>接地兼屏蔽</strong>——杂散电容是电容式方案的老大难，这层是解药</td></tr>
+  <tr><td>保护层</td><td>硅胶胶水</td><td>薄喷在导电层外</td></tr>
+  <tr><td>机械固定</td><td>销柱 + 螺钉</td><td>末指节端部销柱插入内芯孔，螺钉锁死；<strong>螺钉同时固定一片"指甲"盖住 PCB</strong></td></tr>
+</table></div>
+
+<h2>五 · 在 iCub 上的系统集成</h2>
+<div class="card">
+<div class="arch">指尖(AD7147, 4线 I2C) ──► 手背小板 ──► 前臂微控板(25.5×17.4mm, 可挂16片CDC)
+                                            └──► CAN 总线 ──► 头部 PC104</div>
+<ul>
+  <li>iCub 手约 14 cm × 6 cm，5 指欠驱动，每手 9 DOF + 腕 3 DOF，9 个电机中 7 个在前臂</li>
+  <li><strong>两种可编程采样模式</strong>（微控板可现场改 CDC 配置）：
+    <ul>
+      <li>12 触元<strong>独立</strong>采样 @ <strong>50 Hz</strong> —— 精细压力分布</li>
+      <li>12 触元<strong>取平均</strong> @ 约 <strong>500 Hz</strong> —— 高速接触检测</li>
+    </ul>
+    同一指尖可按任务自适应切换：要快就粗、要准就慢</li>
+</ul>
+</div>
+
+<h2>六 · 实测结果</h2>
+
+<h3>6.1 测试台</h3>
+<div class="card">
+<p>笛卡尔机器人（IAI TT-C3-2020）推动 1 kg 称重传感器（Laumas AS1，0/1/10/100/500 g 砝码标定）末端的 <strong>2 mm 圆柱探头</strong>（接触面约 12.6 mm²），0.1 mm 步进按压指尖，电容数据与力数据同板采集、时间同步。</p>
+</div>
+
+<h3>6.2 四条结论</h3>
+<div class="scroll"><table>
+  <tr><th>#</th><th>结论</th><th>细节</th></tr>
+  <tr><td class="ok">✅</td><td><strong>非线性响应，低压更灵敏</strong></td><td>泡棉特性所致；量程可到约 <strong>2 N / 12.6 mm²（0.16 N/mm²）</strong>——既敏感又有量程</td></tr>
+  <tr><td class="ok">✅</td><td><strong>噪声低、重复性好</strong></td><td>多次往返测量标准差小</td></tr>
+  <tr><td class="no">⚠️</td><td><strong>迟滞明显（主要缺点）</strong></td><td>长时定点实验（720/1440 s）揭示机理：<strong>电容输出其实稳定跟踪"位移"，是泡棉的应力松弛让"力"漂了</strong>——探头不动，力却在变；720 秒后仍未消除。作者坦言迟滞是电容式方案的通病</td></tr>
+  <tr><td class="ok">✅</td><td><strong>空间定位可用，串扰小</strong></td><td>探头沿指尖背→前直线逐点按压（28–32 g 恒力筛选），相邻 3 个触元响应峰清晰分离</td></tr>
+</table></div>
+
+<h2>七 · 结论与后续计划（原文）</h2>
+<div class="card">
+<ul>
+  <li>已交付：小尺寸、人指外形、12 点压力、本体柔顺、就近数字化少布线、比 v1 耐用、能测压能定位</li>
+  <li>待做：耐久/阶跃响应/最小可测压力/不同探头形状；<strong>换介电材料降迟滞</strong>；内芯改硅胶更柔顺；用 AD7147 的 PGA 封装版把触元从 12 加到 <strong>24</strong>；引入其他感知模态；同一原理推广到其他指节</li>
+</ul>
+</div>
+
+<h2>八 · 对本项目的启示（整理者标注，非原文）</h2>
+<div class="card">
+<ol>
+  <li><strong>4 线 I2C 直通 SL1680</strong>：指尖只出 I2C+电源，正对 J32 pin1/3/5/9——和已购 PCA9685A 同总线共存（地址错开即可）。iCub 用 CAN 汇聚是因为整机布线，单手方案不需要</li>
+  <li><strong>AD7147 的位置就是 Synaptics IC 的替换位</strong>：同为"电容→数字、I2C 出数"，换成 ForcePad/S788x/S3908 类器件即"同构升级"，还能白拿接近感应和更多通道——这正是调研报告主推的路线</li>
+  <li><strong>50 Hz 精测 / 500 Hz 粗检的自适应思路直接照搬</strong>：Synaptics touch IC 的 report rate/模式同样可配</li>
+  <li><strong>迟滞的教训要认</strong>：泡棉介电做<strong>控制阈值</strong>（碰到了/捏稳了）完全够用——iCub 用了十几年；要<strong>定量力</strong>就别指望泡棉，走 ForcePad/ClearForce 真力通道或选低迟滞介电</li>
+  <li><strong>材料清单可直接采购</strong>：Soma Foama 15（Smooth-On 有售）；导电外皮可自配（硅胶+碳黑）也可用现成导电硅胶/导电织物省去喷涂工艺（四氢呋喃有安全性要求）</li>
+  <li><strong>触觉图像的先例</strong>：12 触元就能定位按压点；我们用更密的电极阵列 + NPU，就是"触觉物体识别"的自然延伸</li>
+</ol>
+<div class="note good">配套阅读：<a href="../SL1680_电容触觉手指方案调研_2026-07-24.html">《SL1680 电容触觉手指方案调研》</a>——本论文的层叠结构在那份报告里被用作 PoC-1 定制指尖的参考设计。</div>
+</div>
+
+<h2>引用</h2>
+<div class="card" style="font-size:13px">
+<p>A. Schmitz, M. Maggiali, L. Natale, B. Bonino, G. Metta, "A Tactile Sensor for the Fingertips of the Humanoid Robot iCub," <em>IEEE/RSJ IROS</em>, 2010.（本地：<code>Finger/schmitz2010iros.pdf</code>）</p>
+<p>关键器件/材料原始出处：ADI AD7147 CapTouch CDC · Smooth-On Soma Foama 15 · Cabot Vulcan XC72 · Rhodia CAF4 · Objet Eden 3D 打印机 · IAI TT-C3-2020 · Laumas AS1。</p>
+</div>
+
+<div class="foot">中文工程整理 · 2026-07-24 · 供内部学习参考，版权归原作者与 IEEE 所有</div>
+
+</div>
+</body>
+</html>

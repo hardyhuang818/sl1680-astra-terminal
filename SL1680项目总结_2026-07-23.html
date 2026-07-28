@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 语音终端 · 项目总结 v2.6</title>
+<style>
+  :root{
+    --ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;
+    --rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;
+    --good:#1F6B4A;--good-bg:#E5F3EC;--bad:#A8305A;--bad-bg:#FBE9EF;--warn:#B06A12;--warn-bg:#FDF3E3;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;
+    --rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;
+    --good:#5FBF8F;--good-bg:#122A1E;--bad:#E06A92;--bad-bg:#2E151F;--warn:#E8A33D;--warn-bg:#2B2114;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 100px}
+  .mast{border-bottom:2px solid var(--ink);padding:40px 0 20px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(23px,4vw,34px);line-height:1.2;margin:0 0 14px;font-weight:680}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;gap:20px;flex-wrap:wrap}
+  .lead{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;margin-top:16px;font-size:14.5px;color:var(--ink-2)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:46px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:640}
+  h4{font-size:14.5px;margin:18px 0 6px;font-weight:640;color:var(--ink-2)}
+  p{margin:0 0 12px} ul,ol{margin:0 0 12px;padding-left:22px} li{margin-bottom:5px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:13px 15px;overflow-x:auto;margin:0 0 16px;color:var(--ink-2)}
+  .scroll{overflow-x:auto;margin:0 0 16px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:0 0 16px;font-size:14px}
+  .note.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:2px 18px 14px;margin:0 0 16px}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono)}
+  .arch{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);padding:14px 16px;border-radius:4px;overflow-x:auto;margin:0 0 16px;line-height:1.7;white-space:pre}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">SL1680 · Synaptics Astra Dolphin RDK · 项目总结</p>
+  <h1>本地语音 AI 终端 + DL7400 多屏显示</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-07-24</span>
+    <span><b>版本</b> v2.6</span>
+    <span><b>板子</b> 192.168.5.126</span>
+  </div>
+  <div class="lead">这份是<strong>项目级总结</strong>——项目是什么、现在能干什么、怎么构建、什么还没解决。逐日调试细节见 <code>SL1680调试总结_2026-07-23_完整版</code>。</div>
+</header>
+
+<h2>结论可信度标注</h2>
+<div class="scroll"><table>
+  <tr><th>标记</th><th>含义</th></tr>
+  <tr><td class="ok">✅ 已验证</td><td>直接测到的现象，或改完复测确认生效</td></tr>
+  <tr><td>⚠️ 高概率推断</td><td>现象为真，但因果链是推的</td></tr>
+  <tr><td>❓ 待确认</td><td>需要厂商/更多数据才能定论</td></tr>
+</table></div>
+
+<h2>一 · 项目是什么</h2>
+<div class="card">
+<p>在 Synaptics SL1680（4×Cortex-A73 + NPU）上做一台<strong>本地语音 AI 终端</strong>，配 DisplayLink DL7400 扩展多屏显示。</p>
+<p><strong>当前形态：不需要 PC。</strong>语音识别和合成全在板上跑，只有对话大脑走云端 DeepSeek。</p>
+<div class="scroll"><table>
+  <tr><th>部件</th><th>型号</th><th>接法</th></tr>
+  <tr><td>主板</td><td>SL1680 Dolphin RDK</td><td>—</td></tr>
+  <tr><td>麦克风</td><td>Logitech C920（USB 音频接口）</td><td>USB <code>1-1.3</code></td></tr>
+  <tr><td>摄像头</td><td>同一个 C920（USB 视频接口）</td><td>同上，两个接口可同时用</td></tr>
+  <tr><td>功放/喇叭</td><td>HT517</td><td>I2S，<code>dolphinasoc</code></td></tr>
+  <tr><td>多屏扩展</td><td>DisplayLink DL7400（固件 12.3.26）</td><td>USB3 <code>1-1.1.1</code>，SuperSpeed</td></tr>
+  <tr><td>显示器</td><td>3 块：2× 4K@60 + 1× 2880×1800@60</td><td>DL7400 输出</td></tr>
+</table></div>
+<div class="note warn">⚠️ 板载麦克风 ZTS6672 有驱动层问题（i2s-mic1 时钟未使能），<strong>现用 C920 替代</strong>，需 Synaptics FAE 支持。</div>
+</div>
+
+<h2>二 · 系统架构</h2>
+<div class="arch">[视觉] C920 摄像头 ──► NPU (mobilenet 人体检测, 25ms/帧)
+                          └─► 人走近 ──► SIGUSR1 ──► astra_voice 播欢迎语
+
+[语音] C920 麦克风 ──► silero VAD 断句 ──► SenseVoice ASR (CPU, int8)
+                                              │
+                                              ▼
+                                    astra_llm.py 四层路由
+                                    ① 本地音量指令  amixer 真的执行
+                                    ② 本地设备指令  时间/温度/内存/切屏
+                                    ③ 联网搜索      智谱 web_search + 接地
+                                    ④ 云端对话      DeepSeek
+                                              │
+                                              ▼
+                                    matcha TTS (CPU) ──► ALSA astraout ──► HT517
+
+[显示] astra_voice     ──► /tmp/astra_status.txt    (中文)
+       astra_translate ──► /tmp/astra_status_en.txt (英文)
+                              │
+                              ▼
+                        dl_face ──► GStreamer ──► DL7400 ──► 3 块屏
+                        屏0 = 表情脸 + 中英双语字幕
+                        屏1 = 可语音切成 C920 实况画面</div>
+
+<h3>各环节用什么模型</h3>
+<div class="scroll"><table>
+  <tr><th>环节</th><th>模型</th><th>跑在哪</th></tr>
+  <tr><td>人体检测</td><td><code>mobilenet224_full1</code></td><td class="ok">NPU</td></tr>
+  <tr><td>VAD</td><td><code>silero_vad.onnx</code></td><td>CPU</td></tr>
+  <tr><td>语音识别</td><td><strong>SenseVoice int8</strong></td><td>CPU</td></tr>
+  <tr><td><strong>对话主模型</strong></td><td><strong><code>deepseek-chat</code></strong></td><td>云端</td></tr>
+  <tr><td>联网搜索</td><td>智谱独立 Web Search API（<code>search_std</code>，约 ¥0.01/次）</td><td>云端</td></tr>
+  <tr><td>断网兜底</td><td><code>qwen2.5-0.5b-instruct-q8_0.gguf</code></td><td>CPU</td></tr>
+  <tr><td>中英翻译</td><td>同 <code>deepseek-chat</code></td><td>云端</td></tr>
+  <tr><td>语音合成</td><td><strong>matcha</strong> + vocos 声码器</td><td>CPU</td></tr>
+</table></div>
+<div class="note">✅ NPU 只对视觉有用。语音链路全在 CPU —— Synaptics 自己的语音示例也全跑 CPU。</div>
+
+<h2>三 · systemd 服务</h2>
+<div class="scroll"><table>
+  <tr><th>服务</th><th>作用</th><th>开机自启</th></tr>
+  <tr><td><code>astra-voice</code></td><td>语音助手主程序（VAD+ASR+四层回复+TTS，一进程常驻）</td><td class="ok">✅</td></tr>
+  <tr><td><code>astra-translate</code></td><td>中英字幕翻译守护进程</td><td class="ok">✅</td></tr>
+  <tr><td><code>dl-face</code></td><td>DL7400 对话界面</td><td class="ok">✅</td></tr>
+  <tr><td><code>vision-wake</code></td><td>视觉唤醒</td><td class="ok">✅</td></tr>
+  <tr><td><code>astra-cleanup.timer</code></td><td>每天 4:00 清语音段</td><td class="ok">✅</td></tr>
+  <tr><td><code>astra-mode</code></td><td>双模看门狗</td><td class="no">❌ 已停用</td></tr>
+  <tr><td><code>astra-xiaozhi</code></td><td>云端 xiaozhi 客户端</td><td class="no">❌ 停用</td></tr>
+</table></div>
+<div class="note bad"><strong>为什么停掉 <code>astra-mode</code></strong>：它每 8 秒探测 PC 的 8000 端口，<strong>探到就会 <code>stop astra-voice</code> 切云端模式</strong>。板子回到家庭网络后和 PC 同网段，这个风险变高了。别再 enable。</div>
+
+<h2>四 · 功能清单与验证状态</h2>
+<div class="card">
+<p>全部在 2026-07-23 重启后复验：</p>
+<div class="scroll"><table>
+  <tr><th>功能</th><th>状态</th><th>实测</th></tr>
+  <tr><td>三块屏开机自动点亮</td><td class="ok">✅</td><td>2×3840×2160@60 + 1×2880×1800@60，<code>NRestarts=0</code></td></tr>
+  <tr><td>语音对话（云端 DeepSeek）</td><td class="ok">✅</td><td>「你是谁」→「我是Astra语音助手」</td></tr>
+  <tr><td>联网实时数据</td><td class="ok">✅</td><td>「今天广州天气」→「多云到晴，26℃到35℃」真实数据</td></tr>
+  <tr><td>本地设备指令</td><td class="ok">✅</td><td>「现在几点」→「14点29分」（真实系统时钟）</td></tr>
+  <tr><td>语音控制音量</td><td class="ok">✅</td><td>「音量调到20%」→ amixer 实测变 <code>[20%]</code></td></tr>
+  <tr><td>语音切摄像头</td><td class="ok">✅</td><td>「打开摄像头」→ 屏1 切 camera + vision-wake 自动停</td></tr>
+  <tr><td>语音切回表情脸</td><td class="ok">✅</td><td>「关闭监控」→ 复位 + vision-wake 自动恢复</td></tr>
+  <tr><td>视觉唤醒</td><td class="ok">✅</td><td>人走近播欢迎语</td></tr>
+  <tr><td>中英双语字幕</td><td class="ok">✅</td><td>屏上「你说/Astra」两行中英对照</td></tr>
+  <tr><td>断电重启全恢复</td><td class="ok">✅</td><td>软件 reboot 验证；另有一次非计划重启也全恢复</td></tr>
+  <tr><td>麦克风掉线不空转</td><td class="ok">✅</td><td>见下</td></tr>
+</table></div>
+</div>
+
+<h3>本版新增：麦克风等待守护</h3>
+<div class="card">
+<p><strong>问题</strong>（2026-07-23 实测）：C920 挂的 <code>1-1.3</code> 总线会抖，实测掉线 <strong>86 秒</strong>。期间 <code>astra_voice</code> 每次启动都报 <code>打不开 plughw:CARD=C920,DEV=0 (capture): No such device</code> 退出，systemd 每 3 秒重拉一次，<strong>每次都白白加载 14–17 秒模型再死掉</strong>，连崩 7 次。</p>
+<p><strong>解法</strong>：<code>ExecStartPre=/usr/bin/astra_wait_mic.sh C920 120</code> 排在最前。两个设计要点：</p>
+<ol>
+  <li><strong>按卡名判断而不是卡号</strong> —— <code>/proc/asound/C920</code> 是按名字建的，卡号每次开机都会变（实测 C920 时而 card0 时而 card2）</li>
+  <li><strong>要等到采集节点而不只是卡目录</strong> —— 实测卡目录先出现，<code>/dev/snd/pcmC&lt;N&gt;D0c</code> 要等 udev 再建一会儿，中间那个窗口去开会报 <code>No such file or directory</code></li>
+</ol>
+<p><strong>✅ 对抗性验证</strong>（整设备 unbind/bind 模拟真拔插）：</p>
+<div class="scroll"><table>
+  <tr><th></th><th>旧行为</th><th>新行为</th></tr>
+  <tr><td>麦克风不在时</td><td class="no">崩 3 次 + 每次白加载模型</td><td class="ok"><code>activating</code>，加载模型 0 次、报错 0 次、NRestarts 0</td></tr>
+  <tr><td>麦克风插回来</td><td>—</td><td class="ok"><code>[wait-mic] C920 在第 17 秒就绪</code> → 加载一次模型 → 开始监听，NRestarts 全程 0</td></tr>
+</table></div>
+</div>
+
+<h2>五 · 关键技术决策（都是踩出来的）</h2>
+
+<h3>音频：<code>astraout</code> 是必需不是优化 ✅</h3>
+<div class="card">
+<p>Synaptics 驱动 <code>berlin_outdai_hw_params</code> 在<strong>非 48000 采样率</strong>（如 matcha 的 22050）下空指针崩溃，把播放子设备卡成占用、owner 是已死 PID，<strong>用户态无法释放，只能重启</strong>。</p>
+<p>解法：<code>/etc/asound.conf</code> 定义 <code>pcm.astraout</code> = <code>plug → softvol → plug(强制48000/2ch/S16_LE) → hw</code>，硬件永远见不到 22050。<strong>所有 ALSA 寻址必须用 <code>CARD=名字</code></strong>，索引 <code>hw:0</code> 会因声卡号重排而错。</p>
+</div>
+
+<h3>显示：绝不能盲信 <code>preferred_mode</code> ✅</h3>
+<div class="card">
+<p>小米显示器 EDID 报 3840×2160<strong>@160Hz</strong> 为首选模式，DL7400 喂不动，<code>dlsdk_display_show</code> <strong>永久阻塞</strong>（确定性卡在第 7 帧）。钳到 60Hz 立刻就好。</p>
+<div class="note">这个故障极像"显示器坏了/线坏了"，因为 <strong>EDID 是显示器的属性，跟着屏走</strong>。换线"没用"也是同一原因。</div>
+</div>
+
+<h3>联网：智谱 chat 的 <code>web_search</code> 工具不工作 ✅</h3>
+<div class="card">
+<p>实测 <code>prompt_tokens</code> 只有 21、<code>search_result</code> 0 条，而模型<strong>照样编出一个气温</strong>（编 15~25℃/18~28℃，真实 28~36℃，两个模型还互相矛盾）。</p>
+<p>正确做法是调<strong>独立搜索 API</strong>，拿到真实网页内容后配 <code>GROUND_PROMPT</code>（"只根据这些资料回答，绝对不许编造数字"）交给 DeepSeek。搜不到时，<strong>天气/股价这类硬实时问题直接说查不到，不回落</strong>。</p>
+</div>
+
+<h3>误触发：纯能量门槛无解 ✅</h3>
+<div class="card">
+<p>实测办公室底噪 <strong>RMS 575~713</strong>，用户说话 <strong>RMS 470~1170</strong>——<strong>两者重叠</strong>。<code>--min-rms</code> 提到 1150 的代价是必须靠近麦（30cm 内）。</p>
+<div class="note warn"><strong>远场 + 嘈杂环境的根治方案是 KWS 唤醒词，还没做。</strong></div>
+</div>
+
+<h2>六 · 已知未解决</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>问题</th><th>状态</th></tr>
+  <tr><td>1</td><td><strong>误触发严重</strong> —— 办公室人声被当指令，每次都真打云端 API</td><td>需 KWS。板上 <code>/home/voice/kws/</code> 素材齐全但未接入</td></tr>
+  <tr><td>2</td><td><strong>DL7400 屏断电不自动重亮</strong></td><td>SDK 三个缺陷，无安全在线检测手段。已提报告给 DisplayLink</td></tr>
+  <tr><td>3</td><td><strong>AEC 回声消除没做</strong></td><td>现靠播报时丢采集帧</td></tr>
+  <tr><td>4</td><td><strong>板载麦 ZTS6672 驱动问题</strong></td><td>需 Synaptics FAE</td></tr>
+  <tr><td>5</td><td><strong>TTS 授权</strong></td><td>espeak-ng GPLv3 穿透整条链路，产品化前必解</td></tr>
+  <tr><td>6</td><td><s><code>astra_voice</code> 二进制无法复现</s></td><td class="ok">✅ v2.5 已解决 —— recipe 现在能完整构建</td></tr>
+  <tr><td>7</td><td><strong>模型约 2GB 不在镜像里</strong></td><td>烧完要单独灌 <code>/home/voice/</code></td></tr>
+  <tr><td>8</td><td><strong>镜像没在真板子上实烧验证过</strong></td><td>板子 SSH 自 2026-07-23 晚不可达</td></tr>
+</table></div>
+
+<h3>DL7400 断电不自愈的三个 SDK 缺陷</h3>
+<div class="card">
+<ol>
+  <li><code>dlsdk_register_hotplug_callback()</code> <strong>恒返回 <code>DLSDK_UNSUCCESSFUL(2)</code></strong>，事件从未送达
+    <ul>
+      <li class="ok">✅ 实测排除了平台原因（<code>LIBUSB_CAP_HAS_HOTPLUG=1</code>）</li>
+      <li>⚠️ 但<strong>没有</strong>证明故障在 libdlsdk 内部——也可能是前置条件没满足或该配置本就不支持</li>
+    </ul>
+  </li>
+  <li>EDID / preferred_mode / display 数量<strong>全是缓存</strong>，屏断电了照样返回 SUCCESS</li>
+  <li><strong>★致命</strong>：对已断开的 sink 调 <code>dpaux_read</code>，在有并发推帧时会让该 device 上<strong>所有输出一起黑屏</strong></li>
+</ol>
+<div class="note bad">危险版本留档在 <code>dl_face.c.DANGEROUS_dpaux_DO_NOT_BUILD</code>，<strong>永远不要编进生产版</strong>。现行方案 = 语音说「重新检测屏幕」重启 dl-face 重新枚举。</div>
+</div>
+
+<h2>七 · 仓库与构建</h2>
+<div class="arch">meta-dlsdk/
+  VERSION                                  ← 版本记录，每次同步追加
+  recipes-ai/
+    astra-voice/astra-voice_1.0.bb         ← 语音助手（2026-07-23 新建）
+              /files/  astra_voice.c, astra_llm.py, astra_translate.py,
+                       astra_wait_mic.sh, astra_setvol.sh, vision_wake.sh,
+                       asound.conf, llm.conf.sample, silent.wav, *.service
+    sherpa-onnx/sherpa-onnx_1.13.4.bb
+  recipes-graphics/
+    dl-face/dl-face_1.0.bb                 ← 显示界面（2026-07-23 新建）
+    dl-clock/ dl-edid/ dl-player/ dlsdk/
+tools/                                     ← 远程操作脚本
+backups/                                   ← 备份包 + CHANGELOG + 部署清单</div>
+<pre>cd /home/astra/sdk &amp;&amp; source poky/oe-init-build-env build-sl1680
+bitbake astra-media          # 完整镜像(含语音终端)</pre>
+<p><strong>语音终端怎么进镜像</strong>：<code>packagegroup-astra-terminal</code> 定义"这台机器是干什么的"，由 <code>recipes-core/images/astra-media.bbappend</code> 挂到 Synaptics 官方镜像上 —— 沿用原来的构建命令和烧录流程，镜像名和产物布局都不变。不想装：<code>local.conf</code> 里写 <code>ASTRA_TERMINAL_PACKAGES = ""</code>。产出的 SYNAIMG 烧录包约 2.5 GB。</p>
+<div class="note warn">⚠️ <strong>模型不在 recipe 里</strong>（约 2GB），装完镜像要单独灌到 <code>/home/voice/</code>，见 <code>files/README_models.md</code> 和 <code>MODEL_MANIFEST.txt</code>。</div>
+
+<h3>构建期抓到的真 bug</h3>
+<div class="card">
+<h4>编译层</h4>
+<ol>
+  <li><strong>Yocto 硬关了 CMake 的 FetchContent</strong> —— <code>cmake.bbclass</code> 传 <code>-DFETCHCONTENT_FULLY_DISCONNECTED=ON</code>，sherpa 的第三方包全下不下来，configure 直接失败。<strong>症状酷似"网络不通"，但日志里根本没有 curl/HTTP/超时记录</strong>。解法：14 个包（含 4 层嵌套）走 <code>SRC_URI</code> 预取 → 拷进 <code>${S}</code> 命中 <code>possible_file_locations</code> → 再关掉那个开关。⚠️ <code>openfst</code>/<code>eigen</code> 各有两个版本被不同子项目索要，都得备着</li>
+  <li><strong><code>-Werror=format-security</code></strong> —— espeak-ng 重设 C 标志丢了 <code>-Wformat</code>，剩下的 <code>-Wformat-security</code> 被 <code>-Werror</code> 变成致命错误</li>
+  <li><strong>字体包名</strong> —— 是 <code>ttf-wqy-zenhei</code> 不是 <code>wqy-zenhei</code></li>
+</ol>
+<h4>打包层（都是"构建全绿、烧板才炸"那一类）</h4>
+<ol start="4">
+  <li><strong>无 SOVERSION 的 <code>.so</code> 被丢进 <code>-dev</code> 包</strong> —— 运行时镜像里根本没有这个库。<code>SOLIBS=".so"</code> / <code>FILES_SOLIBSDEV=""</code> 修复，<span class="ok">已端到端验证</span>（deb 里 4 个 <code>.so</code> 都在）</li>
+  <li><strong>预编译 <code>libonnxruntime.so</code> 没被登记成符号版本提供者</strong> —— <code>RPROVIDES</code> 显式声明</li>
+  <li><strong>第三方装错位置</strong> —— <code>sherpa-onnx.pc</code> 装到 <code>${prefix}</code> 根下、<code>cargs.h</code> 装进 <code>${libdir}</code></li>
+</ol>
+<h4>镜像层（v2.6 验收时抓到，只看"构建成功"一个都发现不了）</h4>
+<ol start="7">
+  <li><strong><code>/etc/asound.conf</code> 与 <code>alsa-state</code> 撞车</strong> → <code>do_rootfs</code> 直接失败。删掉 alsa-state 那份 <strong>32 字节的占位注释</strong></li>
+  <li><strong><code>dl-clock</code> 和 <code>dl-face</code> 都自启</strong> → DLSDK <strong>单进程独占</strong>，两者抢 DL7400，表现为"屏幕黑着但服务 active"</li>
+  <li><strong><code>vision-wake</code> 漏了自启</strong> → 烧完的板子"人走近打招呼"不工作。⚠️ 这是我判断错了：以为它独占 C920，实际视频/音频是两个独立接口可以并存。<strong>应以板子实测状态为准，别按推测排除</strong></li>
+  <li><strong><code>synap_cli_od</code> 依赖没声明</strong> → 碰巧 <code>astra-media</code> 已装，换个 image 就静默失效</li>
+</ol>
+<div class="note warn"><code>SYSTEMD_AUTO_ENABLE:pn-&lt;recipe&gt;</code> 写在别的 recipe 的 bbappend 里<strong>不生效</strong> —— 这种 <code>:pn-</code> 覆盖只在 conf 文件（local.conf/layer.conf）里有效。必须改到该 recipe 自己里。</div>
+</div>
+
+<h3>仓库 vs 板子</h3>
+<div class="note bad"><strong>板子是真相，仓库历史上多次落后。</strong>曾出现：<code>astra-voice.service</code> 停留在旧硬件配置、<code>astra_llm.py</code> 四层能力一个都没有、5 个文件仓库里根本不存在、以及最危险的一次——板端回滚了会让两块屏全黑的代码但<strong>仓库源码没还原</strong>。</div>
+<p>改完板子当场跑 <code>tools/export_live.sh</code> 导出回灌，用 <code>backups/2026-07-23/DEPLOY_MANIFEST.txt</code> 的 sha256 对照表验证一致。<strong>判断某个回退文件安不安全必须 diff 内容，不能看文件名。</strong></p>
+
+<h2>八 · 远程操作</h2>
+<div class="card">
+<p>板子在家庭网络 <code>192.168.5.126</code>（root/1234），和 PC 同网段直连。</p>
+<div class="scroll"><table>
+  <tr><th>脚本</th><th>用途</th></tr>
+  <tr><td><code>tools/brun.ps1</code> / <code>bsh.ps1</code> / <code>bput.ps1</code></td><td><strong>直连</strong>跑命令 / 跑脚本 / 传文件</td></tr>
+  <tr><td><code>tools/wgrun.ps1</code> / <code>wgsh.ps1</code> / <code>wgput.ps1</code> / <code>wgget.ps1</code></td><td>板子在外面时经 WireGuard 跳板</td></tr>
+  <tr><td><code>tools/wgjump.ps1</code></td><td>只登跳板机，板子失联时区分"隧道断了"还是"板子没了"</td></tr>
+  <tr><td><code>tools/export_live.sh</code></td><td>导出板端实际运行文件 + sha256 清单</td></tr>
+</table></div>
+</div>
+
+<h3>六个反复踩的坑</h3>
+<div class="card">
+<ol>
+  <li><strong>上传会被注入 3 字节 UTF-8 BOM</strong> —— 文本没事，<strong>二进制直接废</strong>（<code>Exec format error</code>）。判据：板上大小 = 本地 +3</li>
+  <li><strong><code>.cmd</code> 里绝不能写中文注释</strong> —— cmd.exe 用 ANSI 代码页，中文变乱码并被当命令执行</li>
+  <li><strong><code>powershell -File</code> 会把参数按空格重切</strong> —— 外层引号保不住，<code>-w</code> / <code>$(...)</code> 被 PowerShell 抢去解析。<strong>把远端命令写成脚本文件</strong></li>
+  <li><strong>busybox 缺项</strong> —— 没有 <code>install</code>、<code>timeout</code>、<code>base64</code>、<code>ldd</code>；<code>head</code> 不认 <code>-c</code>/<code>-12</code>；<code>wget -T</code> 管不住 connect 挂起（用 <code>curl -m</code>）</li>
+  <li><strong>askpass 的子串匹配</strong> —— <code>findstr /C:"192.168.5.1"</code> 会匹配上 <code>192.168.5.126</code>，把跳板密码喂给板子，只报 <code>Permission denied</code> 毫无线索</li>
+  <li><strong>板上找 PID 别用 <code>pgrep -f</code></strong> —— 会匹配到外层的 sh 自己</li>
+</ol>
+</div>
+
+<h2>九 · 版本记录</h2>
+<div class="scroll"><table>
+  <tr><th>版本</th><th>日期</th><th>内容</th></tr>
+  <tr><td><strong>v2.6</strong></td><td>2026-07-24</td><td><strong>出了第一个「烧完即用」的完整镜像</strong>；验收抓到 4 个「构建成功但功能不全」的问题</td></tr>
+  <tr><td><strong>v2.5</strong></td><td>2026-07-23</td><td><strong>sherpa-onnx 首次在 Yocto 里构建成功</strong>；根因是 Yocto 硬关了 CMake FetchContent</td></tr>
+  <tr><td><strong>v2.4</strong></td><td>2026-07-23</td><td>麦克风等待守护（<code>astra_wait_mic.sh</code>），消除 USB 抖动时的空转重载</td></tr>
+  <tr><td><strong>v2.3</strong></td><td>2026-07-23</td><td>Codex 审阅整改：移除危险 AUX 代码、板端配置全量回灌、补两个从来不存在的 recipe、修 sherpa <code>.so</code> 打包</td></tr>
+  <tr><td><strong>v2.2</strong></td><td>2026-07-23</td><td>语音「重新检测屏幕」；三个 DLSDK 诊断工具；DisplayLink 问题报告</td></tr>
+  <tr><td><strong>v2.1</strong></td><td>2026-07-23</td><td>双屏分角色 + 语音切监控；CPU 优化；本地设备工具</td></tr>
+  <tr><td><strong>v2.0</strong></td><td>2026-07-23</td><td>中英双语字幕；智谱联网搜索接地</td></tr>
+</table></div>
+<p>完整改动见 <code>backups/CHANGELOG.md</code>，layer 版本见 <code>meta-dlsdk/VERSION</code>。</p>
+
+<h2>十 · 下一步建议</h2>
+<div class="card">
+<ol>
+  <li><strong>治误触发（最高优先）</strong> —— 接 KWS 唤醒词。板上 <code>/home/voice/kws/</code> 的 encoder/decoder/joiner int8、tokens、关键词文件都在，<code>sherpa-onnx-keyword-spotter-alsa</code> 也在，<strong>只差接进链路</strong>。顺带能解决"语音暂停对话"——现在做不到是因为回复链最后一层规则兜底必定出声，真静音只能停采音，而停了之后要用语音唤醒就必须有 KWS</li>
+  <li><s><strong>闭合构建验证</strong></s> —— <span class="ok">✅ 已完成（v2.5/v2.6）</span>。三个 recipe 全绿，完整镜像已产出。<strong>但没在真板子上实烧验证过</strong>，这是现在最该补的一步</li>
+  <li><strong>产品化</strong> —— 智能看护/安防终端（demo 已通，差多摄像头 CSI×2 + 录像 + 告警推送）</li>
+</ol>
+</div>
+
+<div class="foot">生成于 2026-07-24 · SL1680 语音终端项目 · v2.6</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TD7800 SPI 读ID与BIST 源代码 · 2026-07-28</title>
+<style>
+  :root { --c1:#0b5560; --c2:#127a8a; --bg:#f5f9fa; --card:#fff; --ink:#1e3238; --line:#d7e5e8; --warn:#b4540a; --ok:#0f7b3f; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); line-height:1.62; }
+  .wrap { max-width:1080px; margin:0 auto; padding:28px 20px 80px; }
+  header { background:linear-gradient(120deg,var(--c1),var(--c2)); color:#fff; border-radius:14px; padding:24px 30px; margin-bottom:24px; }
+  header h1 { margin:0 0 6px; font-size:23px; }
+  header .sub { opacity:.92; font-size:14px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); padding:3px 12px; border-radius:20px; font-size:13px; margin:10px 8px 0 0; }
+  h2 { color:var(--c1); border-left:5px solid var(--c2); padding-left:12px; margin:34px 0 12px; font-size:19px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:12px 0; overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13.5px; background:#fff; }
+  th { background:#e2eff2; color:#0b4a54; text-align:left; padding:7px 10px; border:1px solid var(--line); }
+  td { padding:6px 10px; border:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td { background:#fafdfd; }
+  code, pre { font-family:Consolas,"Courier New",monospace; }
+  code { background:#eaf3f4; border:1px solid #dbe9eb; border-radius:4px; padding:1px 6px; font-size:12.5px; }
+  pre { background:#0d2126; color:#d8ecef; border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:12.8px; line-height:1.52; }
+  pre code { background:none; border:none; color:inherit; padding:0; }
+  .cmt { color:#7fb3a0; }
+  .callout { border-left:4px solid var(--warn); background:#fff7ef; padding:10px 16px; border-radius:0 10px 10px 0; margin:12px 0; font-size:14px; }
+  .callout.green { border-color:var(--ok); background:#effaf3; }
+  .warn { color:var(--warn); font-weight:700; }
+  footer { margin-top:36px; font-size:12.5px; color:#5a7b82; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>TD7800 显示 SPI：读 0xBF 器件码 &amp; BIST 模式 —— 完整源代码</h1>
+  <div class="sub">SL1680 (dolphin RDK) → TM10.5-TD7800 · 2026-07-28 · 全部代码实测通过</div>
+  <div>
+    <span class="badge">实测 BFh = 02 3C 68 0A</span>
+    <span class="badge">BIST 图案点亮验证</span>
+    <span class="badge">整合版 5 操作单文件</span>
+  </div>
+</header>
+
+<h2>1. 前置条件</h2>
+<div class="card">
+<p><b>硬件</b>（4 线 SPI + 复位，详见《硬件接线总表》）：</p>
+<table>
+<tr><th>面板 U5</th><th>信号</th><th>SL1680 J32</th></tr>
+<tr><td>1</td><td>SCK</td><td>J32.23（SPI2_CLK）</td></tr>
+<tr><td>2</td><td>SDA（MOSI，板→屏）</td><td>J32.19（SPI2_SDO）</td></tr>
+<tr><td>3</td><td>SDO（MISO，屏→板）</td><td>J32.21（SPI2_SDI）</td></tr>
+<tr><td>4</td><td>SS（片选）</td><td>J32.24（SPI2_SS0n）</td></tr>
+<tr><td>9</td><td>RST TFT（RESX）</td><td><span class="warn">必须拉高 3.3V（悬空=芯片复位，SPI 无响应）</span></td></tr>
+</table>
+<p><b>软件</b>：<code>/dev/spidev0.0</code> 由三处 DTS 配置提供（已固化在 boot）——<code>&amp;spi0</code> 使能 + <code>spidev@0</code> 子节点 + <code>spi2_data_pmux</code>（夺回被 U-Boot 占成 UART2 流控的 SM_SPI2_SDO/SDI）。使用前 <code>modprobe spidev</code>。</p>
+<p><b>为什么用 ctypes 不用 fcntl</b>：板上是裁剪版 Python 3.12，<code>import fcntl</code> 报 <code>ModuleNotFoundError</code> —— ioctl 走 <code>ctypes.CDLL(None).ioctl</code> 直调 libc。</p>
+</div>
+
+<h2>2. 协议要点（TD7800B datasheet §22.1）</h2>
+<div class="card">
+<ul>
+<li><b>9-bit 帧</b>：首位 DCX（0=命令，1=参数）+ 8 位数据，MSB 在前；SPI mode 0（上升沿采写、下降沿出读）</li>
+<li><b>写</b>：每寄存器 = 1 命令帧 + N 参数帧（同一 CS 窗口连发）</li>
+<li><b>读</b>：<code>38h</code> 进读模式 → 发读命令帧并继续给哑元时钟，SDO 吐数据 → <code>39h</code> 退出。第一个返回字节 = 命令回显</li>
+<li><b>SDO 有 1-bit 相位偏移</b>（下降沿驱动的半拍差）——解析时把返回字流拼成位流、锚定命令回显再按 8-bit 切参数</li>
+</ul>
+<table>
+<tr><th>寄存器</th><th>名称</th><th>用法</th></tr>
+<tr><td>B0h</td><td>Manufacturer Command Access Protect</td><td>写 <code>00</code> 解锁厂商命令（<code>03</code> 重新上锁）</td></tr>
+<tr><td>D6h</td><td>Sequencer Test Control</td><td>BIST 前写 <code>00</code></td></tr>
+<tr><td>DEh</td><td>Test Image Generator</td><td>参数1 bit0=TIGON：<code>01</code>=开图案，<code>00</code>=关（视频源回 LVDS）</td></tr>
+<tr><td>BFh</td><td>Read Device Code（只读，12 参数）</td><td>前 4 字节标准值 <b>02 3C 68 0A</b> —— 读通 = SPI 链路 + 芯片全活</td></tr>
+<tr><td>B1h / C0h</td><td>LVDS IF Setting / Display Timing</td><td>读面板 NVM 实际配置（对时序答案）</td></tr>
+<tr><td>29h / 11h</td><td>Display On / Sleep Out</td><td>厂商 initial code 点亮收尾（纯命令帧）</td></tr>
+</table>
+</div>
+
+<h2>3. 完整整合版源代码（单文件，5 种操作）</h2>
+<div class="card">
+<p>板上保存为 <code>/tmp/td7800_spi_tool.sh</code>，用法：<code>sh td7800_spi_tool.sh id|bist_on|bist_off|lighton|cfg</code>。可跑版同步存于 <code>TD7800_bringup_backup_2026-07-28/board-scripts/td7800_spi_tool.sh</code>。</p>
+<pre><code>#!/bin/sh
+<span class="cmt"># TD7800 显示 SPI 工具（SL1680 侧）
+#   id       读 0xBF 器件码（期望 02 3C 68 0A）
+#   bist_on  开测试图案（B0&lt;-00, D6&lt;-00, DE&lt;-01）
+#   bist_off 关测试图案（DE&lt;-00，视频源回 LVDS）
+#   lighton  发 29h Display-On + 11h Sleep-Out
+#   cfg      读面板 NVM 配置（B1h / C0h）</span>
+modprobe spidev 2&gt;/dev/null
+python3 - "$1" &lt;&lt;'EOF'
+import struct, ctypes, os, sys, time
+
+<span class="cmt"># ---- ioctl 底层（板上 python 无 fcntl，ctypes 直调 libc）----</span>
+libc = ctypes.CDLL(None, use_errno=True)
+def ioctl(fd, req, buf):
+    r = libc.ioctl(fd, ctypes.c_ulong(req), buf)
+    if r &lt; 0:
+        raise OSError(ctypes.get_errno(), "ioctl 0x%x" % req)
+
+DEV = "/dev/spidev0.0"
+SPI_IOC_WR_MODE          = 0x40016b01   <span class="cmt"># u8</span>
+SPI_IOC_WR_BITS_PER_WORD = 0x40016b03   <span class="cmt"># u8</span>
+SPI_IOC_WR_MAX_SPEED_HZ  = 0x40046b04   <span class="cmt"># u32</span>
+SPI_IOC_MESSAGE_1        = 0x40206b00   <span class="cmt"># struct spi_ioc_transfer ×1</span>
+
+fd = os.open(DEV, os.O_RDWR)
+ioctl(fd, SPI_IOC_WR_MODE,          ctypes.byref(ctypes.c_uint8(0)))    <span class="cmt"># mode 0</span>
+ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, ctypes.byref(ctypes.c_uint8(9)))    <span class="cmt"># 9-bit DCX 帧</span>
+ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ,  ctypes.byref(ctypes.c_uint32(500000)))  <span class="cmt"># 500kHz（上限10MHz）</span>
+
+def xfer(words):
+    <span class="cmt">"""全双工传一串 9-bit 字；CS 在整个 transfer 内保持有效。
+    每字占 2 字节（小端 u16），dw-apb-ssi 原生支持 9bpw。"""</span>
+    n = len(words) * 2
+    tx = ctypes.create_string_buffer(b"".join(struct.pack("&lt;H", w) for w in words), n)
+    rx = ctypes.create_string_buffer(n)
+    <span class="cmt"># struct spi_ioc_transfer: u64 tx_buf, u64 rx_buf, u32 len, u32 speed_hz,
+    #   u16 delay_usecs, u8 bits_per_word, u8 cs_change, u8 tx_nbits, u8 rx_nbits, u16 pad</span>
+    t = struct.pack("QQIIHBBBBH", ctypes.addressof(tx), ctypes.addressof(rx),
+                    n, 500000, 0, 9, 0, 0, 0, 0)
+    ioctl(fd, SPI_IOC_MESSAGE_1, ctypes.create_string_buffer(t, len(t)))
+    return [struct.unpack_from("&lt;H", rx.raw, i * 2)[0] &amp; 0x1FF for i in range(len(words))]
+
+<span class="cmt"># ---- TD7800 9-bit 帧语义 ----</span>
+def cmd(c):   xfer([c])            <span class="cmt"># DCX=0：命令帧（bit8=0）</span>
+def param(p): xfer([0x100 | p])    <span class="cmt"># DCX=1：参数帧（bit8=1）</span>
+
+def write_reg(c, params=()):
+    <span class="cmt">"""一个 CS 窗口内：命令帧 + 全部参数帧"""</span>
+    xfer([c] + [0x100 | p for p in params])
+
+def read_reg(c, nparams):
+    <span class="cmt">"""38h 进读模式 -&gt; 读命令+哑元时钟采样 SDO -&gt; 39h 退出。
+    SDO 输出有 1-bit 相位偏移：拼位流，锚定命令回显后按 8-bit 切参数。"""</span>
+    xfer([0x038])                                   <span class="cmt"># enter_read_mode</span>
+    rx = xfer([c] + [0x000] * (nparams + 3))        <span class="cmt"># 读命令 + 哑元，全双工采样</span>
+    xfer([0x039])                                   <span class="cmt"># exit_read_mode</span>
+    bs = "".join(format(w, "09b") for w in rx)
+    for off in range(0, 18):                        <span class="cmt"># 容错扫描位偏移</span>
+        if off + 8 &lt;= len(bs) and int(bs[off:off + 8], 2) == c:   <span class="cmt"># 找到回显</span>
+            out, k = [], off + 8
+            while k + 8 &lt;= len(bs) and len(out) &lt; nparams:
+                out.append(int(bs[k:k + 8], 2)); k += 8
+            return out
+    return None
+
+<span class="cmt"># ---- 操作分发 ----</span>
+op = sys.argv[1] if len(sys.argv) &gt; 1 else "id"
+
+if op == "id":
+    p = read_reg(0xBF, 5)
+    ok = p and p[:4] == [0x02, 0x3C, 0x68, 0x0A]
+    print("BFh =", " ".join("%02X" % v for v in p) if p else "读取失败",
+          "&lt;- 通过, IC 活着" if ok else "")
+
+elif op == "bist_on":
+    write_reg(0xB0, [0x00])     <span class="cmt"># 解锁厂商命令</span>
+    write_reg(0xD6, [0x00])     <span class="cmt"># 序列器测试控制</span>
+    write_reg(0xDE, [0x01])     <span class="cmt"># TIGON=1 测试图案开</span>
+    print("BIST ON —— 看屏出图案")
+
+elif op == "bist_off":
+    write_reg(0xB0, [0x00])
+    write_reg(0xDE, [0x00])     <span class="cmt"># TIGON=0，视频源切回 LVDS 输入</span>
+    print("BIST OFF —— 视频源回 LVDS")
+
+elif op == "lighton":           <span class="cmt"># 厂商 initial code 尾序（"Light on with 11h29h"）</span>
+    cmd(0x29); time.sleep(0.2)  <span class="cmt"># Display On</span>
+    cmd(0x11); time.sleep(0.15) <span class="cmt"># Sleep Out</span>
+    print("29h + 11h 已发")
+
+elif op == "cfg":
+    b1 = read_reg(0xB1, 7)      <span class="cmt"># LVDS IF Setting</span>
+    c0 = read_reg(0xC0, 7)      <span class="cmt"># Display Timing</span>
+    print("B1h =", " ".join("%02X" % v for v in b1) if b1 else "失败")
+    if b1:
+        print("  LVFMT=%d(0=VESA) LVCOLMOD=%d(1=24bit4lane) LVSYNM=%d(2=DE+SYNC)"
+              % ((b1[0] &gt;&gt; 3) &amp; 1, (b1[0] &gt;&gt; 2) &amp; 1, b1[0] &amp; 3))
+        print("  LVHBP=%d LVHFP=%d LVVBP=%d"
+              % (((b1[1] &amp; 0xF) &lt;&lt; 8) | b1[2], ((b1[3] &amp; 0xF) &lt;&lt; 8) | b1[4],
+                 ((b1[5] &amp; 0xF) &lt;&lt; 8) | b1[6]))
+    print("C0h =", " ".join("%02X" % v for v in c0) if c0 else "失败")
+    if c0:
+        print("  RTN(1H)=%d RCLK  VBP=%d  NL(行数)=%d  VFP=%d"
+              % (((c0[0] &amp; 0xF) &lt;&lt; 8) | c0[1], c0[2],
+                 ((c0[3] &amp; 0xF) &lt;&lt; 8) | c0[4], (c0[5] &lt;&lt; 8) | c0[6]))
+
+os.close(fd)
+EOF</code></pre>
+</div>
+
+<h2>4. 实测输出样例（2026-07-27/28 板上原始记录）</h2>
+<div class="card"><pre><code><span class="cmt"># id —— RESX 拉高后首次命中</span>
+RX = 1FF 17E 008 1E3 080 140 000 …
+★ 命中器件码 02 3C 68 0A (stride=8, off=1)   <span class="cmt">← 1-bit 相位偏移的实际体现</span>
+
+<span class="cmt"># cfg —— 面板 NVM 与厂商 FW 表逐字节一致</span>
+B1h = 06 00 5A 00 61 00 10   → VESA / 24bit 4lane / DE+SYNC，porch 90/97/16
+C0h = 01 0F 0A 02 D0 00 0A   → RTN=271 RCLK，NL=720（原生行数实锤），VFP=10
+
+<span class="cmt"># bist_on → 屏出测试图案（面板整条显示通路无罪的判据）
+# bist_off + weston restart → LVDS 桌面</span></code></pre></div>
+
+<h2>5. 踩坑备忘（这套代码为什么长这样）</h2>
+<div class="card">
+<ol>
+<li><b><code>fcntl</code> 不存在</b> → ctypes 直调 libc ioctl（<code>use_errno=True</code> 拿错误码）</li>
+<li><b>9 bpw 缓冲区排布</b>：每字 2 字节小端；dw-apb-ssi 支持 4–16 bpw</li>
+<li><b>SDO 的 1-bit 偏移</b>：不做位流锚定会把 <code>02 3C 68 0A</code> 读成移位乱码 —— <code>read_reg</code> 的偏移扫描是解药</li>
+<li><span class="warn">读写前芯片必须出复位</span>：RESX（U5.9）悬空时一切全静默（全 0 或全 1FF）</li>
+<li><b>pinmux 前提</b>：SM_SPI2_SDO/SDI 默认被 U-Boot 设成 UART2 流控（收发全 0 的元凶），已在 DTB 固化夺回；换镜像先 <code>devmem 0xf7fe2c14</code> 确认 <code>0x00005A01</code></li>
+<li>速率 500kHz 是调试保守值，datasheet 写周期 ≥100ns（≈10MHz 上限）</li>
+</ol>
+</div>
+
+<h2>6. 原始分散脚本对照（<code>TD7800_bringup_backup_2026-07-28/board-scripts/</code>）</h2>
+<div class="card">
+<table>
+<tr><th>原始脚本</th><th>内容</th><th>本文对应</th></tr>
+<tr><td><code>td_spidev_test2.sh</code></td><td>首个 spidev 版：ID 读（双 mode 自动试）+ BIST</td><td><code>id</code> + <code>bist_on</code></td></tr>
+<tr><td><code>full_retest.sh</code></td><td>RESX 修复后全套重测（含触摸探针）</td><td><code>id</code> + <code>bist_on</code></td></tr>
+<tr><td><code>read_panel_cfg.sh</code></td><td>读 BFh/B1h/C0h 并解码</td><td><code>cfg</code></td></tr>
+<tr><td><code>bist_off_lvds.sh</code></td><td>关 BIST + weston restart 切 LVDS</td><td><code>bist_off</code></td></tr>
+<tr><td><code>dispon_sleepout.sh</code></td><td>29h/11h 点亮尾序</td><td><code>lighton</code></td></tr>
+<tr><td><code>spi_loopback.sh</code></td><td>J32.19↔21 短接回环自证</td><td>（诊断用，未并入）</td></tr>
+<tr><td><code>td_spi_test.sh</code></td><td>早期 GPIO 位敲版（后被硬 SPI 取代）</td><td>（历史存档）</td></tr>
+</table>
+</div>
+
+<footer>TD7800 SPI 源代码总结 · SL1680 项目 · 2026-07-28 · 姊妹篇：《TC358775 配置与调试记录》《硬件接线总表》</footer>
+</div>
+</body>
+</html>

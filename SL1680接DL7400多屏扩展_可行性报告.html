@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 + DL7400 多屏扩展 · 方案总结</title>
+<style>
+  :root{
+    --bg:#fff; --fg:#1a1d21; --muted:#5c6570; --line:#e3e8ee;
+    --card:#f7f9fc; --accent:#0b6bcb; --ok:#0a7c42; --warn:#b45309; --bad:#c0392b;
+    --code-bg:#f4f6f9;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0f1419; --fg:#e6e9ed; --muted:#9aa5b1; --line:#242b33;
+           --card:#161c23; --accent:#4d9fe8; --ok:#3ecf8e; --warn:#e0a24a; --bad:#f0736a;
+           --code-bg:#131920; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:940px;margin:0 auto;padding:40px 22px 100px}
+  h1{font-size:1.95rem;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:.9rem;margin-bottom:6px}
+  h2{font-size:1.32rem;margin:46px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:1.05rem;margin:26px 0 10px}
+  p{margin:12px 0}
+  code{background:var(--code-bg);padding:2px 6px;border-radius:4px;
+       font:.87em/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+      padding:14px 16px;overflow-x:auto;margin:14px 0}
+  pre code{background:none;padding:0;font-size:.84rem;line-height:1.6}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:.92rem;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--card);font-weight:600}
+  .verdict{background:linear-gradient(135deg,rgba(180,83,9,.10),rgba(11,107,203,.08));
+           border:1px solid var(--warn);border-left:5px solid var(--warn);
+           border-radius:10px;padding:18px 22px;margin:24px 0}
+  .verdict .big{font-size:1.18rem;font-weight:700;color:var(--warn)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:18px 0}
+  .key{border-left:5px solid var(--accent)}
+  .warn{border-left:5px solid var(--warn)}
+  .bad{border-left:5px solid var(--bad)}
+  .good{border-left:5px solid var(--ok)}
+  .ok{color:var(--ok);font-weight:600}
+  .no{color:var(--bad);font-weight:600}
+  .wa{color:var(--warn);font-weight:600}
+  ul{padding-left:22px} li{margin:6px 0}
+  ol{padding-left:22px} ol li{margin:8px 0}
+  .flow{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+        padding:16px;overflow-x:auto;font:.82rem/1.65 ui-monospace,Consolas,monospace;white-space:pre}
+  hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+  .step{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+        border-radius:8px;padding:14px 18px;margin:14px 0}
+  .step b{color:var(--accent)}
+  blockquote{border-left:4px solid var(--line);margin:14px 0;padding:2px 0 2px 16px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>SL1680 + DL7400 多屏扩展 · 方案总结</h1>
+<div class="sub">更新：2026-07-14（含当天真机实测结果）</div>
+<div class="sub">依据：DL-7xxx Datasheet RevE · DisplayLink SDK 1.5.0(build156) · DisplayLink Ubuntu 驱动 v6.2.0 发布说明 · Astra SL1680 培训资料 · <code>libdlsdk.so</code> 二进制实测 · <b>SL1680 真机 USB 实测</b></div>
+
+<div class="verdict" style="border-color:var(--ok);background:linear-gradient(135deg,rgba(10,124,66,.12),rgba(11,107,203,.08))">
+  <div class="big" style="color:var(--ok)">✅ 已实测跑通 —— SL1680 接 DL7400 EVK，4K 显示器已点亮</div>
+  <pre style="margin:12px 0"><code>发现 DisplayLink 设备: 1 个
+设备 #0  id=USB_7000-0003001RW02-7400-08G0014
+  固件版本: 12.3.26                    ← 与 SDK 要求完全一致
+  ── 屏 #0  首选模式: 3840x2160 @60Hz
+     ✅ 已点亮: 3840x2160
+     ★ 实测: 30 帧 / 1.29s = 23.3 fps</code></pre>
+  <p style="margin-bottom:0">2026-07-17 真机验证完成。连跑 3 次稳定 23.1~23.3 fps，可复现。</p>
+</div>
+
+<h2>实测性能（真机数据）</h2>
+<table>
+<thead><tr><th>场景</th><th>实测帧率</th><th>等效未压缩带宽</th></tr></thead>
+<tbody>
+<tr><td><b>4K (3840×2160) 动态内容</b>（最坏情况）</td><td class="ok"><b>23.3 fps</b></td><td>738 MB/s</td></tr>
+<tr><td><b>4K 静态/标牌</b></td><td class="ok"><b>33.8 fps</b></td><td>1070 MB/s</td></tr>
+<tr><td><b>1080p 动态</b></td><td class="ok"><b>60.5 fps</b> ⭐ 跑满</td><td>479 MB/s</td></tr>
+<tr><td><b>1080p 静态</b></td><td class="ok"><b>60.6 fps</b> ⭐ 跑满</td><td>479 MB/s</td></tr>
+</tbody>
+</table>
+<div class="card good">
+<p style="margin:0"><b>比预估好很多</b>：早先「4K 不现实」的判断<b>偏保守了</b>。实测单屏 4K 动态有 23 fps、1080p 直接跑满 60fps。</p>
+</div>
+
+<h2>关于「如何更新固件」—— SDK 自动做了，不用手动刷</h2>
+<div class="card key">
+<p>设备现在报告固件 <b>12.3.26</b>，正是 SDK 要求的版本。这是 SDK <b>自动升级</b>的结果：</p>
+<pre><code>dlsdk_config cfg = {0};
+cfg.size = sizeof(cfg);
+cfg.firmwarePath = "/usr/share/displaylink/DL-firmware";  // ★ 指向 spkg 目录即可
+cfg.embeddedMode = 0;
+dlsdk_initialise_with_config(&amp;cfg);   // 检测到固件不匹配 -&gt; 自动升级 -&gt; 设备重启</code></pre>
+<p style="margin-bottom:0">早期几次运行报「0 个设备」，就是 SDK 在<b>后台完成固件升级</b>（约 30s，设备会重启）。升级完成后即正常枚举。<br>
+<b>固件更新的正确做法 = 初始化时把 <code>firmwarePath</code> 指向 spkg 目录，SDK 全自动处理。</b></p>
+</div>
+
+<h2>排查中的两个教训（避免误导）</h2>
+<div class="card warn">
+<ol style="margin:0">
+  <li><b><code>snd-usb-audio</code> 不是问题</b> —— DL7400 带 USB 音频，内核会自动绑 <code>snd-usb-audio</code> 到音频接口。曾误判为真凶，但<b>实测证明：它绑着 SDK 照样正常工作</b>，无需 unbind。udev 里只需要权限规则。</li>
+  <li><b>USB 3.0 是硬前提</b> —— EVK 实测跑在 <code>speed=5000</code> SuperSpeed。之前用零售 Anker 坞经 USB-C→USB-A 线只到 USB 2.0，SDK 直接不驱动。</li>
+</ol>
+</div>
+
+<h2>「很多屏」</h2>
+<ul>
+  <li>本次只接了 <b>1 台</b> HDMI 显示器 → <code>display 数: 1</code>。DL7400 有 <b>4 个输出口</b>，接满即 4 屏。</li>
+  <li><b>多颗 DL7400 可同时挂</b>：<code>dlsdk_get_devices()</code> 支持枚举多颗（C++ 封装自动扩容），无设备数硬上限（唯一上限 255 surface）。</li>
+  <li>→ 很多屏 = <b>N 颗 DL7400 × 每颗 4 屏</b>，天花板是 USB3 带宽 + A73 CPU，不是 SDK。</li>
+</ul>
+
+<h2>1. 结论速览</h2>
+<table>
+<thead><tr><th>检查项</th><th>结果</th><th>依据</th></tr></thead>
+<tbody>
+<tr><td>DL7400 能否接 SL1680</td><td class="ok">✅ 能</td><td>DL7400 是标准 USB 设备(UFP)，SL1680 有 4× USB3.0 主机口</td></tr>
+<tr><td>需不需要写内核驱动</td><td class="ok">✅ 不需要</td><td>DLSDK 是<b>纯用户态 libusb</b></td></tr>
+<tr><td>SDK 有没有 aarch64</td><td class="ok">✅ 有</td><td><code>libs/linux/aarch64/libdlsdk.so</code> 实测存在</td></tr>
+<tr><td>SDK 支不支持 DL-7xxx</td><td class="ok">✅ 支持</td><td>Release Note 明列</td></tr>
+<tr><td>glibc 够不够</td><td class="ok">✅ 够</td><td>要求 2.30，板子是 2.39</td></tr>
+<tr><td>Yocto 集成</td><td class="ok">✅ 已完成并编译通过</td><td><code>meta-dlsdk</code> 层 + demo，产出 arm64 deb</td></tr>
+<tr><td><b>真机点亮 4K 屏</b></td><td class="no">❌ 暂时卡住</td><td><b>USB 链路只跑到 USB 2.0</b>，见 §3</td></tr>
+</tbody>
+</table>
+
+<h2>2. 🔑 关键发现：DLSDK 是纯用户态，完全不碰内核</h2>
+<div class="card key">
+<p>实测 <code>libdlsdk.so</code>(aarch64) 的动态依赖：</p>
+<pre><code>NEEDED: libusb-1.0.so.0     ← 唯一的外部依赖
+        librt / libpthread / libstdc++ / libm / libgcc_s / libc
+内部符号: core/sys/libusbbus/libusb/BusImpl_libusb10.cpp
+          /dev/bus/usb/</code></pre>
+<p><b>没有 evdi、没有 DRM、没有任何 .ko。</b></p>
+<p>DisplayLink 在 PC Linux 上的常规方案要装 <b>evdi 内核模块 + DisplayLinkManager</b>，移植到嵌入式很痛苦。<br>
+<b>这个 SDK 完全绕开了它</b> —— 直接用 libusb 从用户态跟芯片讲话。</p>
+<blockquote>实际意义：SL1680 上<b>不用改内核、不用重编 kernel、不用重刷 boot 分区</b>。<br>
+甚至<b>不用重刷镜像</b> —— 直接把 <code>.so</code> + demo <code>scp</code> 到运行中的板子就能跑。</blockquote>
+</div>
+
+<h2>3. 🔴 当前唯一阻塞：DL7400 没跑上 USB 3.0</h2>
+
+<h3>实测到的现象</h3>
+<p>板子上 <code>lsusb</code> <b>能看到</b> DisplayLink：</p>
+<pre><code>Bus 001 Device 005: ID 17e9:7000 DisplayLink A83B3_A1</code></pre>
+<p>但 USB 拓扑暴露了问题：</p>
+<div class="flow">Bus 001 (USB2.0 root hub, 480M)  ← 所有东西都挤在这条
+  └─ 05e3:0610  SL1680 板载 Hub (USB2 面, 4口)
+      └─ 2109:2822  Anker 坞的 USB2 Hub
+          ├─ 17e9:7000  DisplayLink   ← 480M, ver 2.10  ❌ USB2!
+          └─ 291a:83b3  USB Billboard Device  ← Alt-Mode 协商失败的标志
+
+Bus 002 (USB3.0 root hub, 5000M)  ← USB3 这条路上空空如也
+  └─ 05e3:0620  SL1680 板载 Hub (USB3 面, 4口)  speed=5000
+     ⚠️ 下面什么都没挂</div>
+<p><code>dmesg</code> 里<b>全是 <code>new high-speed</code>(=USB2)，一条 <code>SuperSpeed</code> 都没有</b>。</p>
+
+<div class="card bad">
+<h3 style="margin-top:0">这直接解释了「SDK 枚举到 0 个设备」</h3>
+<p>DL-7xxx 是 <b>USB 3.x SuperSpeed 器件</b>。在 USB2 下它只能<b>枚举出来</b>（所以 <code>lsusb</code> 看得到），但 <b>SDK 拒绝驱动它</b> → <code>dlsdk_get_devices()</code> 返回 0。</p>
+<p style="margin-bottom:0"><b>不是驱动问题，是物理链路没跑起来。</b></p>
+</div>
+
+<div class="card good">
+<h3 style="margin-top:0">板子这一侧是好的（已证明）</h3>
+<pre><code>1-1 : 05e3:0610  USB2.1 Hub  480M   端口数=4
+2-1 : 05e3:0620  USB3.2 Hub  5000M  端口数=4    ← 同一颗板载 Hub 的两张脸</code></pre>
+<p style="margin-bottom:0">同一颗 Genesys 板载 Hub 同时提供 USB2/USB3 通道，喂那 4 个 Type-A 口。<br>
+👉 <b>4 个 Type-A 口每个都有 USB3 通道，不存在「哪个口才是 USB3」的问题。换口无用。</b></p>
+</div>
+
+<h3>原因分析</h3>
+<p>那个 <code>USB Billboard Device</code> 是 <b>USB-C Alt-Mode</b> 才会出现的东西 → 说明 <b>Anker A83B3 本质是 USB-C 坞</b>。
+用 <b>USB-C → USB-A 线</b>接到板子 Type-A 口时：</p>
+<blockquote><b>市面上绝大多数 USB-C 转 USB-A 的线只有 USB 2.0</b>（哪怕线很粗）。真正 USB3 的 C-to-A 线是少数。</blockquote>
+<p>已换过一根线，<b>仍是 USB2</b> → 判断为线的问题（目前手上没有支持 3.0 的 USB-A 转 C 线）。</p>
+
+<div class="card warn">
+<h3 style="margin-top:0">⚠️ 退一万步：USB2 下 4K 本来就不可能</h3>
+<table>
+<thead><tr><th>分辨率</th><th>未压缩码率(RGB32)</th><th>USB2.0 实际可用 ~40 MB/s</th></tr></thead>
+<tbody>
+<tr><td>1080p60</td><td>497 MB/s</td><td class="no">差 12 倍</td></tr>
+<tr><td>4K60</td><td>1990 MB/s</td><td class="no">差 50 倍</td></tr>
+</tbody>
+</table>
+<p style="margin-bottom:0"><b>所以 USB3 不是「优化项」，是「先决条件」。</b></p>
+</div>
+
+<h2>4. ⚠️ 零售 Anker 坞 vs DL7400 EVK —— 固件不是一套</h2>
+<p>屏幕上出现的 <b>「驱动版本过低，去 www.anker.com/83B3 下载」</b> 是 <b>DisplayLink 固件内置的「没装主机驱动」提示画面</b>。</p>
+<p><span class="ok">好消息</span>：它能显示出来，说明坞有电 ✅、HDMI→4K 屏是通的 ✅、坞固件活着并在输出画面 ✅。</p>
+<p><b>但它也暴露了：</b></p>
+<table>
+<thead><tr><th></th><th>固件</th><th>配套驱动</th></tr></thead>
+<tbody>
+<tr><td><b>零售 Anker 坞</b>（手上这台）</td><td>Anker 量产固件</td><td>DisplayLink Manager（消费级，Win/Mac）</td></tr>
+<tr><td><b>DL7400 EVK</b>（明天到）</td><td><b>SDK 固件 12.3.26</b></td><td><b>DLSDK</b> ✅ 我们集成的这套</td></tr>
+</tbody>
+</table>
+<p>SDK changelog 明写：<b>"Do not list devices with incompatible firmware"</b>。<br>
+→ 所以 <code>get_devices()</code> 返回 0 <b>可能有两个叠加原因</b>：USB2 <b>＋</b> 固件不兼容。</p>
+
+<div class="card bad">
+<p style="margin-top:0">⛔ <b>别去 anker.com 下那个驱动</b> —— 那是 Windows/macOS 的消费级驱动，SL1680 的 Linux 上完全用不了。</p>
+<p style="margin-bottom:0">⛔ <b>不要给零售坞刷我们手上的 spkg 固件</b> —— 那 4 个（ella-dock / navarro-dock / ridge-dock / firefly-monitor）都是 <b>DisplayLink 参考设计</b>，不是 Anker A83B3。板型/DDR 配置不同，<b>有刷砖风险</b>。</p>
+</div>
+
+<h2>5. 两条驱动路线对比（有个反直觉的点）</h2>
+<table>
+<thead><tr><th></th><th><b>DLSDK</b>（已集成 ✅）</th><th><b>官方 evdi 驱动</b></th></tr></thead>
+<tbody>
+<tr><td>内核工作量</td><td class="ok">✅ 零（纯用户态 libusb）</td><td class="no">❌ 要为 6.12.62 编 <code>evdi</code> 模块</td></tr>
+<tr><td><b>屏数上限</b></td><td><b>4</b>（DL7400 全部输出）</td><td><b>2</b>（消费级驱动限制）</td></tr>
+<tr><td>零售 Anker 坞</td><td class="wa">⚠️ 固件可能不兼容</td><td class="ok">✅ 本来就是配它的</td></tr>
+<tr><td>DL7400 EVK</td><td class="ok">✅</td><td class="ok">✅</td></tr>
+<tr><td><b>能否扩展桌面</b></td><td class="no">❌ 只能「推像素」，应用自己渲染</td><td class="ok">✅ 能（evdi 提供虚拟 DRM 设备）</td></tr>
+<tr><td>Yocto 适配</td><td class="ok">✅ 已完成</td><td class="no">❌ 安装包是 Ubuntu 的，要手工移植</td></tr>
+<tr><td><b>USB3</b></td><td><b>必需</b></td><td><b>必需</b></td></tr>
+</tbody>
+</table>
+
+<div class="card key">
+<h3 style="margin-top:0">官方 Linux 驱动 v6.2.0（2025-09）实测查证</h3>
+<ul>
+  <li><span class="ok">✅</span> <b>DL-7xxx 已列入支持</b>（v5.7 还没有，新版加了）</li>
+  <li><span class="ok">✅</span> <b>aarch64 有二进制</b>（i686 / amd64 / armv7 / aarch64）</li>
+  <li><span class="ok">✅</span> evdi 已验证到内核 6.15 → <b>6.12 没问题</b></li>
+  <li><span class="wa">⚠️</span> <b>最多 2 个屏</b></li>
+  <li><span class="wa">⚠️</span> 明确要求 <b>"DisplayLink USB 3.0 devices"</b></li>
+</ul>
+<blockquote style="margin-bottom:0"><b>反直觉的点</b>：官方驱动<b>反而能「扩展桌面」</b>（SDK 做不到），但<b>只能带 2 个屏</b>（SDK 能带 4 个）。<br>
+两条路<b>都要 USB3</b>，所以 USB3 没通之前，装哪个都点不亮。</blockquote>
+</div>
+
+<h3>怎么选</h3>
+<ul>
+  <li><b>要多屏各显示各的内容</b>（标牌 / 看板 / 内容墙）→ <b>DLSDK</b>，4 屏，零内核工作</li>
+  <li><b>要把 Linux 桌面扩展到外接屏</b> → <b>官方 evdi 驱动</b>，但只有 2 屏，且要编内核模块</li>
+</ul>
+
+<h2>6. 性能天花板（别按 Datasheet 规划）</h2>
+<p>DL-7xxx Datasheet 写的是 <b>4× 4K@120Hz</b> —— 那是<b>芯片本身</b>的能力，<b>不是 SL1680 能喂饱的量</b>。</p>
+<p><b>瓶颈① USB 3.0 只有 5 Gbps</b>（DL7400 支持 10 Gbps）→ 带宽砍半。</p>
+<p><b>瓶颈② DL3+ 压缩跑在 SL1680 的 CPU 上</b> ← <b>真正的天花板</b><br>
+SL1680 = <b>4× Cortex-A73 @1.8GHz</b>。SDK changelog 有 "Enable multi-threaded encoder on <b>arm64</b> platform" → 编码是<b>主机 CPU 软件做的</b>。</p>
+<p>但 DisplayLink 是<b>按变化区域(delta)压缩</b>的，画面不动的部分不重编码。<br>
+<b>所以能带几个屏，取决于「内容动不动」，而不只是分辨率：</b></p>
+<table>
+<thead><tr><th>场景</th><th>可行性</th></tr></thead>
+<tbody>
+<tr><td>标牌/看板：多屏静态图文、局部刷新</td><td class="ok">✅ 很轻松，4 屏 1080p 是甜点区</td></tr>
+<tr><td>多屏 UI / 仪表盘：偶尔刷新</td><td class="ok">✅ 可行</td></tr>
+<tr><td>2 屏 1080p 视频播放</td><td class="wa">⚠️ 需实测</td></tr>
+<tr><td><b>4 屏 4K60 全动态视频</b></td><td class="no">❌ 不现实（带宽 + CPU 双杀）</td></tr>
+</tbody>
+</table>
+
+<h2>7. 已交付的东西</h2>
+<table>
+<thead><tr><th>产出</th><th>位置</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td><code>meta-dlsdk</code> Yocto 层</td><td><code>Case6_Astra/meta-dlsdk/</code></td><td class="ok">✅ 编译通过</td></tr>
+<tr><td>├ dlsdk recipe</td><td><code>recipes-graphics/dlsdk/dlsdk_1.5.0.bb</code></td><td>打包 aarch64 <code>.so</code> + 头文件 + 4 个固件 spkg + udev 规则(VID 17e9)</td></tr>
+<tr><td>├ 多屏 demo</td><td><code>recipes-graphics/dl-multiscreen-demo/</code></td><td>枚举设备/所有屏 → 逐屏点亮 → <b>实测 fps / MB/s</b></td></tr>
+<tr><td>└ 镜像集成</td><td><code>recipes-core/images/astra-media.bbappend</code></td><td>依赖 <code>libusb1</code>，产出 arm64 deb</td></tr>
+<tr><td>快速部署脚本</td><td><code>D:\Astra\deploy_and_run_dl.sh</code></td><td><b>不用重刷镜像</b>，直接 scp 到运行中的板子</td></tr>
+<tr><td>USB 诊断脚本</td><td><code>D:\Astra\usb_topo.sh</code> / <code>usb3_selftest.sh</code></td><td>一键查 USB3 链路</td></tr>
+</tbody>
+</table>
+<blockquote><b>踩过的坑（已修）</b>：Yocto 里 <code>/var/log</code> 是符号链接，不能直接打包进去 → 改用 systemd <code>tmpfiles.d</code>。</blockquote>
+
+<h2>8. 明天的测试计划（EVK 到了之后）</h2>
+
+<div class="step">
+<b>Step 1 — 先验板子 USB3（可选，5 分钟）</b>
+<p>USB 3.0 U 盘<b>直插板子</b> Type-A 口（别过坞）：</p>
+<pre><code>wsl -d Ubuntu-22.04 -- bash /mnt/d/Astra/usb3_selftest.sh</code></pre>
+<p style="margin-bottom:0">出现在 <b>Bus 002 / 5000M</b> = 板子 USB3 正常，责任在坞/线。</p>
+</div>
+
+<div class="step">
+<b>Step 2 — 接 DL7400 EVK</b>
+<p>EVK 是<b>原生 USB3 上行</b>，不走 USB-C→USB-A 转接，<b>大概率直接解决 USB2 问题</b>。确认链路：</p>
+<pre><code>wsl -d Ubuntu-22.04 -- bash /mnt/d/Astra/usb_topo.sh</code></pre>
+<p style="margin-bottom:0">要看到：DisplayLink 出现在 <b>Bus 002 / 5000M</b>，<code>dmesg</code> 有 <b><code>new SuperSpeed USB device</code></b>。</p>
+</div>
+
+<div class="step">
+<b>Step 3 — 跑 SDK 点屏</b>
+<pre><code>wsl -d Ubuntu-22.04 -- bash /mnt/d/Astra/deploy_and_run_dl.sh</code></pre>
+<p>自动：传 <code>libdlsdk.so</code> + libusb + demo + 固件 → 检查 <code>lsusb</code> 有没有 <code>17e9</code> → 跑 demo。</p>
+<p><b>期望输出：</b></p>
+<pre><code>发现 DisplayLink 设备: 1 个
+  设备 #0  id=...   固件版本: 12.3.26.4df748dd
+  ★ 该设备下的 display 数: N
+  ── 屏 #0   首选模式: 3840x2160 @60Hz
+     ✅ 已点亮
+     ★ 实测: 60 帧 / X.XXs = XX.X fps  (未压缩等效 XXXX MB/s)</code></pre>
+<p style="margin-bottom:0"><b>那个 fps 数字就是「SL1680 到底能带几个屏」的最终答案。</b> 配合 <code>top</code> 看 CPU 占用。</p>
+</div>
+
+<div class="step">
+<b>Step 4 — 按需选路线</b>
+<ul style="margin-bottom:0">
+  <li>SDK 跑通 → 多屏内容墙方案成立，继续做应用</li>
+  <li>要扩展桌面 → 再上官方 evdi 驱动（我可以编）</li>
+</ul>
+</div>
+
+<h2>9. 待决策 / 待办</h2>
+<ul>
+  <li>☐ <b>USB3 线</b>：需要一根支持 3.0 的 USB-A ↔ USB-C 线（当前没有）</li>
+  <li>☐ <b>EVK 实测</b>（明天）：这是最关键的一步</li>
+  <li>☐ <b>选路线</b>：DLSDK(4屏/推像素) vs 官方 evdi(2屏/扩展桌面)</li>
+  <li>☒ <s>给零售 Anker 坞刷 SDK 固件</s> —— <b>有刷砖风险，不建议，未经明确同意不会做</b></li>
+</ul>
+
+<hr>
+
+<h2>附：核心 API（<code>dlsdk.h</code> 实测）</h2>
+<pre><code>dlsdk_initialise_with_config(cfg)                 // 可指定固件目录 + embedded 模式
+dlsdk_get_devices(devices, &amp;n)                    // 枚举 DL 设备
+dlsdk_device_get_displays(dev, displays, &amp;n)      // 拿到该设备下的 N 个屏
+dlsdk_display_preferred_mode(disp, &amp;mode)         // 读屏的首选分辨率
+dlsdk_display_power_on_with_mode(disp, &amp;mode)     // 点亮 + 设模式
+dlsdk_display_show(disp, fmt, pixels, stride)     // 推一帧  ← 核心
+dlsdk_display_wait_on_show(disp)                  // 等这帧送完
+dlsdk_display_edid(disp, buf, &amp;len)               // 读 EDID
+// 还有热插拔回调、DP AUX 读写、固件升级</code></pre>
+<p>另有 <b>Python 绑定</b>（<code>...cp312-manylinux_2_31_aarch64.whl</code>）—— 可先用 Python 在板子上快速验证。</p>
+
+</div>
+</body>
+</html>

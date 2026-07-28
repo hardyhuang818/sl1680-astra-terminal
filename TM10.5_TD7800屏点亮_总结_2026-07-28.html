@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TM10.5-TD7800 屏点亮总结 · 2026-07-28</title>
+<style>
+  :root { --c1:#0f6a5f; --c2:#12836f; --bg:#f6f8f7; --card:#ffffff; --ink:#22302c; --line:#dbe5e1; --warn:#b4540a; --ok:#0f7b3f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); line-height:1.65; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 80px; }
+  header { background: linear-gradient(120deg, var(--c1), var(--c2)); color:#fff; border-radius:14px; padding:26px 30px; margin-bottom:26px; }
+  header h1 { margin:0 0 8px; font-size:26px; }
+  header .sub { opacity:.92; font-size:14.5px; }
+  .badges { margin-top:12px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); padding:3px 12px; border-radius:20px; font-size:13px; margin-right:8px; }
+  h2 { color:var(--c1); border-left:5px solid var(--c2); padding-left:12px; margin:36px 0 14px; font-size:20px; }
+  h3 { color:#1d4f47; margin:22px 0 8px; font-size:16.5px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:14px 0; }
+  table { border-collapse:collapse; width:100%; margin:10px 0; font-size:14px; background:#fff; }
+  th { background:#e8f1ee; color:#134f45; text-align:left; padding:8px 10px; border:1px solid var(--line); }
+  td { padding:7px 10px; border:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td { background:#fafcfb; }
+  code, pre { font-family:Consolas,"Courier New",monospace; }
+  code { background:#eef3f1; border:1px solid #dde7e3; border-radius:4px; padding:1px 6px; font-size:13px; }
+  pre { background:#102420; color:#d7efe7; border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:13px; line-height:1.55; }
+  pre code { background:none; border:none; color:inherit; padding:0; }
+  .ok { color:var(--ok); font-weight:600; }
+  .warn { color:var(--warn); font-weight:600; }
+  .callout { border-left:4px solid var(--warn); background:#fff7ef; padding:10px 16px; border-radius:0 10px 10px 0; margin:12px 0; font-size:14px; }
+  .callout.green { border-color:var(--ok); background:#effaf3; }
+  .path { font-size:13px; word-break:break-all; }
+  footer { margin-top:40px; font-size:12.5px; color:#68807a; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>TM10.5-TD7800 LVDS 屏点亮总结（显示 + 触摸）</h1>
+  <div class="sub">Synaptics SL1680 (dolphin RDK) · 经 LAMTL / Toshiba TC358775 DSI→LVDS 桥 · 2026-07-28</div>
+  <div class="badges">
+    <span class="badge">✅ 显示 1280×720@60 全通</span>
+    <span class="badge">✅ 触摸多点报点全通</span>
+    <span class="badge">✅ 断电重启自动恢复 9/9</span>
+  </div>
+</header>
+
+<h2>1. 最终链路</h2>
+<div class="card"><pre><code>SL1680 J208 (MIPI-DSI 4-lane, 522.4Mbps/lane)
+   → FPC → LAMTL 转接板 (Toshiba TC358775, DSI→LVDS)
+   → LVDS 单链 5 对差分 (OD口/第一链, 457Mbps/对)
+   → TM10.5 面板 U4 的 A 口 → TD7800 TDDI → 1280×720@60 玻璃
+
+触摸:  TD7800 → TP I2C 0x2C (TW0, J32.3/5) + ATTN 中断 (J32.12 = porta10)
+       → synaptics_tcm2 驱动 → /dev/input/event2 (双指多点, ~120Hz)
+SPI:   TD7800 显示寄存器调试口 (U5.1/2/3/4 ↔ J32.23/19/21/24) → /dev/spidev0.0</code></pre></div>
+
+<h2>2. 重启持久性自检（开机 0 分钟实测）</h2>
+<div class="card">
+<table>
+<tr><th>#</th><th>检查项</th><th>结果</th></tr>
+<tr><td>1</td><td>DSI-1 连接器</td><td class="ok">connected / enabled / 1280x720</td></tr>
+<tr><td>2</td><td>触摸驱动</td><td class="ok">i2c 0x2C = UU（驱动接管）</td></tr>
+<tr><td>3</td><td>触摸中断</td><td class="ok">IRQ48（porta10）正常计数</td></tr>
+<tr><td>4</td><td>触摸校准</td><td class="ok">LIBINPUT_CALIBRATION_MATRIX = -1 0 1 0 1 0</td></tr>
+<tr><td>5</td><td>weston</td><td class="ok">active，transform=rotate-180</td></tr>
+<tr><td>6</td><td>时区</td><td class="ok">CST（Asia/Shanghai）</td></tr>
+<tr><td>7</td><td>SPI 调试通道</td><td class="ok">/dev/spidev0.0（modprobe spidev 后）</td></tr>
+<tr><td>8</td><td>SPI pinmux</td><td class="ok">0x00005A01（DTB 固化）</td></tr>
+<tr><td>9</td><td>桌面</td><td class="ok">正向显示 + 触摸交互</td></tr>
+</table>
+</div>
+
+<h2>3. 六层根因（按发现顺序）</h2>
+<div class="card">
+<table>
+<tr><th>#</th><th>根因</th><th>症状</th><th>修复</th></tr>
+<tr><td>1</td><td>base 设备树的 dsi_panel 是<b>树莓派 7 寸屏配置</b>（800×480/1-lane，power-supply 指向物理不存在的 i2c 0x45 芯片）</td><td>DSI-1 永远 disconnected，SoC 不发流</td><td>整体替换为 TM10.5 时序节点</td></tr>
+<tr><td>2</td><td><b>TC358775 上电 LVDS 输出三态</b>，无人写寄存器</td><td>有 DSI 流也无 LVDS 输出</td><td>29 条初始化命令（DSI 通用长写）烤进 DTB</td></tr>
+<tr><td>3</td><td><b>面板 RESX（U5.9）悬空</b></td><td>整颗 TD7800 复位：触摸消失 + 屏黑 + SPI 无响应（三症同源）</td><td>拉高 3.3V（硬件）</td></tr>
+<tr><td>4</td><td><b>U-Boot 把 SM_SPI2_SDO/SDI 复用成 UART2 流控</b></td><td>SPI 收发全 0</td><td>dts 加 pinmux 节点夺回 spi2</td></tr>
+<tr><td>5</td><td><b>DSI→LVDS 零带宽余量</b>（DSI 协议开销吃掉有效速率）</td><td>全屏随机彩色雪花（光栅稳定）</td><td>Byte_clk 48975→65300（+33%），LVCFG PCLKDIV 3→4</td></tr>
+<tr><td>6</td><td>触摸 INT 的 GPIO10 bank 归属不明</td><td>无法写中断节点</td><td>实验法：ATTN 锁低→I2C 排空→释放变高者 = porta10</td></tr>
+</table>
+<div class="callout">最隐蔽的第 5 层：把 DSI 输入带宽配成和 LVDS 输出严格相等时，包头/EoTp/LP 开销使有效像素速率低于面板消耗率 → 桥片行缓冲每行欠载 → 活雪花。对照实验（RK3568 原生 LVDS 同线材正常）排除线材。公式：<b>LVDS 像素钟 = DSI 时钟线频率(byteclk×4) ÷ PCLKDIV，DSI 带宽必须留显著余量</b>（厂商例 4.4%，本项目 33%）。</div>
+</div>
+
+<h2>4. 主要修改与路径</h2>
+
+<h3>4.1 内核设备树（核心修改，烤进 boot 镜像）</h3>
+<div class="card">
+<p class="path">📁 <code>/home/astra/sdk/build-sl1680/tmp/work-shared/sl1680/kernel-source/arch/arm64/boot/dts/synaptics/dolphin-rdk.dts</code>（WSL Ubuntu-22.04）<br>
+📁 原始备份：同目录 <code>dolphin-rdk.dts.pre_td7800</code></p>
+<div class="callout">⚠️ work-shared 是易失目录（cleanall 即清空），正式载体是 4.2 的仓库补丁。</div>
+<table>
+<tr><th>块</th><th>改动</th><th>要点</th></tr>
+<tr><td><code>&amp;drm / dsi_panel</code></td><td>整体替换（RPi→TM10.5）</td><td>1280×720@60、pclk 65300kHz、H 97/30/60、V 7/2/14、Lanes=4、<b>Byte_clk=65300</b>（勿回调 48975！）、删 power-supply/backlight、command=TC358775 初始化 29 条（含 <b>LVCFG=0x41</b>、VESA 映射、HTIM/VTIM）</td></tr>
+<tr><td><code>&amp;i2c0 / synaptics_tcm@2c</code></td><td>新增触摸节点</td><td>compatible <code>synaptics,tcm-i2c</code>，INT=<code>&lt;&amp;porta 10 0x2008&gt;</code>（J32.12）；<b>故意无 reset-gpio</b>（TDDI 复位杀显示）</td></tr>
+<tr><td><code>&amp;spi0</code> + spidev</td><td>使能 SM SPI2</td><td>TD7800 显示 SPI 调试通道（J32.19/21/23/24），compatible rohm,dh2228fv → /dev/spidev0.0</td></tr>
+<tr><td><code>&amp;sm_pinctrl / spi2_data_pmux</code></td><td>新增 pinmux</td><td>把 SM_SPI2_SDO/SDI 从 uart2 功能夺回 spi2（U-Boot 的锅）</td></tr>
+</table>
+<p>桥片控制机制：<code>command</code> 字节流由 VPP 显示固件在每次 modeset 时经 <b>DSI 链路 LP 模式</b>自动下发（格式 <code>0x29 长度 寄存器LE16 数据LE32</code>，延时 <code>0xFF 微秒LE32</code>）——无需接 I2C。</p>
+</div>
+
+<h3>4.2 仓库回灌（正式载体）</h3>
+<div class="card">
+<p class="path">📁 <code>D:\Claude code\Case6_Astra\meta-dlsdk\recipes-kernel\linux\linux-syna.bbappend</code><br>
+📁 <code>D:\Claude code\Case6_Astra\meta-dlsdk\recipes-kernel\linux\files\0001-dolphin-rdk-td7800-tm10p5-lvds-panel.patch</code>（186 行，含全部四块）<br>
+📁 <code>D:\Claude code\Case6_Astra\meta-dlsdk\VERSION</code> → v2.7 条目</p>
+<div class="callout">⚠️ 补丁尚未跑过 cleanall→do_patch 干净构建验证（板端当前配置与补丁内容一致，由 work-shared 直接编译产生）。</div>
+</div>
+
+<h3>4.3 板端 boot 分区（已生效）</h3>
+<div class="card">
+<table>
+<tr><th>项</th><th>值</th></tr>
+<tr><td>分区</td><td><code>/dev/mmcblk0p8</code>（boot_a）+ <code>/dev/mmcblk0p9</code>（boot_b）双槽同刷</td></tr>
+<tr><td>最终镜像</td><td><code>boot_td7800_touch.subimg</code></td></tr>
+<tr><td>sha256</td><td class="path"><code>0aa901725795467ba867e5a11982fadc6a606b7003f89393d327a0fd263dac75</code></td></tr>
+<tr><td>回退备份</td><td>板上 <code>/home/boot_a_backup_td7800.img</code> / <code>boot_b_backup_td7800.img</code></td></tr>
+</table>
+<pre><code># 回退命令（板上执行）
+dd if=/home/boot_a_backup_td7800.img of=/dev/mmcblk0p8 bs=1M
+dd if=/home/boot_b_backup_td7800.img of=/dev/mmcblk0p9 bs=1M
+sync; reboot</code></pre>
+</div>
+
+<h3>4.4 板端 rootfs 三件套（重烧 rootfs 会丢，待进 Yocto）</h3>
+<div class="card">
+<table>
+<tr><th>文件</th><th>内容</th><th>作用</th></tr>
+<tr><td class="path"><code>/etc/xdg/weston/weston.ini</code></td><td>追加 <code>[output] name=DSI-1 transform=rotate-180</code></td><td>画面 180°（面板物理倒装），触摸坐标自动跟转</td></tr>
+<tr><td class="path"><code>/etc/udev/rules.d/99-td7800-touch-cal.rules</code></td><td><code>LIBINPUT_CALIBRATION_MATRIX="-1 0 1 0 1 0"</code></td><td>触摸 X 轴镜像校准</td></tr>
+<tr><td class="path"><code>/usr/share/zoneinfo/Asia/Shanghai</code> + <code>/etc/localtime</code></td><td>TZif（从 WSL 拷入）</td><td>CST 时区（镜像本身无 tzdata）</td></tr>
+</table>
+</div>
+
+<h3>4.5 烧录包目录</h3>
+<div class="card"><p class="path">📁 <code>D:\Claude code\Case6_Astra\SL1680_td7800_boot\</code> —— 三代镜像（首版 / 带宽修正版 / 触摸版）、烧录脚本 <code>flash_boot_td7800.sh</code>、验证脚本、<code>README_TD7800屏点亮.md</code>（完整复盘）</p></div>
+
+<h2>5. 硬件接线定案</h2>
+<div class="card">
+<h3>电源 / 控制</h3>
+<ul>
+<li>LAMTL <b>VCC1V8_LCM（J1-8）外供 1.8V</b>；<span class="warn">TC358_RST / TC358_PWR_EN 必须用 1.8V 电平</span>——接 3.3V 会经 RESX 的 ESD 二极管倒灌把 1.8V 轨抬到 2.38V（实测踩坑）</li>
+<li>12V 背光外供；3.3V 从 J208.1（PWR_3V3_CTL）；使能 J208.6（PWR_ON_DSI）→ J1-13</li>
+<li><span class="warn">面板 U5.9（RST TFT/RESX）必须拉高 3.3V</span>——悬空 = 整颗 TD7800 复位（头号坑）</li>
+</ul>
+<h3>LVDS 数据（LAMTL J3 OD 口 → 面板 U4 A 口，单链走第一链）</h3>
+<table>
+<tr><th>LAMTL J3</th><th>信号</th><th>面板 U4</th><th>信号</th></tr>
+<tr><td>7 / 8</td><td>OD0− / OD0+</td><td>18 / 19</td><td>LVD0A− / LVD0A+</td></tr>
+<tr><td>9 / 10</td><td>OD1− / OD1+</td><td>21 / 22</td><td>LVD1A− / LVD1A+</td></tr>
+<tr><td>11 / 12</td><td>OD2− / OD2+</td><td>24 / 25</td><td>LVD2A− / LVD2A+</td></tr>
+<tr><td>15 / 16</td><td>ODCK− / ODCK+（时钟）</td><td>27 / 28</td><td>LVDCLKA− / LVDCLKA+</td></tr>
+<tr><td>17 / 18</td><td>OD3− / OD3+</td><td>30 / 31</td><td>LVD3A− / LVD3A+</td></tr>
+</table>
+<p>ED 组 / 面板 B 口全不接；GND 多根共地。</p>
+<h3>触摸 + SPI（J32 排针）</h3>
+<table>
+<tr><th>功能</th><th>接线</th></tr>
+<tr><td>触摸 I2C</td><td>SCL→J32.5、SDA→J32.3、GND→J32.9（总线 TW0，地址 0x2C）</td></tr>
+<tr><td>触摸中断</td><td>TP_INT→J32.12（= SoC porta 线 10）</td></tr>
+<tr><td>SPI 调试</td><td>SCK→J32.23、MOSI→J32.19、MISO→J32.21、CS→J32.24 ↔ 面板 U5.1/2/3/4</td></tr>
+</table>
+</div>
+
+<h2>6. 调试工具箱（可复用）</h2>
+<div class="card">
+<table>
+<tr><th>工具</th><th>用法</th></tr>
+<tr><td>SPI 直控面板</td><td><code>/dev/spidev0.0</code>，9-bit DCX 帧。BIST 开：<code>B0←00, D6←00, DE←01</code>；关：<code>DE←00</code>；读器件码 <code>0xBF</code> 应回 <code>02 3C 68 0A</code>；可读 B1h/C0h 等面板 NVM 配置</td></tr>
+<tr><td>触摸报点</td><td><code>evtest /dev/input/event2</code>（0-1279×0-719、双指、~120Hz）；可视化：<code>weston-simple-touch</code></td></tr>
+<tr><td>展示横幅</td><td>gst-launch textoverlay + clockoverlay（标题+走秒时钟）；⚠️ text 属性里不能放换行，多行用多个 textoverlay</td></tr>
+<tr><td>重建烧录</td><td>改 dts → <code>bitbake linux-syna -C compile</code> + <code>-c deploy -f</code>（75 秒）→ DTB 字节级验证 → scp → 板上 dd 双槽 + python 回读校验 → reboot（全程约 4 分钟）</td></tr>
+</table>
+</div>
+
+<h2>7. 遗留事项</h2>
+<div class="card">
+<ol>
+<li>LVDS 杜邦线换双绞（当前能跑，属边缘工作状态；457Mbps/对）</li>
+<li>meta-dlsdk 补丁做一次 cleanall 干净构建验证</li>
+<li>rootfs 三件套（tzdata / weston.ini / udev 规则）进 Yocto recipe</li>
+<li>面板 FSEL（U4-40，极性翻转周期）当前悬空默认，未见异常，暂不处理</li>
+</ol>
+</div>
+
+<div class="callout green">从"接上全黑 + 五层未知故障"到"显示+触摸双通、断电自愈"：硬件侧排掉 RESX 悬空、1.8V 倒灌、线序三雷；软件侧剥掉六层洋葱。每一层的证据、工具与修复均已文档化并入库。</div>
+
+<footer>TM10.5-TD7800 屏点亮总结 · SL1680 项目 · 2026-07-28 · 配套：SL1680_td7800_boot/README、meta-dlsdk v2.7、记忆 td7800-lvds-bringup</footer>
+</div>
+</body>
+</html>

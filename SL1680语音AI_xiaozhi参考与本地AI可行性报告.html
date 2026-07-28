@@ -1,0 +1,473 @@
+<meta charset="utf-8">
+<title>SL1680 语音 AI：xiaozhi 参考价值与本地 AI 可行性报告</title>
+<style>
+  :root{
+    --ground:#FAF9FB; --panel:#FFFFFF; --panel-2:#F3F1F6;
+    --ink:#1C1826; --ink-2:#4A4458; --ink-3:#7A7391;
+    --rule:#E2DEEA; --rule-2:#CFC9DC;
+    --accent:#C4571A; --accent-soft:#FBEDE3;
+    --measured:#B06A12; --measured-bg:#FDF3E3;
+    --verified:#1B6E80; --verified-bg:#E4F3F6;
+    --inferred:#6B5E8C; --inferred-bg:#EFEBF7;
+    --untested:#A8305A; --untested-bg:#FBE9EF;
+    --good:#1F6B4A; --bad:#A8305A;
+    --mono: ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans: system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#14111A; --panel:#1C1826; --panel-2:#241F2F;
+      --ink:#EDEAF3; --ink-2:#B5AEC6; --ink-3:#847C99;
+      --rule:#2E2840; --rule-2:#413954;
+      --accent:#E8873D; --accent-soft:#2A1E14;
+      --measured:#E8A33D; --measured-bg:#2B2114;
+      --verified:#4FB3C8; --verified-bg:#132A30;
+      --inferred:#A594CC; --inferred-bg:#211B30;
+      --untested:#E06A92; --untested-bg:#2E151F;
+      --good:#5FBF8F; --bad:#E06A92;
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#FAF9FB; --panel:#FFFFFF; --panel-2:#F3F1F6;
+    --ink:#1C1826; --ink-2:#4A4458; --ink-3:#7A7391;
+    --rule:#E2DEEA; --rule-2:#CFC9DC;
+    --accent:#C4571A; --accent-soft:#FBEDE3;
+    --measured:#B06A12; --measured-bg:#FDF3E3;
+    --verified:#1B6E80; --verified-bg:#E4F3F6;
+    --inferred:#6B5E8C; --inferred-bg:#EFEBF7;
+    --untested:#A8305A; --untested-bg:#FBE9EF;
+    --good:#1F6B4A; --bad:#A8305A;
+  }
+  :root[data-theme="dark"]{
+    --ground:#14111A; --panel:#1C1826; --panel-2:#241F2F;
+    --ink:#EDEAF3; --ink-2:#B5AEC6; --ink-3:#847C99;
+    --rule:#2E2840; --rule-2:#413954;
+    --accent:#E8873D; --accent-soft:#2A1E14;
+    --measured:#E8A33D; --measured-bg:#2B2114;
+    --verified:#4FB3C8; --verified-bg:#132A30;
+    --inferred:#A594CC; --inferred-bg:#211B30;
+    --untested:#E06A92; --untested-bg:#2E151F;
+    --good:#5FBF8F; --bad:#E06A92;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px; margin:0 auto; padding:0 24px 96px}
+
+  /* ---------- masthead ---------- */
+  .mast{
+    border-bottom:2px solid var(--ink); padding:56px 0 24px; margin-bottom:8px;
+  }
+  .kicker{
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 18px;
+  }
+  h1{
+    font-size:clamp(28px,4.4vw,44px); line-height:1.2; margin:0 0 20px;
+    letter-spacing:-.01em; text-wrap:balance; font-weight:680;
+  }
+  .meta{
+    display:flex; flex-wrap:wrap; gap:8px 28px;
+    font-family:var(--mono); font-size:12px; color:var(--ink-3);
+  }
+  .meta b{color:var(--ink-2); font-weight:500}
+
+  /* ---------- evidence legend ---------- */
+  .legend{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:1px;
+    background:var(--rule); border:1px solid var(--rule); margin:32px 0 48px;
+  }
+  .legend div{background:var(--panel); padding:14px 16px}
+  .legend .lt{font-family:var(--mono); font-size:12px; font-weight:600; display:block; margin-bottom:3px}
+  .legend .ld{font-size:12.5px; color:var(--ink-3); line-height:1.5}
+  .l-m .lt{color:var(--measured)} .l-v .lt{color:var(--verified)}
+  .l-i .lt{color:var(--inferred)} .l-u .lt{color:var(--untested)}
+
+  /* ---------- evidence chip ---------- */
+  .c{
+    font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.04em;
+    padding:2px 7px; border-radius:2px; white-space:nowrap; display:inline-block;
+    vertical-align:2px; line-height:1.5;
+  }
+  .c-m{color:var(--measured); background:var(--measured-bg); border:1px solid color-mix(in srgb,var(--measured) 30%,transparent)}
+  .c-v{color:var(--verified); background:var(--verified-bg); border:1px solid color-mix(in srgb,var(--verified) 30%,transparent)}
+  .c-i{color:var(--inferred); background:var(--inferred-bg); border:1px solid color-mix(in srgb,var(--inferred) 30%,transparent)}
+  .c-u{color:var(--untested); background:var(--untested-bg); border:1px solid color-mix(in srgb,var(--untested) 30%,transparent)}
+
+  /* ---------- thesis ---------- */
+  .thesis{
+    background:var(--panel); border:1px solid var(--rule-2); border-left:4px solid var(--accent);
+    padding:28px 32px; margin:0 0 56px;
+  }
+  .thesis p{margin:0 0 14px; font-size:17.5px; line-height:1.7}
+  .thesis p:last-child{margin-bottom:0}
+  .thesis strong{color:var(--accent)}
+
+  /* ---------- structure ---------- */
+  h2{
+    font-size:13px; font-family:var(--mono); letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:600; margin:72px 0 0; padding-bottom:10px;
+    border-bottom:1px solid var(--rule);
+  }
+  h2 + h3{margin-top:22px}
+  h3{font-size:23px; margin:44px 0 14px; letter-spacing:-.005em; text-wrap:balance; font-weight:640}
+  h4{font-size:16px; margin:30px 0 10px; color:var(--ink-2); font-weight:640}
+  p{margin:0 0 16px; max-width:74ch}
+  ul,ol{margin:0 0 16px; padding-left:22px; max-width:74ch}
+  li{margin-bottom:7px}
+  a{color:var(--accent)}
+  code{
+    font-family:var(--mono); font-size:.86em; background:var(--panel-2);
+    padding:1.5px 5px; border-radius:2px; color:var(--ink-2);
+  }
+  strong{font-weight:660}
+
+  /* ---------- tables ---------- */
+  .scroll{overflow-x:auto; margin:0 0 24px; border:1px solid var(--rule)}
+  table{border-collapse:collapse; width:100%; font-size:14px; background:var(--panel)}
+  th{
+    text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3); font-weight:600;
+    padding:11px 14px; border-bottom:1px solid var(--rule-2); white-space:nowrap;
+    background:var(--panel-2);
+  }
+  td{padding:11px 14px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.6}
+  tr:last-child td{border-bottom:none}
+  .num td:not(:first-child){font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .hi{background:var(--measured-bg)}
+  .yes{color:var(--good); font-weight:600}
+  .no{color:var(--bad); font-weight:600}
+
+  /* ---------- code block ---------- */
+  pre{
+    font-family:var(--mono); font-size:12.5px; line-height:1.65; background:var(--panel);
+    border:1px solid var(--rule); border-left:3px solid var(--rule-2);
+    padding:16px 18px; overflow-x:auto; margin:0 0 24px; color:var(--ink-2);
+  }
+  pre b{color:var(--accent); font-weight:600}
+  pre .ok{color:var(--good)} pre .x{color:var(--bad)}
+
+  /* ---------- callout ---------- */
+  .note{
+    border:1px solid var(--rule-2); background:var(--panel);
+    padding:18px 22px; margin:0 0 24px;
+  }
+  .note.warn{border-left:3px solid var(--untested); background:var(--untested-bg)}
+  .note.key{border-left:3px solid var(--accent); background:var(--accent-soft)}
+  .note p:last-child{margin-bottom:0}
+  .note .nh{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:600; display:block; margin-bottom:8px;
+  }
+
+  /* ---------- roadmap ---------- */
+  .road{display:grid; gap:1px; background:var(--rule); border:1px solid var(--rule); margin-bottom:24px}
+  .road > div{background:var(--panel); padding:18px 20px; display:grid; grid-template-columns:auto 1fr; gap:16px}
+  .road .st{
+    font-family:var(--mono); font-size:11px; color:var(--ink-3); letter-spacing:.08em;
+    white-space:nowrap; padding-top:3px;
+  }
+  .road ol{margin:0; padding-left:18px}
+
+  hr{border:none; border-top:1px solid var(--rule); margin:56px 0}
+  .foot{margin-top:72px; padding-top:24px; border-top:2px solid var(--ink); font-size:13px; color:var(--ink-3)}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">Synaptics Astra SL1680 · 技术决策报告</p>
+  <h1>xiaozhi 的参考价值，与本地 AI 到底能跑到什么程度</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-07-17</span>
+    <span><b>板子</b> dolphin RDK @ 192.168.5.126</span>
+    <span><b>方法</b> 2 组多智能体调研 + 板上实测交叉验证</span>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="l-m"><span class="lt">■ 实测</span><span class="ld">我在这块板子上跑出来的数字，可复现</span></div>
+  <div class="l-v"><span class="lt">■ 已核实</span><span class="ld">拉取一手源码／官方文档逐字确认</span></div>
+  <div class="l-i"><span class="lt">■ 推断</span><span class="ld">有依据的推理，但未直接验证</span></div>
+  <div class="l-u"><span class="lt">■ 待实测</span><span class="ld">没有可靠数据，不要当结论用</span></div>
+</div>
+
+<div class="thesis">
+  <p><strong>xiaozhi 是一份优秀的协议规范和产品参考，不是可移植的代码库</strong> —— 当 RFC 读，别当 SDK 用。</p>
+  <p>SL1680 本地跑 <strong>ASR 没问题</strong>；<strong>TTS 要换模型</strong>；<strong>LLM 只能做"意图分类"，做不了"对话大脑"</strong>；<strong>声音克隆必须联网</strong>。</p>
+  <p>SyNAP NPU 对语音<strong>基本帮不上忙</strong> —— 但它对视觉是真的强。产品叙事应该改成：<strong>NPU 跑视觉感知，CPU 跑语音</strong>。</p>
+</div>
+
+<h2>一 · 能不能参考 xiaozhi</h2>
+
+<h3>值得参考的部分</h3>
+<div class="scroll"><table>
+  <tr><th>项</th><th>说明</th><th>证据</th></tr>
+  <tr><td><b>WebSocket 语音协议</b></td><td>整个项目对我们最有用的东西。设计干净：上行只有 4 种消息（hello／listen／abort／mcp），裸 Opus 二进制帧</td><td><span class="c c-v">已核实</span> 文档 + <code>websocket_protocol.cc</code> 代码级双重确认</td></tr>
+  <tr><td><b>产品形态已被验证</b></td><td>28k stars、今天仍在 push。「唤醒→VAD→ASR→LLM→TTS→回传播放」这条链在真实产品里跑得通，交互状态机不用从零设计</td><td><span class="c c-v">已核实</span></td></tr>
+  <tr><td><b>11 个设备状态机</b></td><td>抄枚举和迁移表，换掉 <code>ESP_LOG</code> 即可</td><td><span class="c c-v">已核实</span></td></tr>
+  <tr><td><b>MCP 暴露设备能力</b></td><td>我们有 3 块屏 + 客户输入，用 MCP 把「切换屏幕」「显示表单」暴露给 LLM，是已验证的模式</td><td><span class="c c-v">已核实</span></td></tr>
+  <tr><td><b>server 的 config.yaml</b></td><td>当<b>选型 checklist</b> 读。里面 SherpaASR 段用的<b>正好是我们这套模型</b>：<code>model_type: sense_voice</code></td><td><span class="c c-v">已核实</span> 逐字</td></tr>
+</table></div>
+
+<h3>不能照搬的部分</h3>
+<div class="scroll"><table>
+  <tr><th>项</th><th>为什么</th></tr>
+  <tr><td><b>ESP-SR 唤醒词</b></td><td>Espressif 闭源、绑死 ESP32-S3。<b>根本不存在 aarch64 版本</b> <span class="c c-v">已核实</span></td></tr>
+  <tr><td><b>AFE 音频前端</b></td><td>同上，ESP-DSP 绑定。SL1680 上 AEC 必须自己解决</td></tr>
+  <tr><td><b>Opus 编码参数</b></td><td>它的 <code>complexity = 0</code> 是 MCU 上的极限压榨。照抄 = <b>无谓自我削弱</b>。SL1680 应上调到 5–10</td></tr>
+  <tr><td><b>MQTT+UDP 传输</b></td><td><b>别碰。</b>文档里 AES-CTR nonce 的描述<b>是错的</b> —— 代码实际把 <code>payload_len</code> 写进了 nonce offset 2，文档漏了。按文档实现必然解密失败。走 WebSocket 完全规避 <span class="c c-v">代码逐行比对</span></td></tr>
+  <tr><td><b>整个 C++ 应用层</b></td><td>连「纯逻辑」的 <code>device_state_machine.cc</code> 都 <code>#include &lt;esp_log.h&gt;</code>。没有一个文件能原样编译 <span class="c c-v">已核实</span></td></tr>
+</table></div>
+
+<h4>只读不抄</h4>
+<ul>
+  <li><b>py-xiaozhi</b>（Python 客户端，MIT）：<b>读它怎么实现协议、怎么用 sherpa-onnx 做 KWS</b>。但别指望跑起来 —— 依赖含 <code>pynput</code>（需 X11，而 Astra 默认是 <b>Weston/Wayland</b>，可能直接 import 失败）、<code>sounddevice</code>（要 PortAudio）、<code>soxr</code>（要编译）。它验证过的 RPi/Jetson <b>全是完整 Debian userland</b>，和 Yocto 不是一回事。</li>
+  <li><b>100askTeam/xiaozhi-linux</b>（C 实现，更贴合）：<b>两条红线</b> —— GitHub API 检测不到任何 license 字段（<b>商用有法律风险</b>）；<code>pushed_at = 2025-07-08</code>，<b>一年多没更新</b>。</li>
+</ul>
+
+<div class="note warn">
+  <span class="nh">两个必须修正的实现细节 · 已核实</span>
+  <p><b>1.</b> <code>features</code> 字段要照发 <code>{"mcp": false}</code>，不要整个省略 —— 参考设备代码里是无条件上报的，没有任何真实服务端验证过省略后的行为。</p>
+  <p><b>2.</b> <b>下行采样率是 24000 Hz，不是 16k</b> —— 上行 16k／下行 24k，<b>需要重采样</b>。</p>
+</div>
+
+<h2>二 · 板上实测</h2>
+
+<h3>CPU：全部结论的基石</h3>
+<pre>CPU part        : 0xd09          = <b>Cortex-A73</b>
+CPU architecture: 8              = <b>ARMv8.0-A</b>
+Features        : fp asimd aes pmull sha1 sha2 crc32 cpuid
+
+<span class="ok">✅ asimd</span>    (NEON)
+<span class="x">❌ asimddp</span>  (dot product, ARMv8.2 起)
+<span class="x">❌ i8mm</span>     (int8 矩阵乘, ARMv8.6 起)
+<span class="x">❌ fphp / asimdhp</span> (fp16)</pre>
+
+<div class="note key">
+  <p><b>这颗 A73 是纯 ARMv8.0，没有任何 int8/fp16 加速指令。</b>几乎所有「int8 量化提速 2–4×」的经验值都建立在 SDOT 之上 —— 在这块板子上拿不到。</p>
+</div>
+
+<h3>TTS 实测：量化是负优化 <span class="c c-m">实测</span></h3>
+<div class="scroll"><table class="num">
+  <tr><th>模型</th><th>线程</th><th>总耗时</th><th>音频时长</th></tr>
+  <tr><td>model.onnx（fp32, 170MB）</td><td>4</td><td><b>21.5 s</b></td><td>4.86 s</td></tr>
+  <tr class="hi"><td>model.int8.onnx（53.5MB）</td><td>4</td><td><b class="no">41.7 s</b> ← 慢 1.9×</td><td>4.82 s</td></tr>
+  <tr><td>model.onnx（fp32）</td><td>2</td><td>28.3 s</td><td>4.86 s</td></tr>
+  <tr class="hi"><td>model.int8.onnx</td><td>2</td><td><b class="no">47.0 s</b> ← 慢 1.7×</td><td>4.99 s</td></tr>
+</table></div>
+<p><b>int8 比 fp32 慢近一倍，两种线程数下一致复现。</b></p>
+<p>与 ONNX Runtime 官方文档的<b>倾向性</b>吻合 <span class="c c-v">已核实</span>：<em>"quantization has overhead… <b>it is not rare to get worse performance on old devices</b>"</em>，且明确说受益的是 <em>"Arm-based processors with <b>dot-product instructions</b>"</em> —— 正好排除 A73。</p>
+
+<h4>⚠️ 但这条不能推广到所有模型 —— 我一度推广了，是错的 <span class="c c-m">实测</span></h4>
+<div class="scroll"><table class="num">
+  <tr><th>模型</th><th>fp32</th><th>int8</th><th>方向</th></tr>
+  <tr><td>vits-melo TTS</td><td>21.5 s</td><td><b>41.7 s</b></td><td class="no">int8 慢 1.9× ❌</td></tr>
+  <tr class="hi"><td><b>SenseVoice ASR</b></td><td>RTF 0.291 / RSS 1287 MB</td><td><b>RTF 0.201 / RSS 393 MB</b></td><td class="yes">int8 快 1.45×、省 3.3× 内存 ✅</td></tr>
+</table></div>
+<p><b>同一颗 CPU、同一个 onnxruntime，两个模型的量化收益方向完全相反。</b>我最初只测了 TTS 就写下「A73 无 dotprod ⇒ 量化是负优化」这条 CPU 级普适规律 —— <b>这是过度泛化</b>。ORT 那句话是<b>倾向性，不是定律</b>。</p>
+<div class="note key">
+  <p><b>正确的规则：量化效果因模型而异，每个模型都要自己测 fp32 vs int8。</b></p>
+  <p>已定结论：<b>SenseVoice 用 int8</b>（快且省内存）｜<b>vits-melo 用 fp32</b>。<br>
+  llama.cpp 的 Q4 是否受影响 —— <span class="c c-u">待实测</span>，<b>不要假设</b>。</p>
+</div>
+<p>机理推测 <span class="c c-i">推断</span>：VITS 有大量卷积／flow 层，动态量化插满 QDQ 且部分算子无 int8 内核要回退；SenseVoice 以 matmul 为主，NEON int8 乘加吞吐仍高于 fp32。</p>
+
+<h3>拆开「加载」与「合成」—— 修正我之前报错的数字</h3>
+<pre>fp32  1 个字  → 11.38s (音频 0.28s)   ⇒ 模型加载 ≈ <b>11.1s</b>
+fp32  长句    → 21.41s (音频 5.02s)   ⇒ 纯合成 ≈ 10.3s / 5.02s = <b>RTF 2.05</b></pre>
+<div class="note key">
+  <p><b>我之前报的「RTF 4.6」是错的</b> —— 把 11 秒的模型加载算进了合成时间。真实合成 <b>RTF ≈ 2.05</b>。</p>
+  <p><b>1.</b> 进程必须常驻。每次重新加载白扔 11 秒，比模型慢本身更致命。<br>
+     <b>2.</b> 差距没那么大：从 2.05 到实时只需 ~2×，不是 ~5×。</p>
+</div>
+<p><b>交叉验证</b> <span class="c c-v">已核实</span>：melo 官方公布树莓派 4 四线程 <b>RTF 2.518</b>。我们实测 <b>2.05</b>，略好于 RPi4 —— 两个独立来源互相印证。</p>
+
+<h3>其它已验证能力 <span class="c c-m">实测</span></h3>
+<div class="scroll"><table>
+  <tr><th>能力</th><th>状态</th></tr>
+  <tr><td>麦克风／喇叭（Razer Kraken, card 2）</td><td class="yes">✅ 正常</td></tr>
+  <tr class="hi"><td><b>SenseVoice ASR 速度</b></td><td class="yes">✅ <b>RTF 0.197（4 线程）= 5× 实时余量</b>。1 线程 0.626／2 线程 0.338 —— <b>ASR 不是瓶颈</b></td></tr>
+  <tr><td>SenseVoice 离线 ASR 准确度</td><td class="yes">✅ 官方音频完美识别</td></tr>
+  <tr><td>Silero VAD + SenseVoice 实时链路</td><td class="yes">✅ 能启动进入监听</td></tr>
+  <tr><td>TTS 中文合成</td><td class="yes">✅ 闭环验证：合成→再识别，中文一字不差</td></tr>
+  <tr><td>TTS 英文合成</td><td>⚠️ 质量差（"Hello, this is a test" → "hel,V say the test"）</td></tr>
+  <tr><td><code>/dev/synap</code></td><td class="yes">✅ 存在</td></tr>
+</table></div>
+
+<h2>三 · SyNAP NPU 的诚实答案</h2>
+
+<h3>结论：对语音 AI 几乎帮不上任何忙</h3>
+<p>不是「需要投入工作量去集成」，而是<b>架构层面尚未被证明可行，且厂商自己选择了不走这条路</b>。</p>
+
+<h4>最有力的证据：Synaptics 自己的选择 <span class="c c-v">已核实</span></h4>
+<p>逐个读了 <code>synaptics-synap/examples</code> 仓库（2026-07-07 还在推）：</p>
+<div class="scroll"><table>
+  <tr><th>文件</th><th>运行时</th><th>硬件</th></tr>
+  <tr><td><code>vision/image_class.py</code></td><td><code>synapRT.pipelines</code> + <code>model.synap</code></td><td><b style="color:var(--accent)">NPU</b></td></tr>
+  <tr><td><code>speech_to_text/moonshine.py</code></td><td><code>onnxruntime.InferenceSession()</code>，<b>无 providers 参数</b></td><td>CPU</td></tr>
+  <tr><td><code>text_to_speech/piper.py</code></td><td><code>os.system('… | piper …')</code></td><td>CPU</td></tr>
+  <tr><td><code>llm/gemma.py</code></td><td><code>llama_cpp.Llama</code>, <code>gemma-3-270m-it-Q8_0.gguf</code></td><td>CPU</td></tr>
+  <tr><td><code>embeddings/minilm.py</code></td><td><code>llama_cpp.Llama(n_threads=4)</code></td><td>CPU</td></tr>
+</table></div>
+<p>README 逐字：<b>"Vision examples leverage NPU and other examples leverage CPU."</b></p>
+<div class="note key">
+  <p><b>MiniLM 是纯 transformer encoder，比 SenseVoice 还小。Synaptics 自己都用 llama.cpp 在 4 个 A73 核上跑，没上 NPU。</b></p>
+  <p>再补一刀：Synaptics 自家参考设计 <code>on-device-ai-assistant</code>（<b>已于 2025-05-09 archived</b>）逐字写着：<em>"Context-specific Q&amp;A matching using an <b>encoder-only</b> language model (<b>future support for small LLM planned</b>)"</em> —— 厂商在自己的旗舰语音参考设计里，刻意避开了 decoder LLM。</p>
+</div>
+
+<h4>算子不是问题，动态 shape 才是 <span class="c c-v">已核实</span></h4>
+<p>需要澄清一个误解：<b>SyNAP 的算子表其实覆盖了 transformer 所需的全部基础算子</b> —— MATRIXMUL ✅、SOFTMAX ✅、LAYER_NORM ✅、GELU ✅、FULLY_CONNECTED ✅。所以「算子不支持」<b>不是</b>拒绝 SyNAP 的正当理由。真正卡死的是四条：</p>
+<ol>
+  <li><b>固定 shape。</b><code>.synap</code> 模型全文零次提及 dynamic shape／KV cache，batch <b>固定为 1</b>。而 SenseVoice 的变长音频、VITS 的变长文本→变长音频、LLM 的 KV cache 增长，<b>全部是动态 shape</b>。</li>
+  <li><b>强制量化。</b>文档原文："in order to efficiently run a model on the NPU HW <b>it has to be quantized</b>"。</li>
+  <li><b>无自动 CPU fallback。</b></li>
+  <li><b>sherpa-onnx 没有 SyNAP provider。</b>enum 只有 8 项：<code>cpu/cuda/coreml/xnnpack/nnapi/trt/directml/spacemit</code>。</li>
+</ol>
+<div class="note warn">
+  <span class="nh">陷阱</span>
+  <p><code>StringToProvider()</code> 对未知字符串<b>静默回退 CPU</b>，只打一行日志。写 <code>--provider=synap</code> <b>不会报错，会安静地跑在 CPU 上。</b></p>
+</div>
+
+<h4>GPU 路径：源码级证伪 <span class="c c-v">已核实</span></h4>
+<p>SL1680 <b>确实有 GPU</b>（Imagination PowerVR Series9XE <b>GE9920</b>）—— 我之前说「无 GPU」是错的。但它救不了我们：</p>
+<pre><i>// runtime/lib/synapnb/src/predictor_onnx.cpp 的 load_model()
+// 只解析 log_level 和 num_threads，<b>从不解析 gpu</b>，且 buffer 绑死 CPU：</i>
+Ort::MemoryInfo mem_info = Ort::MemoryInfo::CreateCpu(...);
+
+<i>// 而转换器 onnx_converter.py 却会写出：</i>
+delegate_string = "onnx gpu=1"</pre>
+<div class="note warn">
+  <p><b><code>delegate: gpu</code> + ONNX 模型 = 静默跑在 CPU 上。这是 SyNAP 自身的 bug。做对照实验时千万别用它，会给假结果。</b></p>
+</div>
+<p>GE9920 本身：Imagination 官方 = <b>"64 FP32 FLOPs/Clock"</b>，定位「DTV 入门级／穿戴／智能家居」。<b>是入门级图形 GPU，不是计算加速器</b>，而且还要驱动我们那 3 块屏。</p>
+
+<div class="note key">
+  <span class="nh">★ 产品建议</span>
+  <p>benchmark 页 12 个模型<b>全是视觉</b>（mobilenet／yolov5／yolov8s-pose／posenet／resnet／unet／deeplab_v3_plus…），全部有官方实测。</p>
+  <p>把「7.9 TOPS NPU 价值」的叙事，从<b>「NPU 跑语音」</b>改成<b>「NPU 跑视觉感知 + CPU 跑语音」</b>。这样既<b>诚实</b>，又<b>真的用上了芯片</b>，而且是一个<b>更好的 kiosk 产品</b> —— 人走近自动唤醒，体验远好于喊「astra」。<b>而且罗技 C920 明天就到。</b></p>
+</div>
+
+<h2>四 · 架构对比</h2>
+<div class="scroll"><table>
+  <tr><th>维度</th><th>xiaozhi 原生（ESP32+云）</th><th>SL1680 全本地</th><th>SL1680 + 自建服务端 ★推荐起点</th></tr>
+  <tr><td><b>唤醒词</b></td><td>ESP-SR（芯片绑定，不可移植）</td><td>sherpa-onnx KWS (CPU)</td><td>同左</td></tr>
+  <tr><td><b>VAD</b></td><td>AFE（芯片绑定）</td><td>Silero ONNX ✅ 已上板</td><td>同左</td></tr>
+  <tr><td><b>ASR</b></td><td>云端</td><td>SenseVoice ✅ 已上板</td><td>板上或同机</td></tr>
+  <tr><td><b>LLM</b></td><td>云端</td><td class="no">❌ 只能 270M–600M 级</td><td>云 API 或外部 llama-server</td></tr>
+  <tr><td><b>TTS</b></td><td>云端</td><td>⚠️ RTF 2.05，需换模型</td><td>可选</td></tr>
+  <tr><td><b>声音克隆</b></td><td>仓库无此概念</td><td class="no">❌ 端侧实时不现实</td><td class="yes">✅ 离线预生成</td></tr>
+  <tr><td><b>联网依赖</b></td><td>强（断网即哑）</td><td>无</td><td>取决于 LLM</td></tr>
+  <tr><td><b>隐私／音色可控</b></td><td class="no">语音出境</td><td class="yes">完全可控</td><td class="yes">可控</td></tr>
+  <tr><td><b>主要风险</b></td><td>商用不可接受</td><td>TTS + LLM 双重不可行</td><td>Yocto 上部署 Python 栈</td></tr>
+</table></div>
+
+<div class="note key">
+  <span class="nh">关于 xiaozhi-esp32-server 的关键澄清 · 已核实</span>
+  <p><b>它进程内真正跑模型的只有 VAD + ASR。</b>所有「本地 TTS／本地 LLM」在配置里<b>全是 HTTP 客户端</b>：FishSpeech → <code>127.0.0.1:8080/v1/tts</code>、Ollama → <code>localhost:11434</code>、LMStudio → <code>localhost:1234/v1</code>。</p>
+  <p><b>1.</b>「server 太重跑不动 SL1680」论证对象错了 —— 它自己就是 SileroVAD + SenseVoice 的开销，<b>正好是我们板上已跑通的两个模型</b>。<br>
+     <b>2.</b> 它对 TTS 瓶颈既不加重也不解决 —— <b>别指望从这个仓库找 TTS 答案</b>。</p>
+</div>
+
+<h2>五 · 三个已知问题的解法</h2>
+
+<h3>TTS 太慢（真实 RTF 2.05）</h3>
+<div class="scroll"><table>
+  <tr><th>#</th><th>方案</th><th>判断</th></tr>
+  <tr class="hi"><td>1</td><td><b>进程常驻</b></td><td><span class="c c-m">实测</span> <b>立刻做</b>。省掉每次 11.1s 加载，白捡的</td></tr>
+  <tr><td>2</td><td><s>int8 量化</s></td><td><span class="c c-m">实测</span> <b class="no">已证伪，放弃</b></td></tr>
+  <tr><td>3</td><td><b>Piper 中文</b>（huayan-medium）</td><td><b>Synaptics 官方 Astra 示例就是 Piper</b>，模型远小于 melo。<span class="c c-u">待实测</span> 无中文 RTF 公开数据</td></tr>
+  <tr><td>4</td><td><b>matcha-icefall-zh-baker</b></td><td>RPi4 官方 <b>RTF 0.391</b>，有 2.5× 余量。<b class="no">⚠️ 但 Baker 数据集非商用 —— kiosk 商业产品的法务硬伤</b></td></tr>
+  <tr><td>5</td><td>TTS 上云</td><td>联网模式下最省事</td></tr>
+</table></div>
+
+<h3>唤醒词「astra」—— 未解决，且我要说清不确定性</h3>
+<div class="scroll"><table>
+  <tr><th>音频</th><th>说话人</th><th>KWS 结果</th></tr>
+  <tr><td><code>en_0.wav</code>（"…the yellow lamps would <b>light up</b> here and there…"）</td><td><b>母语英语 + 录音室</b></td><td class="yes">✅ 检出 LIGHT_UP</td></tr>
+  <tr class="hi"><td>你的录音（"LIGHT UP + 三遍 astra"）</td><td>中文母语者 + 办公室</td><td class="no">❌ 阈值降到 0.05 仍无检出，降噪后也无</td></tr>
+</table></div>
+<p><b>已排除</b> <span class="c c-m">实测</span>：token 空间问题 —— <code>AE1=7, S=57, T=59, R=56, AH0=9</code> <b>全部存在</b>，263 个 token 含 45 个 ARPAbet；引擎坏了 —— 官方音频正常检出。</p>
+<p><b>旁证</b>：SenseVoice 把你的 "LIGHT" 听成 "<b>not</b>" —— l/n 混淆是典型中文口音特征。</p>
+<div class="note warn">
+  <p><b>但我不下结论</b> —— 这里有<b>两个混杂因素</b>（口音、信噪比），现有数据分不开。我用 TTS 合成做对照的尝试<b>无效</b>，因为 melo 的英文发音本身就差。</p>
+</div>
+<p><b>候选解法</b>（按推荐度）：<b>①</b> 改用摄像头感知唤醒（NPU 真能加速，UX 更好，C920 明天到）　<b>②</b> 换中文唤醒词（这个 KWS 模型有拼音 token，且匹配说话人母语）　<b>③</b> openWakeWord，用你实际发音样本训练　<b>④</b> 「hey astra」双音节（业界唤醒词都是双音节以上，短词误触发率高）</p>
+
+<h3>声音克隆</h3>
+<p><span class="c c-v">已核实</span> <b>端侧实时不现实</b>（3.28GB + 4×A73 无 dotprod，零证据支撑）。<b>唯一稳妥路径：PC 上克隆 → 导出音色 → 板上推理，或走云端。</b></p>
+
+<h2>六 · 内存预算 <span class="c c-m">实测</span></h2>
+<pre>物理 4GB LPDDR4x → carveout 后 Linux 可见 3.28GB → 实测可用 ≈ 2.9GB
+
+SenseVoice int8   239 MB
+TTS (melo fp32)   170 MB
+Silero VAD          0.6 MB
+KWS                 5.4 MB
+────────────────────────────
+语音栈小计       ≈ <b>415 MB</b>
+剩余给 3 屏 UI + LLM ≈ <b>2.5 GB</b></pre>
+
+<h2>七 · 路线图</h2>
+<div class="road">
+  <div><span class="st">第一步 · 本周</span><ol>
+    <li><b>TTS 进程常驻</b> —— 白捡 11 秒</li>
+    <li><b>实测 SenseVoice 板上真实 RTF</b>（官方 A55@1.8GHz 4 线程 RTF=0.175，A73 只会更好）—— 5 分钟</li>
+    <li><b>试 Piper 中文</b> —— Synaptics 官方示例路线</li>
+    <li><b>「说一句回一句」闭环跑通</b>（VAD+SenseVoice → 回显 → TTS）</li>
+  </ol></div>
+  <div><span class="st">第二步</span><ol start="5">
+    <li>C920 到货 → <b>摄像头感知唤醒</b>（NPU 真加速）+ UVC 测试</li>
+    <li>唤醒词：openWakeWord 或中文词，二选一实测</li>
+    <li>自建 xiaozhi-server（先在 PC 上跑通，再评估上板）</li>
+  </ol></div>
+  <div><span class="st">第三步</span><ol start="8">
+    <li>双模切换（本地兜底 + 联网增强）</li>
+    <li>声音克隆（PC 克隆 → 导出 → 板上推理）</li>
+  </ol></div>
+</div>
+
+<h2>八 · 必须实测才能确定 <span class="c c-u">待实测</span></h2>
+<ul>
+  <li>Piper 中文在 A73 上的 RTF（<b>无任何公开数据</b>）</li>
+  <li>SenseVoice 在这块板子上的真实 RTF</li>
+  <li>Gemma-3-270M 在 A73 上的 tok/s（<b>无实测数据</b>；RPi4 同样无 dotprod，1–1.5B 模型 &lt;5 tok/s）</li>
+  <li>Yocto 上能否装起 Python 栈（<b>最大落地不确定项</b> —— 板上无 pip，glibc 是否匹配 manylinux_2_17 未知）</li>
+  <li>唤醒词失败的真因（口音 vs 信噪比，需设计能分离两者的实验）</li>
+</ul>
+
+<h2>九 · SyNAP 探针（约 1 天）</h2>
+<pre>docker pull ghcr.io/synaptics-synap/toolkit:3.1.0   <i># ⚠️ 3.1.1 没有镜像</i>
+<i># Python 必须锁 3.10 或 3.12（PyArmor 只有这两个 runtime）</i>
+synap convert --model sensevoice.onnx --target SL1680 \
+              --meta meta.yaml --out-dir out/ --profiling
+<i># 看有多少子图掉到 CPU</i></pre>
+<div class="note warn">
+  <span class="nh">两个真陷阱 · 已核实</span>
+  <p><code>pip install synap</code> <b>会装到无关的第三方包</b>（PyPI 上的 <code>synap</code> 是别人的 "Cognitive memory architecture for LLM agents"）。</p>
+  <p><code>toolkit-prebuilts</code> 里 acuitylib 是 <b>PyArmor 混淆的闭源代码</b>，底层是 VeriSilicon Acuity Toolkit 6.21.2。<b>转换失败时你看不到也改不了转换器内部。</b></p>
+</div>
+
+<hr>
+
+<h2>附录 · 本次调查的方法论教训</h2>
+<p>在麦克风排查中，我连续提出并<b>推翻了六个假设</b>（低通滤波、削波失真、重采样混叠、端点检测截断、声道抵消、187.5Hz 数字伪影）。</p>
+<p><b>根因不是技术，是方法</b>：我一直在「找一个能解释现象的合理原因」，却从未验证最基本的前提 —— <b>那段音频里到底是什么内容</b>。</p>
+<p>最后是靠一段<b>内容已知</b>的录音（我指定说 "LIGHT UP + astra×3"）+ 一个<b>更强的独立模型</b>（PC 端 SenseVoice）拿到地面真相：</p>
+<pre>要求说的:   「LIGHT UP ...  astra    astra    astra 」
+实际听到:   「<b>Not  up</b>  ... <b>after</b> ,  <b>after</b> ,  not <b>after</b>」</pre>
+<p><b>音频一直是好的。ASR 返回空是正确行为 —— "astra" 是生造词，不在任何语言模型词表里。</b></p>
+<p>其中 187.5Hz 那个假设尤其值得记取：我用 1024 点 FFT（分辨率 15.625Hz）测出「187.5Hz」，发现它 = 48000÷256，于是构建了一套「块边界伪影」理论。<b>实际上 187.5 只是第 12 个 bin —— 我把量化误差当成了物理证据。</b>后来用 16384 点 FFT（0.977Hz）一测，峰值是 181.64／187.50／191.41 的簇，<b>而官方音频呈现完全相同的簇</b>。</p>
+<div class="note key">
+  <p><b>教训：先拿地面真相，再建理论。凡是「只有这一个来源能证明」的结论，都要用独立方法交叉验证。</b></p>
+  <p>本报告中每个 <span class="c c-m">实测</span> 标记的数字，都可以在板子上复现。</p>
+</div>
+
+<p class="foot">SL1680 语音 AI 技术决策报告 · 2026-07-17 · 配套 Markdown：<code>SL1680语音AI_xiaozhi参考与本地AI可行性报告.md</code></p>
+
+</div>

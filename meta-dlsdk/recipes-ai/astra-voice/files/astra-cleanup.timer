@@ -1,0 +1,10 @@
+[Unit]
+Description=每天清理 Astra 语音段
+
+[Timer]
+# 每天凌晨 4 点清理（本地时间 TZ 由系统定；也可改 OnCalendar=daily）
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 备份与恢复手册 · 2026-07-24</title>
+<style>
+  :root{
+    --ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;
+    --rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;
+    --good:#1F6B4A;--good-bg:#E5F3EC;--bad:#A8305A;--bad-bg:#FBE9EF;--warn:#B06A12;--warn-bg:#FDF3E3;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;
+    --rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;
+    --good:#5FBF8F;--good-bg:#122A1E;--bad:#E06A92;--bad-bg:#2E151F;--warn:#E8A33D;--warn-bg:#2B2114;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 100px}
+  .mast{border-bottom:2px solid var(--ink);padding:40px 0 20px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(23px,4vw,34px);line-height:1.2;margin:0 0 14px;font-weight:680}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;gap:20px;flex-wrap:wrap}
+  .lead{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;margin-top:16px;font-size:14.5px;color:var(--ink-2)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:46px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:640}
+  h4{font-size:14.5px;margin:18px 0 6px;font-weight:640;color:var(--ink-2)}
+  p{margin:0 0 12px} ul,ol{margin:0 0 12px;padding-left:22px} li{margin-bottom:5px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:13px 15px;overflow-x:auto;margin:0 0 16px;color:var(--ink-2)}
+  .scroll{overflow-x:auto;margin:0 0 16px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:0 0 16px;font-size:14px}
+  .note.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:2px 18px 14px;margin:0 0 16px}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 7px;border-radius:3px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--rule-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">SL1680 · Dolphin RDK 语音终端 · 备份与恢复</p>
+  <h1>手上有哪些备份、区别是什么、每种怎么用</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-07-24</span>
+    <span><b>板子</b> 192.168.5.126</span>
+    <span><b>烧录工具</b> usb-tool-astra-update-v2.0.1</span>
+  </div>
+  <div class="lead"><strong>能回退。</strong>三份镜像同一套 SYNAIMG 布局、同一个烧录工具，互换着烧即可，不存在"烧了就回不去"。<strong>但有一个前提</strong>：模型约 2 GB 不在任何镜像里，烧完必须单独灌 —— 这份东西以前<strong>只存在于板子的 eMMC 上</strong>，2026-07-24 才拉到 PC。</div>
+</header>
+
+<h2>一 · 备份清单</h2>
+
+<h3>镜像级（整机可烧）</h3>
+<div class="scroll"><table>
+  <tr><th>#</th><th>位置</th><th>时间</th><th>大小</th><th>内容</th></tr>
+  <tr><td><span class="tag">A</span></td><td><code>flash_image_20260723163055\</code></td><td>2026-07-24</td><td>2.5 GB</td><td>astra-media + <strong>完整语音终端</strong></td></tr>
+  <tr><td><span class="tag">B</span></td><td><code>delivery_sl1680\SYNAIMG\</code></td><td>2026-07-13</td><td>2.4 GB</td><td>astra-media <strong>干净底座</strong></td></tr>
+  <tr><td><span class="tag">C</span></td><td><code>D:\Astra\board_backup\</code></td><td>烧我们镜像之前</td><td>5.1 GB</td><td><strong>出厂 Yealink 状态</strong>（逐分区 dump）</td></tr>
+</table></div>
+
+<h3>数据级（配合镜像使用）</h3>
+<div class="scroll"><table>
+  <tr><th>#</th><th>位置</th><th>大小</th><th>内容</th></tr>
+  <tr><td><span class="tag">D</span></td><td><code>backups\models_2026-07-24\</code></td><td>1.15 GB</td><td><strong>模型 + 脚本 + API key</strong>　★任何镜像烧完都要灌</td></tr>
+  <tr><td><span class="tag">E</span></td><td><code>backups\2026-07-23\</code></td><td>7.3 MB</td><td>源码/工具/文档快照 + 配置文件</td></tr>
+</table></div>
+<p><strong>源码</strong>：<code>meta-dlsdk\</code> —— 板端配置在 2026-07-23 已全量回灌，用 <code>backups\2026-07-23\DEPLOY_MANIFEST.txt</code> 的 sha256 对照表可验证板子与仓库一致。</p>
+
+<h2>二 · ⚠️ 三份镜像的关键区别</h2>
+<div class="card">
+<div class="note bad"><strong>B（7-13）不能当作"当前功能的备份"。</strong>实测确认（解压 5.4 GB ext4，<code>debugfs</code> 读取）：</div>
+<pre>✗ /usr/bin/astra_voice        ✗ /usr/bin/dl_face
+✗ /usr/lib/libdlsdk.so        ✗ /home/voice/
+✓ /etc/asound.conf  32 字节   ← 只是 alsa-state 的占位注释</pre>
+<p>原因：语音终端是 <strong>7 月 18–23 日在板子上手工装的</strong>，从来没有被打进任何镜像。直到 A（7-24）才第一次进 Yocto 构建。</p>
+<div class="scroll"><table>
+  <tr><th></th><th>A · 新镜像</th><th>B · 7-13 底座</th><th>C · 出厂状态</th></tr>
+  <tr><td>系统能启动</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td></tr>
+  <tr><td>DisplayLink（dlsdk / dl_face）</td><td class="ok">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+  <tr><td>语音助手（astra_voice）</td><td class="ok">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+  <tr><td>sherpa-onnx 库</td><td class="ok">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+  <tr><td>视觉唤醒</td><td class="ok">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+  <tr><td><strong>模型（2 GB）</strong></td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td></tr>
+  <tr><td>用途</td><td>交付 / 部署</td><td>回到干净底座重来</td><td>还原成 Yealink 测试板</td></tr>
+</table></div>
+<div class="note warn"><strong>板子当前运行的状态（v2.4）没有整机镜像备份</strong> —— 只在那块 eMMC 上。但源码在 <code>meta-dlsdk\</code>、模型在 D，两者合起来可以重建，不是不可恢复。</div>
+</div>
+
+<h2>三 · 使用方法</h2>
+
+<h3><span class="tag">A</span> 烧新镜像（含语音终端）</h3>
+<div class="card">
+<pre># 1. 校验完整性
+cd flash_image_20260723163055
+sha256sum -c SHA256SUMS.txt
+
+# 2. 板子进 USB 恢复模式（IO 板按钮位置见 D:\Astra\board_backup\*.png）
+# 3. 用 usb-tool-astra-update-v2.0.1 烧录</pre>
+<p>烧完<strong>必须</strong>做两件事，否则语音助手起不来：</p>
+<pre># 灌模型（见第四节）
+# 填 API key
+cp /etc/astra/llm.conf.sample /etc/astra/llm.conf
+chmod 600 /etc/astra/llm.conf
+vi /etc/astra/llm.conf
+systemctl restart astra-voice     # EnvironmentFile 只在启动时注入</pre>
+<p>详见 <code>flash_image_20260723163055\README_烧录说明.md</code>。</p>
+</div>
+
+<h3><span class="tag">B</span> 回退到 7-13 干净底座</h3>
+<div class="card">
+<p>同样的烧录流程，把源目录换成 <code>delivery_sl1680\SYNAIMG\</code>。</p>
+<p><strong>烧完得到的是没有任何语音功能的系统。</strong>要恢复功能需要从 <code>meta-dlsdk\</code> 重新构建（<code>bitbake astra-media</code> 就直接是 A 了）。</p>
+<div class="note"><strong>什么时候才该用 B</strong>：怀疑是新镜像本身把系统搞坏了、想验证"换回旧底座是否还有问题"。单纯想去掉语音终端的话，<code>local.conf</code> 里 <code>ASTRA_TERMINAL_PACKAGES = ""</code> 重新构建更干净。</div>
+</div>
+
+<h3><span class="tag">C</span> 还原成出厂 Yealink 状态</h3>
+<div class="card">
+<p><code>D:\Astra\board_backup\</code> 是<strong>逐分区 dump</strong>（<code>partitions\p01~p18*.img.gz</code> + GPT 头 + boot0/1），和 SYNAIMG 不是一个格式，恢复方法见该目录的 <code>烧录指南_SL1680.md</code>。</p>
+<div class="note">这份是"把板子还给 Yealink"用的，日常回退用不到。</div>
+</div>
+
+<h3><span class="tag">D</span> 恢复模型与配置（★ 每次烧完都要做）</h3>
+<div class="card">
+<pre># 传到板子（PC 上执行）
+powershell -File tools\bput.ps1 backups\models_2026-07-24\voice_sv.tar.gz /home/voice_sv.tar.gz
+# ...其余 7 个同理
+
+# 板子上解压
+mkdir -p /home/voice &amp;&amp; cd /home/voice
+for f in sv matcha tts kws bin scripts; do tar xzf /home/voice_$f.tar.gz -C /home/voice; done
+tar xzf /home/voice_llm_inuse.tar.gz -C /home/voice
+tar xzf /home/etc_astra.tar.gz -C /
+chmod 600 /etc/astra/llm.conf
+chmod +x /home/voice/*.py /home/voice/bin/*
+systemctl restart astra-voice astra-translate dl-face</pre>
+<div class="note warn"><strong><code>bput.ps1</code> 会注入 3 字节 UTF-8 BOM</strong>，二进制传完必须剥掉（判据：板上大小 = 本地 +3）。更省事的办法：PC 上起 <code>python -m http.server</code>，板子上 <code>wget</code> 拉。</div>
+</div>
+
+<h3><span class="tag">E</span> 源码/工具/文档快照</h3>
+<div class="card">
+<p><code>backups\2026-07-23\</code> 里三个 <code>SL1680_backup_v*.tar.gz</code> 是<strong>配置文件级</strong>快照（19 项：<code>etc/</code>、<code>systemd/</code>、<code>home_voice/</code>、<code>usr_bin/</code>），另外三个是 <code>meta-dlsdk\</code>、<code>tools\</code>、文档的打包。</p>
+<div class="note warn">这些是 v2.1/v2.2/v2.4 时点的，<strong>现在仓库已经到 v2.6</strong>，直接用仓库当前版本即可。这些快照只在"想看某个时点长什么样"时有用。</div>
+</div>
+
+<h2>四 · 模型备份包（D）明细</h2>
+<div class="scroll"><table>
+  <tr><th>文件</th><th>恢复到</th><th>解压后</th><th>内容</th></tr>
+  <tr><td><code>voice_sv.tar.gz</code></td><td><code>/home/voice/sv/</code></td><td>229 MB</td><td>SenseVoice ASR（int8）+ silero VAD</td></tr>
+  <tr><td><code>voice_matcha.tar.gz</code></td><td><code>/home/voice/matcha/</code></td><td>144 MB</td><td>Matcha TTS + vocos + espeak-ng-data</td></tr>
+  <tr><td><code>voice_tts.tar.gz</code></td><td><code>/home/voice/tts/</code></td><td>234 MB</td><td>VITS TTS（备用发音人）</td></tr>
+  <tr><td><code>voice_llm_inuse.tar.gz</code></td><td><code>/home/voice/llm/</code></td><td>676 MB</td><td>qwen2.5-0.5b-q8_0，断网兜底</td></tr>
+  <tr><td><code>voice_kws.tar.gz</code></td><td><code>/home/voice/kws/</code></td><td>5.6 MB</td><td>KWS 唤醒词素材（还没接进链路）</td></tr>
+  <tr><td><code>voice_bin.tar.gz</code></td><td><code>/home/voice/bin/</code></td><td>224 MB</td><td>llama-completion + sherpa 命令行工具</td></tr>
+  <tr><td><code>voice_scripts.tar.gz</code></td><td><code>/home/voice/</code></td><td>17 KB</td><td>astra_llm.py / astra_translate.py 等</td></tr>
+  <tr><td><code>etc_astra.tar.gz</code></td><td><code>/etc/</code></td><td>536 B</td><td><strong>含明文 API key 的 llm.conf</strong> + asound.conf</td></tr>
+</table></div>
+<p class="ok"><strong>已验证</strong>：8 个包 sha256 与板端一致，抽验可正常解压。</p>
+<div class="note bad"><code>etc_astra.tar.gz</code> 有明文 API key，<strong>不要提交 git、不要外传</strong>。</div>
+<div class="note"><code>llm/</code> 只备了在用的那个。板上另有 <code>gemma-3-270m-it-Q8_0.gguf</code> 和 <code>qwen2.5-0.5b-instruct-q4_k_m.gguf</code>，是选型残留、当前无服务使用，未备份（省 800 MB）。</div>
+
+<h2>五 · 典型场景</h2>
+<div class="scroll"><table>
+  <tr><th>场景</th><th>怎么做</th></tr>
+  <tr><td>给同事一台能用的板子</td><td>烧 <span class="tag">A</span> → 灌 <span class="tag">D</span> → 填 API key</td></tr>
+  <tr><td>新镜像有问题，想退回去</td><td>烧 <span class="tag">A</span> 重来一次；怀疑镜像本身有问题才烧 <span class="tag">B</span></td></tr>
+  <tr><td>只想要干净的 astra-media</td><td>烧 <span class="tag">B</span>；或 <code>ASTRA_TERMINAL_PACKAGES=""</code> 重新构建</td></tr>
+  <tr><td>板子要还给 Yealink</td><td>按 <span class="tag">C</span> 的 <code>烧录指南_SL1680.md</code></td></tr>
+  <tr><td>只是模型坏了/误删</td><td>只做 <span class="tag">D</span>，不用重烧</td></tr>
+  <tr><td>想知道板子和仓库是否一致</td><td><code>tools\export_live.sh</code> 导出后对 <code>DEPLOY_MANIFEST.txt</code> 的 sha256</td></tr>
+</table></div>
+
+<h2>六 · 已知缺口</h2>
+<div class="card">
+<ol>
+  <li><strong>板子当前状态（v2.4）没有整机镜像</strong> —— 只在 eMMC 上。靠"源码 + 模型备份"可重建，但不是一键回滚</li>
+  <li><strong>模型来源没记录具体 release URL</strong> —— <code>README_models.md</code> 写了是 sherpa-onnx 官方预训练包，但当初的下载链接没留。所以 <strong>D 这份备份不能丢</strong></li>
+  <li><strong>新镜像没在真板子上实烧验证过</strong> —— 所有验证都在镜像文件层面（<code>debugfs</code> 直接读 ext4：文件在、服务自启配置对），"烧进去开机真能跑"这一步还没做</li>
+</ol>
+</div>
+
+<h2>七 · 备份策略建议</h2>
+<div class="card">
+<ul>
+  <li><strong>每次动板子之前</strong>，先跑一次 <code>tools\export_live.sh</code> 导出配置对比</li>
+  <li><strong>模型不会变</strong>，D 这份除非换模型否则不用重做</li>
+  <li><strong>镜像每次构建都换时间戳目录</strong>，旧的别急着删（磁盘 2 TB，不差这点）</li>
+  <li><strong><code>etc_astra.tar.gz</code> 单独管理</strong>，它是唯一含密钥的包</li>
+</ul>
+</div>
+
+<div class="foot">生成于 2026-07-24 · SL1680 语音终端项目 · 备份与恢复手册</div>
+
+</div>
+</body>
+</html>

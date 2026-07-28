@@ -1,0 +1,18 @@
+[Unit]
+Description=Astra 对话界面 (DL7400 可爱脸 + 实时字幕)
+After=astra-voice.service
+
+[Service]
+Type=simple
+Environment=LD_LIBRARY_PATH=/opt/dlsdk:/usr/lib
+# --wait: 开机时 DL7400 可能还没枚举好，等它
+ExecStart=/usr/bin/dl_face --screen 0 --max-hz 60 --fps 15 --wait --status /tmp/astra_status.txt
+KillSignal=SIGINT
+TimeoutStopSec=8
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,535 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SYN4390 · 面向机器人的 Wi-Fi 7 无线方案</title>
+<style>
+  :root{
+    --ground:#EEF1F2; --panel:#FFFFFF; --panel-2:#F5F7F8;
+    --ink:#0E1626; --ink-2:#3E4C60; --ink-3:#6B7A8E;
+    --line:#DDE3E7; --line-2:#C7D0D6;
+    --deep:#0B1220; --deep-2:#131E31; --deep-line:#26344B;
+    --on-deep:#EAF1F7; --on-deep-2:#93A6BD;
+    --signal:#0C9AA6; --signal-ink:#0A7A84; --signal-bright:#2AD3DE;
+    --amber:#E1912A; --amber-bright:#F6B23F;
+    --good:#2E9E68; --bad:#C24A4A;
+    --band24:#7C8AA5; --band5:#0C9AA6; --band6:#E1912A;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI Variable","Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --wrap:1120px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#0A101C; --panel:#111B2C; --panel-2:#0E1726;
+      --ink:#E7EEF6; --ink-2:#AEBECE; --ink-3:#7C8DA1;
+      --line:#22304A; --line-2:#2C3D5A;
+      --deep:#070C16; --deep-2:#101B2C; --deep-line:#233450;
+      --on-deep:#EAF1F7; --on-deep-2:#93A6BD;
+      --signal:#22C3CE; --signal-ink:#3AD6E0; --signal-bright:#2AD3DE;
+      --amber:#F0A93B; --amber-bright:#F6B23F;
+      --good:#43B87E; --bad:#DB6B6B;
+      --band24:#8B99B2; --band5:#22C3CE; --band6:#F0A93B;
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#EEF1F2; --panel:#FFFFFF; --panel-2:#F5F7F8;
+    --ink:#0E1626; --ink-2:#3E4C60; --ink-3:#6B7A8E;
+    --line:#DDE3E7; --line-2:#C7D0D6;
+    --deep:#0B1220; --deep-2:#131E31; --deep-line:#26344B;
+    --on-deep:#EAF1F7; --on-deep-2:#93A6BD;
+    --signal:#0C9AA6; --signal-ink:#0A7A84; --signal-bright:#2AD3DE;
+    --amber:#E1912A; --amber-bright:#F6B23F;
+    --good:#2E9E68; --bad:#C24A4A; --band24:#7C8AA5; --band5:#0C9AA6; --band6:#E1912A;
+  }
+  :root[data-theme="dark"]{
+    --ground:#0A101C; --panel:#111B2C; --panel-2:#0E1726;
+    --ink:#E7EEF6; --ink-2:#AEBECE; --ink-3:#7C8DA1;
+    --line:#22304A; --line-2:#2C3D5A;
+    --deep:#070C16; --deep-2:#101B2C; --deep-line:#233450;
+    --on-deep:#EAF1F7; --on-deep-2:#93A6BD;
+    --signal:#22C3CE; --signal-ink:#3AD6E0; --signal-bright:#2AD3DE;
+    --amber:#F0A93B; --amber-bright:#F6B23F;
+    --good:#43B87E; --bad:#DB6B6B; --band24:#8B99B2; --band5:#22C3CE; --band6:#F0A93B;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+       font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
+  h1,h2,h3{text-wrap:balance;letter-spacing:-.01em;margin:0}
+  p{margin:0}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+           color:var(--signal-ink);font-weight:600}
+  .tnum{font-variant-numeric:tabular-nums}
+  a{color:inherit}
+  :focus-visible{outline:2.5px solid var(--signal);outline-offset:3px;border-radius:3px}
+
+  /* ---------- band chips motif ---------- */
+  .bands{display:inline-flex;gap:6px;vertical-align:middle}
+  .band{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
+        border:1px solid currentColor;line-height:1.5;white-space:nowrap}
+  .b24{color:var(--band24)} .b5{color:var(--band5)} .b6{color:var(--band6)}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;background:var(--deep);color:var(--on-deep);overflow:hidden;
+        border-bottom:1px solid var(--deep-line)}
+  #field{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.5}
+  .hero-in{position:relative;padding:88px 24px 76px;max-width:var(--wrap);margin:0 auto}
+  .brandrow{display:flex;align-items:center;gap:14px;margin-bottom:40px}
+  .brandrow .sy{font-weight:700;letter-spacing:.02em;font-size:15px;color:var(--on-deep)}
+  .brandrow .div{width:1px;height:16px;background:var(--deep-line)}
+  .brandrow .tag{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--on-deep-2);text-transform:uppercase}
+  .hero h1{font-size:clamp(34px,6.2vw,66px);line-height:1.04;font-weight:800;max-width:16ch}
+  .hero h1 .hl{color:var(--signal-bright)}
+  .hero .sub{margin-top:22px;font-size:clamp(16px,2.2vw,21px);color:var(--on-deep-2);max-width:52ch;line-height:1.7}
+  .hero .chipname{margin-top:30px;display:inline-flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .hero .chipname b{font-family:var(--mono);font-size:clamp(22px,3.4vw,32px);font-weight:700;
+                    color:var(--on-deep);letter-spacing:.04em}
+  .hero .chipname .k{font-size:13px;color:var(--on-deep-2);font-family:var(--mono);letter-spacing:.05em}
+  .statrow{margin-top:52px;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+           background:var(--deep-line);border:1px solid var(--deep-line);border-radius:14px;overflow:hidden}
+  .statrow .s{background:var(--deep-2);padding:22px 20px}
+  .statrow .n{font-size:clamp(26px,3.6vw,38px);font-weight:800;color:var(--signal-bright);line-height:1;letter-spacing:-.02em}
+  .statrow .n .u{font-size:.5em;color:var(--on-deep-2);font-weight:600;margin-left:3px}
+  .statrow .l{margin-top:9px;font-size:13px;color:var(--on-deep-2);line-height:1.5}
+  @media(max-width:760px){.statrow{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- section frame ---------- */
+  section{padding:76px 0}
+  .sec-head{margin-bottom:40px;max-width:60ch}
+  .sec-head h2{font-size:clamp(25px,3.6vw,38px);font-weight:800;margin-top:12px;line-height:1.2}
+  .sec-head p{margin-top:14px;color:var(--ink-2);font-size:17px}
+
+  /* ---------- pain cards ---------- */
+  .pain{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  @media(max-width:900px){.pain{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.pain{grid-template-columns:1fr}}
+  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 18px;
+         display:flex;flex-direction:column;gap:12px;transition:transform .18s ease,border-color .18s ease}
+  .pcard:hover{transform:translateY(-3px);border-color:var(--signal)}
+  .ic{width:38px;height:38px;color:var(--signal)}
+  .ic svg{width:100%;height:100%;display:block}
+  .pcard b{font-size:16px;font-weight:700}
+  .pcard span{font-size:13.5px;color:var(--ink-3);line-height:1.6}
+
+  /* ---------- needs → solution mapping ---------- */
+  .map{display:flex;flex-direction:column;gap:14px}
+  .mrow{display:grid;grid-template-columns:1fr auto 1.4fr;gap:0;align-items:stretch;
+        background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .mrow .need{padding:20px 22px;background:var(--panel-2)}
+  .mrow .need .t{font-weight:700;font-size:16px}
+  .mrow .need .d{font-size:13px;color:var(--ink-3);margin-top:5px;line-height:1.55}
+  .mrow .arrow{display:flex;align-items:center;justify-content:center;padding:0 14px;color:var(--signal)}
+  .mrow .arrow svg{width:26px;height:26px}
+  .mrow .sol{padding:20px 22px;display:flex;flex-direction:column;gap:5px}
+  .mrow .sol .tech{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--signal-ink);letter-spacing:.03em}
+  .mrow .sol .t{font-weight:700;font-size:16px}
+  .mrow .sol .d{font-size:13px;color:var(--ink-3);line-height:1.55}
+  @media(max-width:720px){
+    .mrow{grid-template-columns:1fr}
+    .mrow .arrow{padding:6px 0;transform:rotate(90deg)}
+  }
+
+  /* ---------- dark data band ---------- */
+  .band-dark{background:var(--deep);color:var(--on-deep);border-top:1px solid var(--deep-line);border-bottom:1px solid var(--deep-line)}
+  .band-dark .eyebrow{color:var(--signal-bright)}
+  .band-dark .sec-head h2{color:var(--on-deep)}
+  .band-dark .sec-head p{color:var(--on-deep-2)}
+  .bignums{display:grid;grid-template-columns:repeat(4,1fr);gap:34px 24px}
+  @media(max-width:820px){.bignums{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:460px){.bignums{grid-template-columns:1fr}}
+  .bn .n{font-size:clamp(46px,6.6vw,66px);font-weight:800;line-height:.92;letter-spacing:-.03em;color:var(--amber-bright)}
+  .bn .n .u{font-size:.36em;color:var(--on-deep-2);font-weight:700;margin-left:5px;letter-spacing:0}
+  .bn .cap{margin-top:14px;font-size:15px;color:var(--on-deep);font-weight:600}
+  .bn .sub{margin-top:5px;font-size:13px;color:var(--on-deep-2);line-height:1.55}
+
+  /* ---------- scan core split ---------- */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+  @media(max-width:840px){.split{grid-template-columns:1fr}}
+  .radiocard{border-radius:16px;padding:26px;border:1px solid var(--line)}
+  .radiocard h3{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .radiocard .dot{width:10px;height:10px;border-radius:50%}
+  .radiocard ul{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:11px}
+  .radiocard li{position:relative;padding-left:22px;font-size:14.5px;color:var(--ink-2);line-height:1.55}
+  .radiocard li::before{content:"";position:absolute;left:0;top:9px;width:8px;height:8px;border-radius:2px;background:currentColor}
+  .rc-main{background:var(--panel);color:var(--ink-3)}
+  .rc-main h3{color:var(--ink)} .rc-main .dot{background:var(--ink-3)}
+  .rc-scan{background:var(--panel);border-color:var(--signal)}
+  .rc-scan h3{color:var(--signal-ink)} .rc-scan .dot{background:var(--signal)}
+  .rc-scan li{color:var(--ink-2)}
+
+  /* ---------- tables ---------- */
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+  thead th{background:var(--panel-2);text-align:left;font-weight:700;font-size:12.5px;color:var(--ink-2);
+           padding:13px 16px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+  tbody td,tbody th{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tbody tr:last-child td,tbody tr:last-child th{border-bottom:none}
+  tbody th{text-align:left;font-weight:600;color:var(--ink)}
+  td.c{text-align:center}
+  .win{color:var(--signal-ink);font-weight:700;background:color-mix(in srgb,var(--signal) 9%,transparent)}
+  .yes{color:var(--good);font-weight:700} .no{color:var(--bad);font-weight:600}
+  .me{font-weight:800;color:var(--ink)}
+  caption{caption-side:top;text-align:left;font-size:13px;color:var(--ink-3);padding:0 0 10px}
+
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  @media(max-width:700px){.kv{grid-template-columns:1fr}}
+  .kvc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .kvc .n{font-size:26px;font-weight:800;color:var(--signal-ink);letter-spacing:-.01em}
+  .kvc .l{font-size:13px;color:var(--ink-3);margin-top:4px}
+
+  /* ---------- scenarios ---------- */
+  .scenes{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:860px){.scenes{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:460px){.scenes{grid-template-columns:1fr}}
+  .scene{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:10px}
+  .scene .ic{width:34px;height:34px}
+  .scene b{font-size:15.5px;font-weight:700}
+  .scene span{font-size:13px;color:var(--ink-3);line-height:1.6}
+
+  /* ---------- why chips ---------- */
+  .why{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:760px){.why{grid-template-columns:1fr}}
+  .wc{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .wc .n{font-size:22px;font-weight:800;color:var(--amber);line-height:1;min-width:2.4em}
+  .wc .n.sig{color:var(--signal-ink)}
+  .wc .t{font-size:14.5px;font-weight:600;line-height:1.5}
+  .wc .t span{display:block;font-weight:400;color:var(--ink-3);font-size:13px;margin-top:3px}
+
+  /* ---------- CTA ---------- */
+  .cta{background:var(--deep);color:var(--on-deep);text-align:center;padding:80px 24px}
+  .cta h2{font-size:clamp(26px,4vw,40px);font-weight:800;max-width:20ch;margin:0 auto;line-height:1.2}
+  .cta p{margin:18px auto 0;color:var(--on-deep-2);max-width:46ch;font-size:16px}
+  .cta .btnrow{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:15px;
+       padding:14px 26px;border-radius:11px;text-decoration:none;transition:transform .16s ease}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-p{background:var(--signal);color:#04222A}
+  .btn-s{background:transparent;color:var(--on-deep);border:1px solid var(--deep-line)}
+  .foot{background:var(--deep);color:var(--on-deep-2);border-top:1px solid var(--deep-line);
+        padding:26px 24px;font-size:12.5px;line-height:1.7}
+  .foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+</style>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <canvas id="field" aria-hidden="true"></canvas>
+  <div class="hero-in">
+    <div class="brandrow">
+      <span class="sy">Synaptics</span><span class="div"></span>
+      <span class="tag">Wireless · Robotics · 2026</span>
+    </div>
+    <h1>为机器人而生的<br><span class="hl">Wi-Fi 7</span> 无线连接</h1>
+    <p class="sub">自主机器人需要始终在线、低时延、抗拥塞的无线链路。SYN4390 以专用扫描核、真正多链路与三频 Wi-Fi 7，把"不掉线、不卡顿、更省电"变成可交付的硬指标。</p>
+    <div class="chipname">
+      <b>SYN4390</b>
+      <span class="k">三频 Wi-Fi 7 &nbsp;·&nbsp; 双蓝牙 6.0 &nbsp;·&nbsp; 802.15.4 / Thread &nbsp;·&nbsp; 专用扫描核</span>
+    </div>
+    <div class="statrow tnum">
+      <div class="s"><div class="n">&lt;100<span class="u">ms</span></div><div class="l">漫游时延<br>切换零丢包</div></div>
+      <div class="s"><div class="n">~10<span class="u">×</span></div><div class="l">拥塞环境下<br>时延更低</div></div>
+      <div class="s"><div class="n">75<span class="u">%</span></div><div class="l">扫描功耗<br>最高降幅</div></div>
+      <div class="s"><div class="n">3.2<span class="u">Gbps</span></div><div class="l">Wi-Fi 7<br>物理层速率</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PAIN POINTS ============ -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">The Challenge</span>
+      <h2>机器人对无线连接的五个硬需求</h2>
+      <p>无论是自主移动机器人、人形机器人还是工业巡检设备，实时控制、视频回传与云端智能都建立在一条永不掉线的无线链路之上。</p>
+    </div>
+    <div class="pain">
+      <div class="pcard">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M20 10v4"/><rect x="4.5" y="9.5" width="9" height="5" rx="1" fill="currentColor" stroke="none"/></svg></div>
+        <b>长电池续航</b><span>低功耗架构支撑更长运行时间</span>
+      </div>
+      <div class="pcard">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17a9 9 0 0 1 18 0"/><path d="M12 17l4-6"/><circle cx="12" cy="17" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+        <b>持续吞吐</b><span>高带宽支撑视频流与 AI 负载</span>
+      </div>
+      <div class="pcard">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 12a8 8 0 0 1 13-6"/><path d="M20 12a8 8 0 0 1-13 6"/><path d="M17 3v3h-3"/><path d="M7 21v-3h3"/></svg></div>
+        <b>快速可靠漫游</b><span>动态环境中无缝切换 AP</span>
+      </div>
+      <div class="pcard">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 9l6-2v10l-6-2"/></svg></div>
+        <b>极低丢包</b><span>关键指令可靠送达</span>
+      </div>
+      <div class="pcard">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="7"/><path d="M12 13V9"/><path d="M9 2h6"/></svg></div>
+        <b>确定性低时延</b><span>实时控制与操作响应</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NEEDS → SOLUTION ============ -->
+<section style="background:var(--panel-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">Purpose-Built</span>
+      <h2>SYN4390 专为机器人而设计</h2>
+      <p>先进无线技术结合专用架构——把机器人的每一项需求，对应到芯片里一项确定的能力。</p>
+    </div>
+    <div class="map">
+      <div class="mrow">
+        <div class="need"><div class="t">持续连接与快速漫游</div><div class="d">在动态环境中保持连接、无缝切换</div></div>
+        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+        <div class="sol"><div class="tech">DEDICATED SCAN CORE</div><div class="t">专用扫描核</div><div class="d">后台持续扫描发现 AP，对业务流量零影响</div></div>
+      </div>
+      <div class="mrow">
+        <div class="need"><div class="t">确定性低时延</div><div class="d">面向控制与操作的实时响应</div></div>
+        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+        <div class="sol"><div class="tech">eMLSR &nbsp;(5G + 6G)</div><div class="t">增强多链路单射频</div><div class="d">选用最优链路最小化时延，拥塞下亦然</div></div>
+      </div>
+      <div class="mrow">
+        <div class="need"><div class="t">高吞吐</div><div class="d">支撑高带宽视频与 AI 负载</div></div>
+        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+        <div class="sol"><div class="tech">STR &nbsp;(2.4G + 5G/6G)</div><div class="t">同时收发多链路</div><div class="d">双频并发运行，最大化整机吞吐</div></div>
+      </div>
+      <div class="mrow">
+        <div class="need"><div class="t">长电池续航</div><div class="d">低功耗运行、延长在线时间</div></div>
+        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+        <div class="sol"><div class="tech">PM OFFLOAD + LP ARCH</div><div class="t">电源管理卸载 + 低功耗架构</div><div class="d">卸载连接管理，降功耗、延续航</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BIG DATA BAND ============ -->
+<section class="band-dark">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">Numbers That Matter</span>
+      <h2>用数据说话</h2>
+      <p>以下均为 SYN4390 平台实测结果——不是理论峰值，而是机器人真实工况下的表现。</p>
+    </div>
+    <div class="bignums tnum">
+      <div class="bn"><div class="n">10<span class="u">×</span></div><div class="cap">拥塞环境时延改善</div><div class="sub">ping 时延由 48.8ms 降至 4.68ms</div></div>
+      <div class="bn"><div class="n">94<span class="u">%</span></div><div class="cap">峰值吞吐保持率</div><div class="sub">即使在 100% OBSS 满负荷干扰下</div></div>
+      <div class="bn"><div class="n">75<span class="u">%</span></div><div class="cap">扫描功耗降幅</div><div class="sub">扫描电流由 40mA 降至 8.2mA</div></div>
+      <div class="bn"><div class="n">47<span class="u">%</span></div><div class="cap">连接功耗降幅</div><div class="sub">更低热负载，更长续航</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCAN CORE ============ -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">Core Differentiator</span>
+      <h2>什么是"专用扫描核"？</h2>
+      <p>SYN4390 内置一颗独立的低功耗射频，持续监测无线环境——主 Wi-Fi 射频得以专注用户流量，无需为每次扫描而中断业务。这是竞品普遍不具备的关键差异。</p>
+    </div>
+    <div class="split">
+      <div class="radiocard rc-main">
+        <h3><span class="dot"></span>主 Wi-Fi 射频</h3>
+        <ul>
+          <li>专注高吞吐用户数据收发</li>
+          <li>承载 MLO 多链路业务流量</li>
+          <li>不再被周期性扫描打断</li>
+        </ul>
+      </div>
+      <div class="radiocard rc-scan">
+        <h3><span class="dot"></span>专用扫描核 <span class="bands"><span class="band b24">2.4G</span><span class="band b5">5G</span><span class="band b6">6G</span></span></h3>
+        <ul>
+          <li>后台持续扫描，发现邻近 AP</li>
+          <li>快速信道选择与 Wi-Fi 环境感知</li>
+          <li>更低扫描功耗，更快漫游</li>
+          <li>业务流量全程不中断</li>
+        </ul>
+      </div>
+    </div>
+    <div class="scroll" style="margin-top:16px">
+      <table>
+        <caption>有无扫描核的对比</caption>
+        <thead><tr><th>维度</th><th>无扫描核</th><th>SYN4390 · 有扫描核</th></tr></thead>
+        <tbody>
+          <tr><th>扫描执行</th><td>占用主 Wi-Fi 射频扫描</td><td class="win">专用扫描核独立执行</td></tr>
+          <tr><th>对业务流量</th><td>扫描期间数据可能中断</td><td class="win">用户流量全程不中断</td></tr>
+          <tr><th>扫描功耗</th><td>较高</td><td class="win">显著更低（↓75%）</td></tr>
+          <tr><th>漫游性能</th><td>漫游时间较长</td><td class="win">漫游更快（&lt;100ms）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPETITIVE ============ -->
+<section style="background:var(--panel-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">Competitive Edge</span>
+      <h2>同级别里，独一份的组合</h2>
+      <p>eMLSR、专用扫描核、Thread、集成射频与电源、完整 Dongle 架构——这些机器人真正在意的能力，只有 SYN4390 一次给全。</p>
+    </div>
+    <div class="scroll">
+      <table class="tnum">
+        <thead>
+          <tr><th>能力</th><th class="me">SYN4390</th><th>竞品 A（高通级）</th><th>竞品 B（三星级）</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>工艺节点</th><td class="c">7nm</td><td class="c">6nm</td><td class="c">5nm</td></tr>
+          <tr><th>Wi-Fi 7 MLO-STR</th><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+          <tr><th>Wi-Fi 7 eMLSR</th><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><th>双蓝牙 6.0</th><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+          <tr><th>蓝牙信道探测</th><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td></tr>
+          <tr><th>专用扫描核</th><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><th>Thread 支持</th><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><th>射频 / 电源管理</th><td class="c win">集成</td><td class="c">外置</td><td class="c">外置</td></tr>
+          <tr><th>完整 Dongle 架构 <sup>¹</sup></th><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><th>FCBGA 封装尺寸</th><td class="c win">6.2×6.2</td><td class="c">6.5×6.5</td><td class="c">10×6</td></tr>
+          <tr><th>样片状态</th><td class="c">现已可用</td><td class="c">现已可用</td><td class="c">现已可用</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px;font-size:12.5px;color:var(--ink-3)">¹ 卸载模式下 Wi-Fi 子系统独立运行，不依赖主机 DDR。竞品命名以能力级别示意，具体以各家公开规格为准。</p>
+  </div>
+</section>
+
+<!-- ============ MEASURED DATA ============ -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">Field Results</span>
+      <h2>实测：漫游、时延与吞吐</h2>
+      <p>eMLSR 将流量从拥塞的 5GHz 引导至干净的 6GHz，在真实干扰环境中维持高吞吐与低时延。</p>
+    </div>
+
+    <div class="kv tnum">
+      <div class="kvc"><div class="n">98% / 94%</div><div class="l">eMLSR 在 100% OBSS 下的下行 / 上行吞吐保持率</div></div>
+      <div class="kvc"><div class="n">28% / 43%</div><div class="l">单链路在同等干扰下的保持率（对照）</div></div>
+      <div class="kvc"><div class="n">4.68 ms</div><div class="l">eMLSR + 扫描核的拥塞时延（对比单链路 48.8ms）</div></div>
+    </div>
+
+    <div class="scroll tnum" style="margin-top:22px">
+      <table>
+        <caption>漫游性能实测（100Mbps 业务负载）</caption>
+        <thead><tr><th>漫游场景</th><th>漫游时延（ms）</th><th>最大丢包率</th></tr></thead>
+        <tbody>
+          <tr><th>同信道（AP1 → AP2）</th><td class="c">43 / 58</td><td class="c yes">0%</td></tr>
+          <tr><th>不同信道（AP1 → AP3）</th><td class="c">105 / 74</td><td class="c yes">0%</td></tr>
+          <tr><th>跨频段 5G → 6G（AP1 → AP4）</th><td class="c">154 / 76</td><td class="c">0.11%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:10px;font-size:12.5px;color:var(--ink-3)">时延数值为双向（去程 / 回程）。全部场景下丢包率均维持在极低水平，视频流无卡顿或中断。</p>
+  </div>
+</section>
+
+<!-- ============ SCENARIOS ============ -->
+<section style="background:var(--panel-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">Where It Fits</span>
+      <h2>面向下一代机器人的无线平台</h2>
+      <p>从仓储 AMR 到人形机器人，任何需要"边移动、边联网、边推理"的场景，都是 SYN4390 的主战场。</p>
+    </div>
+    <div class="scenes">
+      <div class="scene">
+        <div class="ic" style="color:var(--signal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="8" width="16" height="10" rx="2"/><circle cx="8" cy="18" r="2"/><circle cx="16" cy="18" r="2"/><path d="M9 8V5h6v3"/></svg></div>
+        <b>自主移动机器人 AMR</b><span>仓储物流中跨区漫游不掉线，云端调度实时响应</span>
+      </div>
+      <div class="scene">
+        <div class="ic" style="color:var(--signal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="5" r="2.4"/><path d="M12 7.5v6M8 10h8M9 20l3-6 3 6"/></svg></div>
+        <b>人形 / 双臂机器人</b><span>高带宽视频回传 + 低时延运动控制并发</span>
+      </div>
+      <div class="scene">
+        <div class="ic" style="color:var(--signal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L21 21"/></svg></div>
+        <b>工业巡检机器人</b><span>严苛无线环境下的抗拥塞鲁棒连接</span>
+      </div>
+      <div class="scene">
+        <div class="ic" style="color:var(--signal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <b>服务 / 交互终端</b><span>Wi-Fi 7 吞吐支撑多模态 AI 与实时对话</span>
+      </div>
+    </div>
+    <p style="margin-top:18px;font-size:13.5px;color:var(--ink-2)">
+      <strong>平台协同：</strong>SYN4390 通过 PCIe 3.0 接口与 Synaptics Astra 系列边缘 AI 处理器（如 SL1680）天然配套，为机器人提供"感知 + 推理 + 连接"的一体化 Synaptics 方案。
+    </p>
+  </div>
+</section>
+
+<!-- ============ WHY ============ -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">Why SYN4390</span>
+      <h2>更优性能 · 更高在线率 · 更大价值</h2>
+    </div>
+    <div class="why tnum">
+      <div class="wc"><div class="n sig">&lt;100ms</div><div class="t">漫游时延<span>移动中不掉线</span></div></div>
+      <div class="wc"><div class="n">47%</div><div class="t">更低连接功耗<span>续航更持久</span></div></div>
+      <div class="wc"><div class="n sig">~10×</div><div class="t">拥塞环境更低时延<span>干扰中稳如常</span></div></div>
+      <div class="wc"><div class="n">75%</div><div class="t">更低扫描功耗<span>热负载更小</span></div></div>
+      <div class="wc"><div class="n sig">STR</div><div class="t">级并发吞吐<span>MLO 多链路加持</span></div></div>
+      <div class="wc"><div class="n sig">Wi-Fi 7</div><div class="t">面向下一代机器人<span>三频 · 双蓝牙 · Thread</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<div class="cta">
+  <h2>为您的机器人，选一条永不掉线的无线链路</h2>
+  <p>索取 SYN4390 完整规格书、评估样片与参考设计，或预约技术团队做一对一方案沟通。</p>
+  <div class="btnrow">
+    <a class="btn btn-p" href="mailto:sales@synaptics.com?subject=SYN4390%20Robotics%20Inquiry">联系销售获取样片 &nbsp;→</a>
+    <a class="btn btn-s" href="https://www.synaptics.com" target="_blank" rel="noopener">访问 Synaptics 官网</a>
+  </div>
+</div>
+<footer class="foot">
+  <div class="wrap">
+    <span>SYN4390 · 面向机器人的 Wi-Fi 7 无线方案 · 中文推广资料</span>
+    <span>© 2026 Synaptics Incorporated. 数据基于平台实测，规格以官方文档为准。</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // scroll reveal
+  var rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!rm){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+    },{threshold:.12});
+    document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('in');});
+  }
+
+  // hero ambient: drifting connection field (restrained, reduced-motion aware)
+  var c = document.getElementById('field');
+  if(c && !rm){
+    var ctx = c.getContext('2d'), W,H,dpr,pts,raf;
+    function sig(){ var s=getComputedStyle(document.documentElement).getPropertyValue('--signal-bright').trim(); return s||'#2AD3DE'; }
+    function resize(){
+      dpr=Math.min(window.devicePixelRatio||1,2);
+      var r=c.getBoundingClientRect(); W=r.width; H=r.height;
+      c.width=W*dpr; c.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+      var n=Math.max(14,Math.min(30,Math.round(W/46)));
+      pts=[]; for(var i=0;i<n;i++){pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22});}
+    }
+    function tick(){
+      ctx.clearRect(0,0,W,H); var col=sig();
+      for(var i=0;i<pts.length;i++){var p=pts[i];p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;}
+      for(var a=0;a<pts.length;a++){for(var b=a+1;b<pts.length;b++){
+        var dx=pts[a].x-pts[b].x, dy=pts[a].y-pts[b].y, d=Math.hypot(dx,dy);
+        if(d<130){ctx.globalAlpha=(1-d/130)*.22;ctx.strokeStyle=col;ctx.lineWidth=1;
+          ctx.beginPath();ctx.moveTo(pts[a].x,pts[a].y);ctx.lineTo(pts[b].x,pts[b].y);ctx.stroke();}
+      }}
+      ctx.globalAlpha=.7;ctx.fillStyle=col;
+      for(var k=0;k<pts.length;k++){ctx.beginPath();ctx.arc(pts[k].x,pts[k].y,1.5,0,6.2832);ctx.fill();}
+      ctx.globalAlpha=1; raf=requestAnimationFrame(tick);
+    }
+    resize(); tick();
+    var to; window.addEventListener('resize',function(){clearTimeout(to);to=setTimeout(resize,180);});
+  }
+})();
+</script>

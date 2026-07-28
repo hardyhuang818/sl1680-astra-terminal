@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL1680 + DL7400 Achievement Report · 2026-07-24</title>
+<style>
+  :root{
+    --ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;
+    --rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;
+    --good:#1F6B4A;--good-bg:#E5F3EC;--bad:#A8305A;--bad-bg:#FBE9EF;--warn:#B06A12;--warn-bg:#FDF3E3;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;
+    --rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;
+    --good:#5FBF8F;--good-bg:#122A1E;--bad:#E06A92;--bad-bg:#2E151F;--warn:#E8A33D;--warn-bg:#2B2114;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px 100px}
+  .mast{border-bottom:2px solid var(--ink);padding:40px 0 20px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-size:clamp(23px,4vw,34px);line-height:1.2;margin:0 0 14px;font-weight:680}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;gap:20px;flex-wrap:wrap}
+  .lead{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;margin-top:16px;font-size:14.5px;color:var(--ink-2)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:46px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:640}
+  h4{font-size:14.5px;margin:18px 0 6px;font-weight:640;color:var(--ink-2)}
+  p{margin:0 0 12px} ul,ol{margin:0 0 12px;padding-left:22px} li{margin-bottom:5px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:13px 15px;overflow-x:auto;margin:0 0 16px;color:var(--ink-2)}
+  .scroll{overflow-x:auto;margin:0 0 16px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:0 0 16px;font-size:14px}
+  .note.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:2px 18px 14px;margin:0 0 16px}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono)}
+  .arch{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);padding:14px 16px;border-radius:4px;overflow-x:auto;margin:0 0 16px;line-height:1.7;white-space:pre}
+  .big{font-family:var(--mono);font-size:25px;font-weight:700;color:var(--accent);line-height:1.1}
+  .kpi{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 18px}
+  .kpi>div{flex:1 1 158px;background:var(--panel);border:1px solid var(--rule);border-radius:5px;padding:14px 16px}
+  .kpi .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+  .kpi .sub{font-size:12px;color:var(--ink-3);margin-top:5px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">SL1680 · DL7400 · Internal Achievement Report</p>
+  <h1>Local Voice-AI Terminal with Four-Display Output</h1>
+  <div class="meta">
+    <span><b>Date</b> 2026-07-24</span>
+    <span><b>Platform</b> Synaptics SL1680 (Dolphin RDK) + DisplayLink DL7400 EVK</span>
+  </div>
+  <div class="lead"><strong>All figures are from measurements on real hardware</strong>, not datasheet estimates. The earlier frame-rate conclusion derived from synthetic test patterns has been withdrawn — see §3.4.</div>
+</header>
+
+<h2>1 · Executive Summary</h2>
+<div class="kpi">
+  <div><div class="lbl">Multi-display</div><div class="big">4 screens</div><div class="sub">Verified concurrent<br>mixed resolutions</div></div>
+  <div><div class="lbl">Voice end-to-end</div><div class="big">5–6 s</div><div class="sub">ASR + TTS fully on-device</div></div>
+  <div><div class="lbl">ASR real-time factor</div><div class="big">RTF 0.197</div><div class="sub">5× real-time headroom</div></div>
+  <div><div class="lbl">CPU utilization</div><div class="big">21.7%</div><div class="sub">was 52.5%</div></div>
+</div>
+<div class="scroll"><table>
+  <tr><th>Capability</th><th>Result</th></tr>
+  <tr><td><strong>Multi-display</strong></td><td class="ok">✅ 4 displays verified running concurrently, mixed resolutions, no kernel driver needed</td></tr>
+  <tr><td><strong>Voice interaction</strong></td><td class="ok">✅ On-device ASR + TTS, cloud LLM, 5–6 s end-to-end</td></tr>
+  <tr><td><strong>Vision wake</strong></td><td class="ok">✅ NPU person detection — greets automatically when someone approaches</td></tr>
+  <tr><td><strong>Camera to display</strong></td><td class="ok">✅ Live C920 feed switchable to any display by voice</td></tr>
+  <tr><td><strong>Productization readiness</strong></td><td>⚠️ Suitable for <strong>digital signage / dashboards / kiosks</strong>; <span class="no">❌ not a video wall</span></td></tr>
+</table></div>
+<div class="note"><strong>One-line positioning</strong>: a <strong>multi-display content presentation and voice interaction terminal</strong> — not a video playback device.</div>
+
+<h2>2 · Test Conditions (Hardware and Software Basis)</h2>
+<div class="note"><strong>This system was built with very low resource investment</strong>: one borrowed development board, one borrowed EVK, a few self-purchased accessories, and software based on the Synaptics open-source SDK published on GitHub.</div>
+
+<h3>2.1 Hardware</h3>
+<div class="scroll"><table>
+  <tr><th>Item</th><th>Model / Spec</th><th>Qty</th><th>Source</th></tr>
+  <tr><td><strong>Main board</strong></td><td>Synaptics SL1680 Astra (Dolphin RDK)<br>4×Cortex-A73 + NPU, 4 GB LPDDR4</td><td>1</td><td><strong>Borrowed</strong> (formerly a Yealink test board; factory image retained for restore)</td></tr>
+  <tr><td><strong>Multi-display</strong></td><td>DisplayLink DL7400 EVK (Redwood-8Gb Video Dock)<br>USB <code>17e9:7000</code>, firmware 12.3.26</td><td>1</td><td><strong>Borrowed</strong></td></tr>
+  <tr><td>Camera + microphone</td><td>Logitech C920 (one USB device exposing both audio and video interfaces)</td><td>1</td><td><strong>Purchased</strong></td></tr>
+  <tr><td>Amplifier</td><td>HT517 (I2S digital amplifier)</td><td>1</td><td>Purchased</td></tr>
+  <tr><td>Speaker</td><td>Matching speaker</td><td>1</td><td>Purchased</td></tr>
+  <tr><td><strong>Displays ×4</strong></td><td>Sculptor portable 2880×1800 @60 (HDMI)<br>Redmi 27 NU 3840×2160 @60<br>Mi Monitor 3840×2160 @60<br>Samsung S24D390 1920×1080 @60</td><td>4</td><td><strong>Self-owned</strong></td></tr>
+</table></div>
+<div class="note"><strong>Not used</strong>: GPU, external PC, dedicated AI accelerator card. The entire voice AI stack runs on the SL1680's own CPU and NPU.</div>
+
+<h3>2.2 Software Basis</h3>
+<div class="scroll"><table>
+  <tr><th>Component</th><th>Source</th><th>License</th><th>Notes</th></tr>
+  <tr><td><strong>Astra Yocto SDK</strong></td><td class="ok"><strong>GitHub <code>synaptics-astra</code> (open source)</strong></td><td>Open source</td><td>Branch <code>scarthgap_6.12_v2.3.0</code>, commit <code>a0344af</code> (2026-04-14)</td></tr>
+  <tr><td>Yocto / Poky</td><td>scarthgap 5.0.9</td><td>Open source</td><td>Kernel 6.12.62</td></tr>
+  <tr><td><strong>DLSDK</strong></td><td class="no">⚠️ <strong>Not part of the open-source SDK</strong></td><td class="no"><strong>Closed</strong> (<code>LICENSE = CLOSED</code>)</td><td>Pre-built <code>libdlsdk.so</code> + firmware package supplied separately by Synaptics/DisplayLink</td></tr>
+  <tr><td>sherpa-onnx</td><td>GitHub k2-fsa</td><td>Apache-2.0</td><td>Speech recognition / synthesis inference framework</td></tr>
+  <tr><td>SenseVoice / matcha / silero</td><td>Open pre-trained models</td><td>Respective licenses</td><td>See §4.2</td></tr>
+  <tr><td>Cloud dialogue</td><td>DeepSeek API</td><td>Commercial API</td><td>Only the dialogue model runs in the cloud</td></tr>
+</table></div>
+<div class="note warn">⚠️ <strong>An important boundary to state clearly</strong>: what Synaptics open-sources on GitHub is the <strong>Astra Yocto BSP</strong> (kernel, board support, multimedia, NPU runtime). <strong>DisplayLink's DLSDK is not included</strong> — it is a separately supplied closed-source binary, currently under NDA. Per the official application note, <strong>DLSDK (officially "DisplayLink Direct") is scheduled for public release on 2026-08-01</strong>, which will significantly lower the open-source / productization barrier for this product line.</div>
+
+<h3>2.3 What We Built on Top</h3>
+<div class="scroll"><table>
+  <tr><th>Deliverable</th><th>Description</th></tr>
+  <tr><td><strong><code>meta-dlsdk</code> Yocto layer</strong></td><td>Packages DLSDK into Yocto — udev rules, automatic firmware upgrade, dependency consolidation</td></tr>
+  <tr><td><strong>4 display applications</strong></td><td><code>dl_face</code> / <code>dl_player</code> / <code>dl_clock</code> / <code>dl_edid</code> (all in-house C programs)</td></tr>
+  <tr><td><strong>Voice terminal</strong></td><td><code>astra_voice</code> (C) + four-layer routing (Python) + bilingual subtitle daemon</td></tr>
+  <tr><td><strong>Complete flashable image</strong></td><td>Produced by a single <code>bitbake astra-media</code>, using the existing flashing workflow</td></tr>
+</table></div>
+
+<h3>2.4 Test Environment</h3>
+<div class="scroll"><table>
+  <tr><th>Item</th><th>Description</th></tr>
+  <tr><td>Build environment</td><td>WSL2 Ubuntu 22.04, Yocto scarthgap</td></tr>
+  <tr><td>Cross-compilation</td><td>aarch64 (<code>gcc-cross</code> 13.3.0)</td></tr>
+  <tr><td>Board connectivity</td><td>Direct SSH over LAN; remote debugging via WireGuard tunnel when off-site</td></tr>
+  <tr><td>Test period</td><td>2026-07-13 – 2026-07-24 (approx. 10 days)</td></tr>
+  <tr><td>Data collection</td><td>Frame rates from in-program counters emitted every 60 s; CPU from <code>/proc/stat</code> deltas (not a single <code>top</code> sample)</td></tr>
+</table></div>
+
+<h2>3 · Multi-Display Capability (Key Section)</h2>
+
+<h3>3.1 Four-Display Concurrent Test Results</h3>
+<div class="card">
+<p><strong>All 4 DL7400 outputs were driven simultaneously.</strong> All four frame counters kept advancing; none stalled.</p>
+<div class="scroll"><table>
+  <tr><th>Display</th><th>Model</th><th>Vendor ID</th><th>Resolution</th><th>Port</th><th>Measured FPS</th></tr>
+  <tr><td>0</td><td>Sculptor portable (HDMI)</td><td>YCT 0xAC00</td><td>2880×1800 @60</td><td><code>^0</code></td><td><strong>8.7 fps</strong></td></tr>
+  <tr><td>1</td><td>Redmi 27 NU</td><td>XMI 0xB005</td><td>3840×2160 @60</td><td><code>^1</code></td><td><strong>5.8 fps</strong></td></tr>
+  <tr><td>2</td><td>S24D390 (Samsung)</td><td>SAM 0x0B65</td><td>1920×1080 @60</td><td><code>^2</code></td><td class="ok"><strong>15.0 fps</strong> (capped)</td></tr>
+  <tr><td>3</td><td>Mi Monitor</td><td>XMI 0x27B4</td><td>3840×2160 @60</td><td><code>^3</code></td><td><strong>5.7 fps</strong></td></tr>
+</table></div>
+</div>
+
+<h3>3.2 Bandwidth Sharing (3-display vs 4-display)</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>Configuration</th><th>4K display FPS</th><th>1080p display FPS</th></tr>
+  <tr><td>3 displays (4K + 1080p + 4K)</td><td><strong>7.2 fps</strong></td><td>15.0 fps</td></tr>
+  <tr><td>4 displays (2880×1800 + 4K + 1080p + 4K)</td><td><strong>5.8 fps</strong></td><td>15.0 fps</td></tr>
+  <tr><td>Change</td><td class="no"><strong>↓ ~20%</strong></td><td>unchanged (already at the app's cap)</td></tr>
+</table></div>
+<p><strong>Conclusion</strong>: total USB 3.0 (5 Gbps) throughput stays roughly constant — <strong>adding a display divides the existing share rather than degrading linearly</strong>. The 1080p display always reaches the application's 15 fps cap because its pixel count is small.</p>
+</div>
+
+<h3>3.3 Video Playback — Bottleneck Analysis</h3>
+<div class="card">
+<p>4K VP9 → 1080p, measured over 150 frames:</p>
+<div class="scroll"><table>
+  <tr><th>Pipeline stage</th><th>Time</th><th>FPS</th><th>Note</th></tr>
+  <tr><td>Hardware 4K VP9 decode only</td><td>1.35 s</td><td class="ok"><strong>111 fps</strong></td><td>Decoding is not a constraint</td></tr>
+  <tr><td>＋ software <code>videoconvert/videoscale</code></td><td>17.55 s</td><td class="no">8.5 fps</td><td>❌ Wastes 94% of the time</td></tr>
+  <tr><td>＋ hardware <code>synavideoconvertscale</code></td><td>5.63 s</td><td class="ok"><strong>31.9 fps</strong></td><td>✅ 3.7× faster — pipeline ceiling</td></tr>
+  <tr><td>＋ <code>appsink sync=true</code></td><td>—</td><td>17.6 fps</td><td>Timestamp-paced</td></tr>
+  <tr><td>＋ push to DL7400</td><td>—</td><td class="no"><strong>7.4 fps</strong></td><td>★ <strong>The real bottleneck is the DL transfer</strong></td></tr>
+</table></div>
+<p><strong>Live camera</strong>: C920 MJPEG 720p30 → pushed to a 4K display, measured <strong>7.0 fps</strong>.</p>
+</div>
+
+<h3>3.4 ⚠️ A Misleading Benchmark We Must Correct</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>Content type</th><th>Resolution</th><th>FPS</th></tr>
+  <tr><td><strong>Real video</strong> (4K VP9 → 1080p)</td><td>1920×1080</td><td><strong>7.4 fps</strong></td></tr>
+  <tr><td>Synthetic test pattern (one moving bar)</td><td>1920×1080</td><td class="no">60.3 fps ⚠️ <strong>Do not use for planning</strong></td></tr>
+</table></div>
+<div class="note bad">DisplayLink's DL3+ compression <strong>transfers only changed regions</strong>. A synthetic pattern transfers almost nothing → inflated FPS; real video changes every pixel every frame → about 1/8 the rate. <strong>The earlier 60 fps figure derived from synthetic patterns is withdrawn.</strong></div>
+</div>
+
+<h3>3.5 Performance Positioning</h3>
+<div class="scroll"><table>
+  <tr><th>Use case</th><th>Feasibility</th></tr>
+  <tr><td>Digital signage / dashboards / clocks (low-change content)</td><td class="ok">✅ <strong>Well suited</strong> — plays to DL3+ compression's strength</td></tr>
+  <tr><td>Interactive UI / subtitles / status display</td><td class="ok">✅ Well suited</td></tr>
+  <tr><td>Camera monitoring feed</td><td>⚠️ 7 fps — usable but not smooth</td></tr>
+  <tr><td>Full-screen smooth video / video wall</td><td class="no">❌ <strong>7.4 fps — not viable</strong></td></tr>
+</table></div>
+
+<h2>4 · Voice Interaction Capability</h2>
+
+<h3>4.1 System Architecture</h3>
+<div class="arch">[Vision] C920 camera → NPU person detection (25 ms/frame) → approach → auto greeting
+
+[Voice]  C920 mic → silero VAD segmentation → SenseVoice ASR (CPU)
+                                                  ↓
+                                        Four-layer routing
+                                        ① Local volume commands  → amixer, actually executed
+                                        ② Local device queries   → time / temp / memory / display
+                                        ③ Live web search        → search API + factual grounding
+                                        ④ Cloud dialogue         → DeepSeek
+                                                  ↓
+                                        matcha TTS (CPU) → amplifier
+
+[Display] Animated face + real-time bilingual subtitles → DL7400 multi-display
+          Any display can be switched to the live camera feed by voice</div>
+
+<h3>4.2 On-Device Model Performance (Measured)</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>Stage</th><th>Model</th><th>Measured</th><th>Runs on</th></tr>
+  <tr><td>Person detection</td><td>mobilenet224_full1</td><td><strong>25 ms/frame</strong></td><td class="ok">NPU</td></tr>
+  <tr><td>Voice activity detection</td><td>silero VAD</td><td>real-time</td><td>CPU</td></tr>
+  <tr><td>Speech recognition</td><td>SenseVoice <strong>int8</strong></td><td class="ok"><strong>RTF 0.197</strong> (4 threads) = <strong>5× real-time headroom</strong></td><td>CPU</td></tr>
+  <tr><td>Speech synthesis</td><td>matcha + vocos</td><td class="ok"><strong>RTF 0.37</strong> (warm synthesis)</td><td>CPU</td></tr>
+  <tr><td>Offline fallback LLM</td><td>Qwen2.5-0.5B Q8_0</td><td>19.6 tok/s</td><td>CPU</td></tr>
+  <tr><td>Cloud dialogue</td><td>DeepSeek</td><td>—</td><td>Cloud</td></tr>
+</table></div>
+<p><strong>ASR thread scaling</strong>: 1 thread RTF 0.626 → 2 threads 0.338 → <strong>4 threads 0.197</strong> (near-linear).</p>
+<p><strong>Quantization gain</strong> (SenseVoice fp32 → int8): <strong>1.45× faster</strong>, <strong>3.3× less memory</strong> (1287 MB → 393 MB).</p>
+<p><strong>TTS selection iteration</strong>: melo RTF 2.05 (unusable) → matcha RTF 0.37, a <strong>5.5× speedup</strong>.</p>
+</div>
+
+<h3>4.3 End-to-End Latency</h3>
+<div class="scroll"><table>
+  <tr><th>Scenario</th><th>Measured</th></tr>
+  <tr><td>Local commands (time / volume / display switch)</td><td class="ok"><strong>Instant</strong> (no cloud round-trip)</td></tr>
+  <tr><td>One cloud dialogue turn</td><td><strong>5 – 12 s</strong> (depends on answer length)</td></tr>
+  <tr><td>Live-data question (e.g. weather)</td><td><strong>~5 s</strong> (2.3 s search ＋ LLM)</td></tr>
+  <tr><td>First TTS sentence</td><td>Streamed — <strong>~1 s to first audio</strong> (does not wait for full generation)</td></tr>
+</table></div>
+
+<h3>4.4 Implemented Features</h3>
+<div class="scroll"><table>
+  <tr><th>Feature</th><th>Status</th><th>Verified example</th></tr>
+  <tr><td>Bilingual (ZH/EN) speech recognition</td><td class="ok">✅</td><td>SenseVoice mixed ZH/EN</td></tr>
+  <tr><td>Cloud dialogue</td><td class="ok">✅</td><td>"Who are you?" → "I'm the Astra voice assistant"</td></tr>
+  <tr><td><strong>Live web data</strong></td><td class="ok">✅</td><td>"Weather in Guangzhou today" → "Cloudy to clear, 26–35 °C" — <strong>real data</strong></td></tr>
+  <tr><td>Local device queries</td><td class="ok">✅</td><td>"What time is it?" → actual system clock</td></tr>
+  <tr><td>Voice volume control</td><td class="ok">✅</td><td>"Set volume to 20%" → actually applied</td></tr>
+  <tr><td>Voice display-content switching</td><td class="ok">✅</td><td>"Open the camera" → target display shows live feed</td></tr>
+  <tr><td>Vision wake</td><td class="ok">✅</td><td>Plays a greeting when someone approaches</td></tr>
+  <tr><td><strong>Real-time bilingual subtitles</strong></td><td class="ok">✅</td><td>Two lines on screen: "You said / Astra", ZH with EN</td></tr>
+  <tr><td>Offline fallback</td><td class="ok">✅</td><td>Automatically falls back to the on-device 0.5B model</td></tr>
+  <tr><td>Full recovery after power loss</td><td class="ok">✅</td><td>Including one unplanned power-cycle</td></tr>
+</table></div>
+
+<h3>4.5 Hallucination Suppression (Technical Highlight)</h3>
+<div class="card">
+<p>We found that one vendor's "web search" tool in its chat API <strong>does not actually work</strong>: it returned <strong>zero search results</strong>, yet the model still <strong>fabricated a temperature</strong> (15–25 °C / 18–28 °C against an actual 28–36 °C — and two models contradicted each other).</p>
+<p><strong>Our approach</strong>: call a standalone search API to obtain real web content, then pass it to the LLM with a grounding prompt ("answer only from this material; never fabricate any number"). When search fails, hard-real-time questions (weather, stock prices) <strong>say so honestly rather than falling back</strong> to a model with no live data.</p>
+<div class="note"><strong>Result</strong>: <span class="ok">zero fabrication</span> on live-data questions.</div>
+</div>
+
+<h2>5 · Resource Utilization</h2>
+<div class="scroll"><table>
+  <tr><th>Scenario</th><th>CPU (sum over 4 cores; 100% = one core saturated)</th></tr>
+  <tr><td>Before optimization (3 displays + voice idle)</td><td>52.5%</td></tr>
+  <tr><td><strong>After optimization</strong> (same configuration)</td><td class="ok"><strong>21.7%</strong></td></tr>
+  <tr><td>Current (3 displays: 2×4K + 1×2880×1800)</td><td>dl_face 167% + astra_voice 110%</td></tr>
+</table></div>
+<p><strong>Optimizations applied</strong>: display refresh 15 fps → 5 fps (pixel throughput 311 → 104 MB/s); throttled the vision detection loop (back-to-back → 0.5 s interval).</p>
+<div class="note warn">With two 4K displays among three, pixel throughput is about 436 MB/s and CPU rises accordingly — <strong>display count and resolution are the dominant cost</strong>.</div>
+
+<h2>6 · Engineering Deliverables</h2>
+<div class="scroll"><table>
+  <tr><th>Deliverable</th><th>Contents</th></tr>
+  <tr><td><strong>Yocto layer <code>meta-dlsdk</code></strong></td><td>One layer covering DLSDK + dependencies + applications + services + fonts</td></tr>
+  <tr><td><strong>Complete flashable image</strong></td><td>2.5 GB — works on boot (models and API key still loaded separately)</td></tr>
+  <tr><td>Display applications</td><td><code>dl_face</code> (face + subtitles) / <code>dl_player</code> (video) / <code>dl_clock</code> / <code>dl_edid</code> (diagnostics)</td></tr>
+  <tr><td>Voice applications</td><td><code>astra_voice</code> (main) + <code>astra_llm.py</code> (four-layer routing) + <code>astra_translate.py</code> (bilingual subtitles)</td></tr>
+  <tr><td>Documentation</td><td>Project summary, flashing guide, backup &amp; recovery manual, DisplayLink issue report (bilingual)</td></tr>
+</table></div>
+<p><strong>Build</strong>: <code>bitbake astra-media</code> produces a fully-featured image using the existing flashing workflow.</p>
+
+<h2>7 · Key Technical Findings (For Internal Reuse)</h2>
+
+<h3>7.1 DL7400 Integration</h3>
+<div class="card">
+<ol>
+  <li><strong>DLSDK is pure userspace libusb</strong> — no kernel module required; <code>meta-dlsdk</code> builds it directly</li>
+  <li><strong>USB 3.0 is mandatory</strong> — the SDK refuses to drive the device at USB 2.0</li>
+  <li><strong>Never trust <code>preferred_mode</code> blindly</strong> — one monitor's EDID advertises 4K@160Hz as preferred; the DL7400 cannot feed that and the frame push <strong>blocks forever</strong>. Must clamp to ≤60 Hz</li>
+  <li><strong>DLSDK is single-process exclusive</strong> — while one process holds the device, a second enumerates zero</li>
+  <li><strong>The desktop cannot be extended onto these displays</strong> — DLSDK is a "push pixels" API with no DRM/KMS node; the application must render its own content. For content-wall use cases this is actually an advantage in control</li>
+</ol>
+</div>
+
+<h3>7.2 Judge "Is the Display Actually Working" by Frame Count, Not by Eye</h3>
+<div class="card">
+<div class="scroll"><table>
+  <tr><th>Symptom</th><th>Meaning</th><th>Fix</th></tr>
+  <tr><td>Frame counter <strong>frozen</strong></td><td>Link stalled</td><td>Lower refresh rate / deep USB reset</td></tr>
+  <tr><td>Frame counter <strong>rising but screen black</strong></td><td>Link fine — monitor input source is wrong</td><td>Switch input source on the monitor's OSD</td></tr>
+</table></div>
+<div class="note bad"><strong>These two have completely different causes and fixes; conflating them wastes a lot of time.</strong></div>
+</div>
+
+<h3>7.3 Voice Side</h3>
+<div class="card">
+<ol>
+  <li><strong>The NPU only helps vision</strong> — the entire voice pipeline runs on CPU (Synaptics' own voice examples do the same)</li>
+  <li><strong>Quantization gains vary by model and must be measured individually</strong> — SenseVoice int8 is 1.45× faster, but VITS int8 was 1.9× <em>slower</em></li>
+  <li><strong>A pure energy threshold cannot separate speech from ambient noise</strong> — measured office noise floor RMS 575–713 versus speech 470–1170: <strong>the ranges overlap</strong>. A wake word is the real solution for far-field use</li>
+</ol>
+</div>
+
+<h2>8 · Known Limitations and Next Steps</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>Issue</th><th>Impact</th><th>Plan</th></tr>
+  <tr><td>1</td><td><strong>False triggering from ambient noise</strong></td><td>Requires speaking within ~30 cm in noisy rooms</td><td>Integrate KWS wake word (assets already on device)</td></tr>
+  <tr><td>2</td><td><strong>Display does not relight after power cycle</strong></td><td>Needs a voice command or service restart</td><td>Issue report submitted to DisplayLink</td></tr>
+  <tr><td>3</td><td><strong>No acoustic echo cancellation (AEC)</strong></td><td>Currently drops capture frames during playback</td><td>To be evaluated</td></tr>
+  <tr><td>4</td><td><strong>On-board microphone driver issue</strong></td><td>Using a USB microphone instead</td><td>Requires Synaptics FAE support</td></tr>
+  <tr><td>5</td><td><strong>TTS licensing</strong></td><td>espeak-ng is GPLv3 and propagates through the whole chain</td><td class="no"><strong>Must be resolved before productization</strong></td></tr>
+  <tr><td>6</td><td>New image not yet flash-verified on hardware</td><td>—</td><td>Pending</td></tr>
+</table></div>
+
+<h3>DL7400 Power-Cycle Recovery Issue (Reported to Vendor)</h3>
+<div class="card">
+<p>We identified three SDK-level problems and submitted a bilingual report:</p>
+<ol>
+  <li>Hotplug callback registration <strong>always fails</strong>, so display arrival/removal events never arrive</li>
+  <li>EDID / preferred mode / display count are <strong>all cached</strong> — they still report success after a monitor is powered off</li>
+  <li>The one interface that does reflect reality (AUX read) <strong>blanks every output on that device</strong> when called concurrently with frame streaming</li>
+</ol>
+<div class="note bad"><strong>Conclusion</strong>: there is currently no safe in-band detection method at the SDK level.</div>
+</div>
+
+<h2>9 · Commercial Positioning</h2>
+<div class="card">
+<h4 class="ok">Good fit</h4>
+<ul>
+  <li>Multi-display digital signage / retail guidance screens / showroom content walls</li>
+  <li>Voice interaction terminals (reception, guided tours, assisted-care monitoring)</li>
+  <li>Multi-display dashboards and monitoring boards with low-change content</li>
+</ul>
+<h4 class="no">Poor fit</h4>
+<ul>
+  <li>Video walls or multi-channel video surveillance playback (insufficient frame rate)</li>
+  <li>Office scenarios requiring desktop extension (DLSDK provides no DRM/KMS)</li>
+</ul>
+<div class="note"><strong>Cost advantage</strong>: a single SL1680 plus one DL7400 drives 4 displays, and the voice AI runs entirely on-device (only the dialogue model is in the cloud) — <strong>no GPU or additional PC required</strong>.</div>
+</div>
+
+<div class="foot">Generated 2026-07-24 · SL1680 + DL7400 Internal Achievement Report · English</div>
+
+</div>
+</body>
+</html>

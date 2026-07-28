@@ -1,0 +1,187 @@
+<meta charset="utf-8">
+<title>SL1680 语音 AI — 系统现状与操作手册</title>
+<style>
+  :root{
+    --ground:#FAF9FB; --panel:#FFFFFF; --panel-2:#F3F1F6; --ink:#1C1826; --ink-2:#4A4458; --ink-3:#7A7391;
+    --rule:#E2DEEA; --rule-2:#CFC9DC; --accent:#C4571A; --accent-soft:#FBEDE3;
+    --good:#1F6B4A; --good-bg:#E7F3EC; --warn:#A8305A; --warn-bg:#FBE9EF;
+    --code-bg:#1C1826; --code-ink:#E8E4F0; --code-key:#E8873D;
+    --mono: ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans: system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --ground:#14111A; --panel:#1C1826; --panel-2:#241F2F; --ink:#EDEAF3; --ink-2:#B5AEC6; --ink-3:#847C99;
+    --rule:#2E2840; --rule-2:#413954; --accent:#E8873D; --accent-soft:#2A1E14;
+    --good:#5FBF8F; --good-bg:#12241B; --warn:#E06A92; --warn-bg:#2E151F;
+    --code-bg:#0E0B14; --code-ink:#D8D2E6; --code-key:#E8A33D;
+  }}
+  :root[data-theme="light"]{--ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;--rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;--good:#1F6B4A;--good-bg:#E7F3EC;--warn:#A8305A;--warn-bg:#FBE9EF;--code-bg:#1C1826;--code-ink:#E8E4F0;--code-key:#E8873D;}
+  :root[data-theme="dark"]{--ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;--rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;--good:#5FBF8F;--good-bg:#12241B;--warn:#E06A92;--warn-bg:#2E151F;--code-bg:#0E0B14;--code-ink:#D8D2E6;--code-key:#E8A33D;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px 90px}
+  .mast{border-bottom:2px solid var(--ink);padding:52px 0 22px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px}
+  h1{font-size:clamp(26px,4vw,40px);line-height:1.2;margin:0 0 18px;letter-spacing:-.01em;text-wrap:balance;font-weight:680}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 26px;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .meta b{color:var(--ink-2);font-weight:500}
+  .hero{background:var(--panel);border:1px solid var(--rule-2);border-left:4px solid var(--accent);padding:22px 26px;margin:28px 0 44px}
+  .hero p{margin:0;font-size:16.5px}
+  .hero b{color:var(--accent)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:60px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:19px;margin:32px 0 12px;font-weight:640;letter-spacing:-.005em}
+  p{margin:0 0 14px;max-width:76ch} ul{margin:0 0 14px;padding-left:22px;max-width:76ch} li{margin-bottom:6px}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  .flow{font-family:var(--mono);font-size:12px;line-height:1.85;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:15px 17px;overflow-x:auto;margin:0 0 22px;color:var(--ink-2)}
+  .flow b{color:var(--accent)}
+  pre{font-family:var(--mono);font-size:13px;line-height:1.65;background:var(--code-bg);color:var(--code-ink);border-radius:6px;padding:15px 17px;overflow-x:auto;margin:0 0 20px}
+  pre .c{color:#8b84a0}  /* 注释 */
+  pre .k{color:var(--code-key)} /* 命令关键字 */
+  .scroll{overflow-x:auto;margin:0 0 22px;border:1px solid var(--rule);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:10px 13px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:10px 13px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.55}
+  tr:last-child td{border-bottom:none}
+  .ok{color:var(--good);font-weight:600}
+  .card{border:1px solid var(--rule-2);border-radius:6px;padding:16px 20px;margin:0 0 18px;background:var(--panel)}
+  .card.warn{border-left:3px solid var(--warn);background:var(--warn-bg)}
+  .card.good{border-left:3px solid var(--good);background:var(--good-bg)}
+  .card .h{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:7px}
+  .card p:last-child{margin-bottom:0}
+  .foot{margin-top:64px;padding-top:22px;border-top:2px solid var(--ink);font-size:13px;color:var(--ink-3)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <p class="kicker">Synaptics Astra SL1680 · 操作手册</p>
+  <h1>智能语音 AI — 系统现状与操作手册</h1>
+  <div class="meta">
+    <span><b>更新</b> 2026-07-18</span>
+    <span><b>板子</b> 192.168.5.126 (root/1234)</span>
+    <span><b>定性</b> 内部 POC / demo</span>
+  </div>
+</header>
+
+<div class="hero">
+  <p>一台<b>能看见人、听得懂话、答得上来、说得出声、屏上有字</b>的本地语音 AI。四个服务全部开机自启，<b>通电约 15 秒即用</b>。</p>
+</div>
+
+<h2>一 · 系统链路</h2>
+<div class="flow"> [C920摄像头] ──人走近──▶ <b>NPU人体检测</b> ──▶ 唤醒
+ [C920麦克风] ──说话──▶ <b>VAD切句</b> ──▶ <b>SenseVoice识别</b> ──▶ 回复分级 ──▶ <b>matcha合成</b> ──▶ [Razer喇叭]
+                                              │                        │
+                                    事实接地 / Kimi云端 / 本地兜底    [DL7400屏] 可爱脸+字幕</div>
+<p><b>四层回复（逐层失败自动降级）：</b>① 事实类(时间/日期/天气)查真实数据 → ② Kimi 云端 LLM(联网,流式) → ③ 本地 Qwen0.5B(断网兜底) → ④ 规则。</p>
+
+<h2>二 · 硬件连接</h2>
+<div class="scroll"><table>
+  <tr><th>设备</th><th>作用</th><th>系统里的名字</th></tr>
+  <tr><td><b>Logitech C920</b></td><td>摄像头(视觉唤醒) + 麦克风(采音)</td><td>摄像头 by-id；麦 <code>CARD=C920</code></td></tr>
+  <tr><td><b>Razer Kraken</b></td><td>喇叭(放回复)</td><td><code>CARD=Edition</code></td></tr>
+  <tr><td><b>DL7400 EVK</b></td><td>接显示器,显示对话界面</td><td>DisplayLink <code>17e9</code></td></tr>
+  <tr><td>显示器</td><td>接 DL7400 的 HDMI/DP 口</td><td>可爱脸 + 实时字幕</td></tr>
+  <tr><td>有线网 eth0</td><td>连 Kimi 云端</td><td>网关 192.168.5.242</td></tr>
+</table></div>
+<div class="card warn"><span class="h">重要</span><p>USB 声卡号/摄像头号<b>会随重启拔插重排</b> —— 系统已全部改用<b>名字/稳定路径</b>寻址，不受影响。</p></div>
+
+<h2>三 · 当前能力（实测）</h2>
+<div class="scroll"><table>
+  <tr><th>功能</th><th></th><th>说明</th></tr>
+  <tr><td>👀 NPU 人体检测</td><td class="ok">✅</td><td>25ms/帧，置信 0.94</td></tr>
+  <tr><td>🔔 人走近自动唤醒</td><td class="ok">✅</td><td>框高≥45%触发，说欢迎语（阈值可调）</td></tr>
+  <tr><td>👂 语音识别</td><td class="ok">✅</td><td>SenseVoice，中英，正常说话准确</td></tr>
+  <tr><td>🧠 云端对话</td><td class="ok">✅</td><td>Kimi (moonshot-v1-8k)，答得准</td></tr>
+  <tr><td>🧠 本地兜底</td><td class="ok">✅</td><td>断网走 Qwen0.5B</td></tr>
+  <tr><td>📅 事实接地</td><td class="ok">✅</td><td>时间/日期答真实，天气诚实说"没联网"</td></tr>
+  <tr><td>⚡ 流式提速</td><td class="ok">✅</td><td>边生成边按句播，首句更快</td></tr>
+  <tr><td>🗣️ 语音合成</td><td class="ok">✅</td><td>matcha 中英双语，RTF~0.4</td></tr>
+  <tr><td>📺 DL7400 界面</td><td class="ok">✅</td><td>可爱脸 (・ω・) + 中文字幕</td></tr>
+  <tr><td>🧹 每天自动清理</td><td class="ok">✅</td><td>凌晨 4 点清语音段，保留模型</td></tr>
+  <tr><td>🔌 断网降级</td><td class="ok">✅</td><td>云端失败自动回落本地</td></tr>
+</table></div>
+<p>四个服务全部 <b class="ok">active + 开机自启</b>：<code>astra-voice</code> / <code>dl-face</code> / <code>vision-wake</code> / <code>astra-cleanup.timer</code>。</p>
+
+<h2>四 · 操作手册</h2>
+
+<h3>日常使用</h3>
+<ul>
+  <li><b>走近摄像头</b> → Astra 主动说"你好，欢迎，有什么可以帮你的吗？"</li>
+  <li><b>对着 C920 正常说话</b>（正常音量、面向摄像头）→ 识别 → 回答 → Razer 出声 → DL7400 屏显字幕</li>
+  <li>时间/日期会查真实数据；其它问题走 Kimi</li>
+</ul>
+
+<h3>看实时日志（排查 / 演示）</h3>
+<pre><span class="c"># 语音对话</span>
+<span class="k">journalctl</span> -u astra-voice -f -o cat
+<span class="c"># 视觉唤醒（框高%、触发）</span>
+<span class="k">journalctl</span> -u vision-wake -f -o cat</pre>
+
+<h3>启停服务</h3>
+<pre><span class="k">systemctl</span> restart astra-voice   <span class="c"># 重启（改配置后用）</span>
+<span class="k">systemctl</span> stop astra-voice dl-face vision-wake   <span class="c"># 全停</span></pre>
+
+<h3>换云端 key / 模型</h3>
+<pre><span class="k">vi</span> /etc/astra/llm.conf
+<span class="c"># DEEPSEEK_API_KEY=&lt;你的key&gt;   ← 通用容器，装任何家的 key</span>
+<span class="c"># LLM_MODEL=moonshot-v1-8k     ← 换模型(如 moonshot-v1-32k)</span>
+<span class="c"># LLM_URL=https://api.moonshot.ai/v1/chat/completions</span>
+<span class="k">systemctl</span> restart astra-voice   <span class="c"># 改完必须重启</span></pre>
+<p><b>验证 key 通不通</b>（不进语音，直接测）：</p>
+<pre><span class="k">set</span> -a; . /etc/astra/llm.conf; <span class="k">set</span> +a
+<span class="k">python3</span> /home/voice/astra_llm.py "你好"
+<span class="c"># 出中文=通  |  HTTP 401=key无效  |  HTTP 429=额度/频率</span></pre>
+
+<h3>调视觉唤醒灵敏度</h3>
+<pre><span class="k">vi</span> /etc/systemd/system/vision-wake.service
+<span class="c"># ExecStart=/bin/sh /usr/bin/vision_wake.sh 45 2</span>
+<span class="c">#                                          ↑框高阈值%  ↑持续帧数</span>
+<span class="c"># 太难触发→调小(35)；太灵敏→调大(55)</span>
+<span class="k">systemctl</span> daemon-reload; <span class="k">systemctl</span> restart vision-wake</pre>
+
+<h3>存储清理</h3>
+<pre><span class="k">systemctl</span> start astra-cleanup.service        <span class="c"># 立刻清一次</span>
+<span class="k">systemctl</span> list-timers astra-cleanup.timer    <span class="c"># 看下次自动清理</span></pre>
+
+<h2>五 · 常见故障</h2>
+<div class="scroll"><table>
+  <tr><th>现象</th><th>原因</th><th>解法</th></tr>
+  <tr><td>说话没反应</td><td>麦克风电平低/没对准</td><td>面向 C920、正常音量；日志看有没有"[跳过]太轻"</td></tr>
+  <tr><td>回复没声音</td><td>Razer 掉线/音量</td><td><code>cat /proc/asound/cards</code> 看 Edition；戴上耳机</td></tr>
+  <tr><td>答非所问/乱码</td><td>识别糊(音量太低)</td><td>靠近说清楚，RMS≥0.04 才准</td></tr>
+  <tr><td>答"没联网查不到天气"</td><td>正常(事实接地)</td><td>不让 AI 编；要真天气需接天气 API</td></tr>
+  <tr><td>云端不通/慢</td><td>网络或 key</td><td><code>python3 /home/voice/astra_llm.py "你好"</code> 测；断网自动走本地</td></tr>
+  <tr><td>屏幕没画面/方框</td><td>DL7400 掉线/字体</td><td><code>lsusb|grep 17e9</code>；中文字体 wqy-zenhei</td></tr>
+  <tr><td>走近不唤醒</td><td>阈值太高</td><td>见 4.6 调阈值</td></tr>
+</table></div>
+<div class="card good"><span class="h">万能重启</span><p>出问题先试这个：<code>systemctl restart astra-voice dl-face vision-wake</code></p></div>
+
+<h2>六 · 关键文件</h2>
+<div class="scroll"><table>
+  <tr><th>路径</th><th>是什么</th></tr>
+  <tr><td><code>/usr/bin/astra_voice</code></td><td>语音助手主程序(VAD+ASR+LLM+TTS 常驻)</td></tr>
+  <tr><td><code>/usr/bin/dl_face</code></td><td>DL7400 对话界面</td></tr>
+  <tr><td><code>/usr/bin/vision_wake.sh</code></td><td>视觉唤醒检测</td></tr>
+  <tr><td><code>/home/voice/astra_llm.py</code></td><td>云端 LLM 助手(python)</td></tr>
+  <tr><td><code>/home/voice/{sv,matcha,llm,kws}</code></td><td>模型：ASR / TTS / 本地LLM / 唤醒词</td></tr>
+  <tr><td><code>/etc/astra/llm.conf</code></td><td>云端 key/模型配置</td></tr>
+  <tr><td><code>/tmp/astra_status.txt</code></td><td>语音↔屏幕通信(状态+字幕)</td></tr>
+</table></div>
+
+<h2>七 · 产品化前要补</h2>
+<div class="scroll"><table>
+  <tr><th>缺口</th><th>说明</th></tr>
+  <tr><td><b>TTS 商用授权</b></td><td>matcha 无 license、espeak-ng GPLv3 —— 产品化必解，走商业 TTS 最干净</td></tr>
+  <tr><td>AEC 回声消除</td><td>现在靠"放音时丢采集"的土办法</td></tr>
+  <tr><td>本地 LLM 常驻</td><td>断网走本地每轮冷启动 3~4s，应上常驻 llama-server</td></tr>
+  <tr><td>联网天气</td><td>现在诚实说"查不到"，可接天气 API</td></tr>
+  <tr><td>API key 轮换</td><td>测试用的 Kimi key 在聊天里贴过，建议重新生成</td></tr>
+</table></div>
+
+<div class="hero" style="margin-top:40px">
+  <p><b>四项目标(联网/提速/DL7400界面/定时清理)全部落地，另加视觉唤醒。</b>走近会打招呼，说话能对话(联网更聪明、断网也能用)，屏上有可爱脸和字幕，每天自动清理。通电即用，全部开机自启。</p>
+</div>
+
+<p class="foot">SL1680 语音 AI 操作手册 · 2026-07-18 · 每条状态均为板上实时快照 · 配套 Markdown：<code>SL1680语音AI_系统现状与操作手册.md</code></p>
+</div>

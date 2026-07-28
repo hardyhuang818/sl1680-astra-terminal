@@ -1,0 +1,16 @@
+[Unit]
+Description=Astra xiaozhi cloud-brain voice client (connects to PC xiaozhi-server)
+After=network-online.target
+Wants=network-online.target
+# 和 astra-voice 抢麦克风，二选一运行
+Conflicts=astra-voice.service
+
+[Service]
+Type=simple
+# 服务器地址按实际 PC IP 改；设备名按 aplay -L / arecord -L 实际输出改
+ExecStart=/usr/bin/astra_xiaozhi --server ws://192.168.5.166:8000/xiaozhi/v1/ --dev-in plughw:CARD=C920 --dev-out plughw:CARD=Edition
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

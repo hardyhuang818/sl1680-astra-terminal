@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 项目总览 · 2026-07-28</title>
+<style>
+  :root { --c1:#1a5c38; --c2:#2e8b57; --bg:#f5f9f6; --card:#fff; --ink:#22322a; --line:#d9e6dd; --warn:#b4540a; --ok:#0f7b3f; --hl:#eaf5ee; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); line-height:1.65; }
+  .wrap { max-width:1100px; margin:0 auto; padding:28px 20px 80px; }
+  header { background:linear-gradient(120deg,var(--c1),var(--c2)); color:#fff; border-radius:14px; padding:26px 30px; margin-bottom:24px; }
+  header h1 { margin:0 0 8px; font-size:26px; }
+  header .sub { opacity:.93; font-size:14.5px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); padding:3px 12px; border-radius:20px; font-size:13px; margin:10px 8px 0 0; }
+  h2 { color:var(--c1); border-left:5px solid var(--c2); padding-left:12px; margin:34px 0 12px; font-size:19.5px; }
+  h3 { color:#1d4f38; margin:20px 0 8px; font-size:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:12px 0; overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13.5px; background:#fff; }
+  th { background:#e4f0e8; color:#164a30; text-align:left; padding:7px 10px; border:1px solid var(--line); }
+  td { padding:6px 10px; border:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td { background:#fafcfb; }
+  code, pre { font-family:Consolas,"Courier New",monospace; }
+  code { background:#edf4ef; border:1px solid #dee9e2; border-radius:4px; padding:1px 6px; font-size:12.5px; }
+  pre { background:#ffffff; color:#14301f; border:2px solid var(--c2); border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:13.5px; line-height:1.7; font-weight:600; }
+  .callout { border-left:4px solid var(--warn); background:#fff7ef; padding:10px 16px; border-radius:0 10px 10px 0; margin:12px 0; font-size:14px; }
+  .callout.green { border-color:var(--ok); background:#effaf3; }
+  .warn { color:var(--warn); font-weight:700; }
+  .nav b { color:var(--c1); }
+  footer { margin-top:36px; font-size:12.5px; color:#5f7a68; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>SL1680 边缘 AI 终端 · 项目总览</h1>
+  <div class="sub">2026-07-28 · v2.7 · Synaptics SL1680（Astra "Dolphin" RDK）· <b>项目唯一顶层入口</b>——三大成果域 / 关键知识 / 资产 / 未解决 / 文档导航</div>
+  <div>
+    <span class="badge">本地语音 AI</span>
+    <span class="badge">DL7400 四屏</span>
+    <span class="badge">TD7800 LVDS+触摸直驱</span>
+    <span class="badge">断电自愈 9/9</span>
+  </div>
+</header>
+
+<h2>1. 项目一句话</h2>
+<div class="card">
+<p>在 Synaptics SL1680（4×Cortex-A73 + NPU）上构建<b>边缘 AI 人机交互终端</b>：本地语音 AI（识别/合成全在板上）+ 两条显示链路（DisplayLink DL7400 USB 多屏 + TC358775 直驱 LVDS 触摸屏）+ 视觉唤醒，全部断电自愈。</p>
+<p><b>测试条件</b>：GitHub 开源 Astra SDK（Yocto scarthgap）+ 借用 SL1680 RDK ×1 与 DL7400 EVK ×1 + 自购外设（C920、显示器 ×4 自有、TM10.5-TD7800 触摸屏、LAMTL 转接板、功放喇叭等）。</p>
+</div>
+
+<h2>2. 系统总架构</h2>
+<div class="card"><pre>                 ┌──────────────── SL1680 (4×A73 + NPU) ────────────────┐
+[C920 摄像头]──USB──► NPU: mobilenet 人体检测 25ms/帧 ──► 视觉唤醒(欢迎语)
+[C920 麦克风]──USB──► CPU: silero VAD ──► SenseVoice ASR(int8) ──► 四层路由
+                 │   ①本地音量 ②本地设备 ③联网搜索(智谱+接地) ④云端DeepSeek
+                 │   ──► matcha TTS ──► ALSA astraout ──► [HT517 功放+喇叭]
+                 │
+                 │ 显示链A: dl_face ─► GStreamer ─► [DL7400] ─USB3─► 最多4屏
+                 │          屏0=表情脸+中英字幕  屏1=可语音切摄像头实况
+                 │ 显示链B: weston ─► DSI 4-lane ─► [LAMTL/TC358775] ─LVDS─►
+                 │          [TM10.5-TD7800 1280×720 触摸屏]（触摸回板 ~120Hz）
+                 └───────────────────────────────────────────────────────┘
+云端: DeepSeek(对话/翻译)+智谱独立搜索 │ 断网兜底: 本地 qwen2.5-0.5b</pre></div>
+
+<h2>3. 三大成果域</h2>
+<div class="card">
+<h3>3A. 本地语音 AI 终端（v2.0→v2.6）</h3>
+<table>
+<tr><th>能力</th><th>要点</th><th>实测</th></tr>
+<tr><td>全本地语音链</td><td>SenseVoice ASR(int8)+matcha TTS，不依赖 PC</td><td>ASR RTF 0.197；TTS 0.37</td></tr>
+<tr><td>四层回复路由</td><td>本地指令真执行；实时题真搜索+接地；闲聊 DeepSeek</td><td>「音量20%」→ amixer 实测 [20%]</td></tr>
+<tr><td>视觉唤醒</td><td>NPU 人体检测→欢迎语</td><td>25ms/帧</td></tr>
+<tr><td>麦克风守护</td><td>卡名+采集节点双条件，USB 抖 86 秒不空转</td><td>对抗验证 0 次模型重载</td></tr>
+<tr><td>稳定性</td><td>断电重启全恢复；每日自动清理</td><td>多次复验 ✓</td></tr>
+</table>
+<h3>3B. DL7400 USB 多屏</h3>
+<table>
+<tr><th>结论</th><th>数据</th></tr>
+<tr><td>4 屏同时点亮可行</td><td>并发帧率 8.7 / 5.8 / 15.0 / 5.7 fps</td></tr>
+<tr><td>USB3 总带宽恒定</td><td>3→4 屏时 4K 屏 7.2→5.8 fps（−20%）</td></tr>
+<tr><td>瓶颈在 DL 推流</td><td>111→31.9(硬缩放)→7.4 fps 逐级实测</td></tr>
+<tr><td>3 个 SDK 缺陷已报 DisplayLink</td><td>热插拔回调恒失败 / EDID 缓存 / dpaux 全黑雷</td></tr>
+<tr><td class="warn">屏断电不自愈</td><td>现行方案：语音「重新检测屏幕」</td></tr>
+</table>
+<h3>3C. TD7800 LVDS 触摸屏直驱（v2.7 新增）</h3>
+<table>
+<tr><th>#</th><th>根因</th><th>修复</th></tr>
+<tr><td>1</td><td>base 设备树是树莓派屏残留</td><td>dsi_panel 换 TM10.5 时序</td></tr>
+<tr><td>2</td><td>TC358775 上电三态无人初始化</td><td>29 条 DSI 长写序列烤入 DTB</td></tr>
+<tr><td>3</td><td>面板 RESX 悬空（整颗 TDDI 复位）</td><td>硬件拉高 3.3V</td></tr>
+<tr><td>4</td><td>U-Boot 占 SPI 数据脚为 UART2 流控</td><td>dts pinmux 夺回（顺带得 SPI 调试通道）</td></tr>
+<tr><td>5</td><td>DSI→LVDS 零带宽余量 → 活雪花</td><td>Byte_clk 65300 + PCLKDIV=4（+33% 余量）</td></tr>
+<tr><td>6</td><td>触摸 INT bank 归属不明</td><td>实验法定位 porta10</td></tr>
+</table>
+<p>配套：SPI 调试工具（读器件码/BIST/读 NVM）、触摸 120Hz 多点、180° 翻转+触摸校准、上海时区。断电自愈 9/9 实测。</p>
+</div>
+
+<h2>4. 关键知识沉淀（跨项目可复用）</h2>
+<div class="card"><ol>
+<li><b>DSI→LVDS 桥必须留带宽余量</b>：LVDS 像素钟 = DSI 时钟线频率 ÷ PCLKDIV；零余量 = 行缓冲欠载 = 活雪花</li>
+<li><b>TDDI 复位纪律</b>：TP_RST/RESX 一律硬件拉高——悬空全哑，SoC 控会杀显示</li>
+<li><b>电平域纪律</b>：1.8V 域脚喂 3.3V 会经 ESD 倒灌抬轨（实测 2.38V）</li>
+<li><b>EDID preferred_mode 不可盲信</b>：160Hz 首选模式让 DL7400 永久阻塞，故障跟屏走</li>
+<li><b>ALSA 非 48k 会内核崩溃</b>：astraout 强制重采样是必需品；寻址用 CARD=名字</li>
+<li><b>智谱 chat 的 web_search 是假的</b>：调独立搜索 API + 接地；搜不到宁可说查不到</li>
+<li><b>Yocto 四类暗坑</b>：FetchContent 硬关（像断网）/ 无 SOVERSION 的 .so 进错包 / :pn- 只在 conf 生效 / 构建全绿≠功能完整</li>
+<li><b>板子是真相</b>：改完必回灌 + sha256 对账</li>
+<li><b>远程三律</b>：复杂命令走脚本文件；先查 busybox 缺项；二进制防 BOM</li>
+</ol></div>
+
+<h2>5. 软件资产</h2>
+<div class="card">
+<table>
+<tr><th>资产</th><th>位置</th><th>说明</th></tr>
+<tr><td>Yocto layer</td><td><code>meta-dlsdk/</code>（VERSION v2.7）</td><td>astra-voice / dl-face / sherpa-onnx / dlsdk / <b>linux-syna.bbappend（TD7800 补丁）</b></td></tr>
+<tr><td>完整镜像</td><td><code>flash_image_20260723163055/</code></td><td>SYNAIMG 2.5GB，烧完即用（模型另灌）</td></tr>
+<tr><td>TD7800 boot 包</td><td><code>SL1680_td7800_boot/</code></td><td>三代镜像+烧录/验证脚本+复盘</td></tr>
+<tr><td>模型备份</td><td><code>backups/models_2026-07-24/</code></td><td>1.15GB 唯一副本（⚠️ 含明文密钥勿外传）</td></tr>
+<tr><td>调试代码备份</td><td><code>TD7800_bringup_backup_2026-07-28/</code></td><td>79 文件+SHA256</td></tr>
+<tr><td>rootfs 三件套</td><td>板上 /etc</td><td>翻转/触摸校准/时区（待进 Yocto）</td></tr>
+</table>
+<p><b>构建</b>：<code>bitbake astra-media</code>；内核单独重建 75 秒；boot dd 双槽+回读校验全程 ~4 分钟。</p>
+</div>
+
+<h2>6. 硬件资产与接线</h2>
+<div class="card">
+<table>
+<tr><th>器件</th><th>接口</th><th>接线文档</th></tr>
+<tr><td>SL1680 RDK</td><td>J208（DSI 22P）/ J32（40P 排针）</td><td>《硬件接线总表》§1/§3</td></tr>
+<tr><td>LAMTL 转接板</td><td>J1（DSI 入）/ J3（LVDS 出）/ J2、J4 未用</td><td>同上 §1/§2</td></tr>
+<tr><td>TM10.5-TD7800</td><td>U4（LVDS+触摸）/ U5（电源/SPI/复位）/ U3（背光）</td><td>同上 §2/§3</td></tr>
+<tr><td>DL7400 EVK</td><td>USB3 上行 + 4× DP/HDMI</td><td>即插即用</td></tr>
+<tr><td>音频套件</td><td>HT517（I2S/J32）+ 喇叭；麦=C920</td><td>《小智套件接线指南》</td></tr>
+<tr><td>外部电源</td><td>12V 背光（经驱动板）/ 3.3V 面板+复位 / 1.8V LAMTL</td><td>接线总表 §4（电平域警示）</td></tr>
+</table>
+</div>
+
+<h2>7. 当前运行状态（2026-07-28 板端实测）</h2>
+<div class="card">
+<table>
+<tr><th>项</th><th>状态</th></tr>
+<tr><td>自启服务</td><td>astra-voice / astra-translate / dl-face / vision-wake / cleanup.timer ✅；astra-mode、astra-xiaozhi、dl-clock 停用</td></tr>
+<tr><td>显示</td><td>DL7400 多屏 ✅ + TM10.5 LVDS 桌面 ✅（180°、CST 时钟）</td></tr>
+<tr><td>触摸</td><td>0x2C 接管、IRQ porta10、evtest 报点、方向校准 ✅</td></tr>
+<tr><td>boot</td><td><code>boot_td7800_touch.subimg</code>（sha 0aa90172…）双槽；回退备份在板上 /home</td></tr>
+<tr><td>断电自愈</td><td><b>9/9 自检通过</b></td></tr>
+</table>
+</div>
+
+<h2>8. 已知未解决（合并全项目）</h2>
+<div class="card">
+<table>
+<tr><th>#</th><th>问题</th><th>优先级</th></tr>
+<tr><td>1</td><td><b>KWS 唤醒词未接入</b>——误触发烧云端 API；素材全在只差接线</td><td>★ 最高</td></tr>
+<tr><td>2</td><td>AEC 回声消除缺失</td><td>高</td></tr>
+<tr><td>3</td><td>DL7400 屏断电不自愈（已报 DisplayLink）</td><td>中（等厂商）</td></tr>
+<tr><td>4</td><td>板载麦 ZTS6672 驱动问题（需 FAE）</td><td>中</td></tr>
+<tr><td>5</td><td>TTS 授权（espeak-ng GPLv3）</td><td>中</td></tr>
+<tr><td>6</td><td>新镜像未真板实烧验证</td><td>中</td></tr>
+<tr><td>7</td><td>LVDS 杜邦线换双绞</td><td>低</td></tr>
+<tr><td>8</td><td>TD7800 补丁 cleanall 验证</td><td>低</td></tr>
+<tr><td>9</td><td>rootfs 三件套进 Yocto</td><td>低</td></tr>
+</table>
+</div>
+
+<h2>9. 文档导航（治"凌乱"的入口——只记这一节即可）</h2>
+<div class="card nav">
+<p><b>顶层（先看）</b>：本文（中/英，md+html）→《SL1680项目总结_2026-07-23》（中/英，v2.6 语音终端详版）</p>
+<p><b>TD7800 屏专题</b>：《TM10.5_TD7800屏点亮_总结》（中/英）→《硬件接线总表》（中/英）→《TC358775 配置与调试记录》→《TD7800_SPI 源代码》→ 备份目录 README（79 文件清单）</p>
+<p><b>汇报与对比</b>：《SL1680_DL7400 成果汇报》（中/英）·《SL1680 vs ESP32》· 机器人手指/电容触觉调研 · iCub 论文整理</p>
+<p><b>运维</b>：《备份与恢复手册》· <code>SL1680_td7800_boot/README</code>（烧录回退）· <code>meta-dlsdk/VERSION</code>（版本流水）· <code>backups/CHANGELOG.md</code></p>
+</div>
+
+<h2>10. 下一步路线</h2>
+<div class="card"><ol>
+<li><b>KWS 接入</b>（一举治误触发 + 解锁"语音暂停"）</li>
+<li>新镜像真板实烧验证 + rootfs 三件套进 Yocto → 同事"一次烧录全功能"</li>
+<li>机器人方向：SL1680 躯干算力 + TM10.5 脸 + DL7400 遥操作台 + 手指执行器——与 Synaptics 官方"高速接口×机器人"叙事对齐</li>
+</ol></div>
+
+<footer>SL1680 项目总览 v2.7 · 2026-07-28 · 姊妹篇：英文版 SL1680_Project_Overview_2026-07-28_EN</footer>
+</div>
+</body>
+</html>

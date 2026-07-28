@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 Project Overview · 2026-07-28</title>
+<style>
+  :root { --c1:#1a5c38; --c2:#2e8b57; --bg:#f5f9f6; --card:#fff; --ink:#22322a; --line:#d9e6dd; --warn:#b4540a; --ok:#0f7b3f; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
+  .wrap { max-width:1100px; margin:0 auto; padding:28px 20px 80px; }
+  header { background:linear-gradient(120deg,var(--c1),var(--c2)); color:#fff; border-radius:14px; padding:26px 30px; margin-bottom:24px; }
+  header h1 { margin:0 0 8px; font-size:26px; }
+  header .sub { opacity:.93; font-size:14.5px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); padding:3px 12px; border-radius:20px; font-size:13px; margin:10px 8px 0 0; }
+  h2 { color:var(--c1); border-left:5px solid var(--c2); padding-left:12px; margin:34px 0 12px; font-size:19.5px; }
+  h3 { color:#1d4f38; margin:20px 0 8px; font-size:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:12px 0; overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13.5px; background:#fff; }
+  th { background:#e4f0e8; color:#164a30; text-align:left; padding:7px 10px; border:1px solid var(--line); }
+  td { padding:6px 10px; border:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td { background:#fafcfb; }
+  code, pre { font-family:Consolas,"Courier New",monospace; }
+  code { background:#edf4ef; border:1px solid #dee9e2; border-radius:4px; padding:1px 6px; font-size:12.5px; }
+  pre { background:#ffffff; color:#14301f; border:2px solid var(--c2); border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:13.5px; line-height:1.7; font-weight:600; }
+  .warn { color:var(--warn); font-weight:700; }
+  .nav b { color:var(--c1); }
+  footer { margin-top:36px; font-size:12.5px; color:#5f7a68; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>SL1680 Edge-AI Terminal · Project Overview</h1>
+  <div class="sub">2026-07-28 · v2.7 · Synaptics SL1680 (Astra "Dolphin" RDK) · <b>the single top-level entry</b> — achievement domains / key knowledge / assets / open issues / document navigator</div>
+  <div>
+    <span class="badge">Local Voice AI</span>
+    <span class="badge">DL7400 4-Display</span>
+    <span class="badge">TD7800 LVDS + Touch Direct Drive</span>
+    <span class="badge">Power-cycle recovery 9/9</span>
+  </div>
+</header>
+
+<h2>1. The Project in One Sentence</h2>
+<div class="card">
+<p>An <b>edge-AI human-machine terminal</b> on the Synaptics SL1680 (4×Cortex-A73 + NPU): local voice AI (ASR/TTS fully on-board) + two display chains (DisplayLink DL7400 USB multi-display + TC358775 direct-drive LVDS touch panel) + visual wake-up — all self-recovering after power loss.</p>
+<p><b>Test conditions</b>: open-source Astra SDK from GitHub (Yocto scarthgap) + one borrowed SL1680 RDK and DL7400 EVK + self-purchased peripherals (C920 camera, 4 self-owned monitors, TM10.5-TD7800 touch panel, LAMTL adapter, amp/speaker).</p>
+</div>
+
+<h2>2. System Architecture</h2>
+<div class="card"><pre>              ┌────────────── SL1680 (4×A73 + NPU) ──────────────┐
+[C920 camera]──USB──► NPU: person detect 25ms/frame ──► visual wake
+[C920 mic]   ──USB──► CPU: silero VAD ─► SenseVoice ASR(int8) ─► 4-layer routing
+              │   ①local volume ②local device ③web search(+grounding) ④DeepSeek
+              │   ─► matcha TTS ─► ALSA astraout ─► [HT517 amp + speaker]
+              │
+              │ Display A: dl_face ─► GStreamer ─► [DL7400] ─USB3─► up to 4 monitors
+              │            screen0 = face+subtitles, screen1 = live camera
+              │ Display B: weston ─► DSI 4-lane ─► [LAMTL/TC358775] ─LVDS─►
+              │            [TM10.5-TD7800 1280×720 touch] (touch back ~120Hz)
+              └────────────────────────────────────────────────────┘
+Cloud: DeepSeek + Zhipu standalone search │ Offline fallback: local qwen2.5-0.5b</pre></div>
+
+<h2>3. Three Achievement Domains</h2>
+<div class="card">
+<h3>3A. Local Voice-AI Terminal (v2.0→v2.6)</h3>
+<table>
+<tr><th>Capability</th><th>Key points</th><th>Measured</th></tr>
+<tr><td>Fully local speech chain</td><td>SenseVoice ASR(int8)+matcha TTS, no PC</td><td>ASR RTF 0.197; TTS 0.37</td></tr>
+<tr><td>4-layer routing</td><td>Local commands really execute; realtime Qs use real search+grounding; chat → DeepSeek</td><td>"Volume 20%" → amixer [20%]</td></tr>
+<tr><td>Visual wake-up</td><td>NPU person detection → greeting</td><td>25 ms/frame</td></tr>
+<tr><td>Microphone guard</td><td>Card-name+capture-node wait; survives 86 s USB flap</td><td>Adversarial: 0 model reloads</td></tr>
+<tr><td>Stability</td><td>Full power-cycle recovery; daily cleanup</td><td>Re-verified ✓</td></tr>
+</table>
+<h3>3B. DL7400 USB Multi-Display</h3>
+<table>
+<tr><th>Conclusion</th><th>Data</th></tr>
+<tr><td>4 simultaneous monitors feasible</td><td>8.7 / 5.8 / 15.0 / 5.7 fps concurrent</td></tr>
+<tr><td>USB3 total bandwidth constant</td><td>3→4 screens: 4K 7.2→5.8 fps (−20%)</td></tr>
+<tr><td>Bottleneck = DL streaming</td><td>111→31.9 (HW scale)→7.4 fps stage-by-stage</td></tr>
+<tr><td>3 SDK defects reported to DisplayLink</td><td>hotplug callback / EDID cache / dpaux blackout</td></tr>
+<tr><td class="warn">No self-heal after monitor power loss</td><td>Workaround: voice "re-detect screens"</td></tr>
+</table>
+<h3>3C. TD7800 LVDS Touch Panel Direct Drive (v2.7)</h3>
+<table>
+<tr><th>#</th><th>Root cause</th><th>Fix</th></tr>
+<tr><td>1</td><td>Raspberry-Pi panel leftovers in base device tree</td><td>Replace dsi_panel with TM10.5 timing</td></tr>
+<tr><td>2</td><td>TC358775 powers up tri-stated, uninitialized</td><td>29 DSI generic writes baked into DTB</td></tr>
+<tr><td>3</td><td>Panel RESX floating (whole TDDI in reset)</td><td>Tie high 3.3V in hardware</td></tr>
+<tr><td>4</td><td>U-Boot muxed SPI data pads to UART2 flow control</td><td>Reclaim via dts pinmux (bonus: SPI debug channel)</td></tr>
+<tr><td>5</td><td>Zero DSI→LVDS bandwidth margin → live noise</td><td>Byte_clk 65300 + PCLKDIV=4 (+33% margin)</td></tr>
+<tr><td>6</td><td>Touch INT GPIO bank ambiguous</td><td>Located empirically: porta10</td></tr>
+</table>
+<p>Companions: SPI debug tool (ID/BIST/NVM read), 120 Hz multitouch, 180° rotation + touch calibration, Shanghai timezone. Power-cycle recovery 9/9 measured.</p>
+</div>
+
+<h2>4. Key Knowledge Distilled (reusable)</h2>
+<div class="card"><ol>
+<li><b>DSI→LVDS bridges need bandwidth margin</b>: LVDS pclk = DSI clock-lane freq ÷ PCLKDIV; zero margin = line-buffer underrun = live noise</li>
+<li><b>TDDI reset discipline</b>: TP_RST/RESX always tied high in hardware — floating kills everything; SoC control kills the display</li>
+<li><b>Level-domain discipline</b>: 3.3V into a 1.8V pin back-feeds via ESD diodes (measured 2.38V)</li>
+<li><b>Never trust EDID preferred_mode</b>: a 160 Hz preferred mode blocked DL7400 forever; the fault travels with the monitor</li>
+<li><b>Non-48 kHz rates crash the audio driver</b>: the astraout resample chain is a necessity; address ALSA by CARD=name</li>
+<li><b>Zhipu chat's web_search is fake</b>: use the standalone search API + grounding; answer "cannot find" rather than fall back</li>
+<li><b>Four Yocto trap classes</b>: FetchContent hard-off (mimics network failure) / unversioned .so mis-packaged / :pn- only in conf files / build-green ≠ feature-complete</li>
+<li><b>The board is the truth</b>: backflow immediately, reconcile sha256</li>
+<li><b>Three laws of remote ops</b>: script files for complex commands; check busybox gaps; guard binaries against BOM</li>
+</ol></div>
+
+<h2>5. Software Assets</h2>
+<div class="card">
+<table>
+<tr><th>Asset</th><th>Location</th><th>Notes</th></tr>
+<tr><td>Yocto layer</td><td><code>meta-dlsdk/</code> (VERSION v2.7)</td><td>astra-voice / dl-face / sherpa-onnx / dlsdk / <b>linux-syna.bbappend (TD7800 patch)</b></td></tr>
+<tr><td>Full image</td><td><code>flash_image_20260723163055/</code></td><td>SYNAIMG 2.5 GB, flash-and-go (models separate)</td></tr>
+<tr><td>TD7800 boot bundle</td><td><code>SL1680_td7800_boot/</code></td><td>3 image generations + scripts + retrospective</td></tr>
+<tr><td>Model backup</td><td><code>backups/models_2026-07-24/</code></td><td>1.15 GB sole copy (⚠️ contains plaintext keys)</td></tr>
+<tr><td>Debug-code backup</td><td><code>TD7800_bringup_backup_2026-07-28/</code></td><td>79 files + SHA256</td></tr>
+<tr><td>Rootfs trio</td><td>/etc on board</td><td>rotation / touch calibration / timezone (→ Yocto)</td></tr>
+</table>
+<p><b>Build</b>: <code>bitbake astra-media</code>; kernel-only rebuild 75 s; boot dd both slots + read-back verify ~4 min.</p>
+</div>
+
+<h2>6. Hardware Assets and Wiring</h2>
+<div class="card">
+<table>
+<tr><th>Device</th><th>Interfaces</th><th>Wiring doc</th></tr>
+<tr><td>SL1680 RDK</td><td>J208 (DSI 22P) / J32 (40P header)</td><td>Wiring Reference §1/§3</td></tr>
+<tr><td>LAMTL adapter</td><td>J1 (DSI in) / J3 (LVDS out) / J2, J4 unused</td><td>ibid. §1/§2</td></tr>
+<tr><td>TM10.5-TD7800</td><td>U4 (LVDS+touch) / U5 (power/SPI/reset) / U3 (backlight)</td><td>ibid. §2/§3</td></tr>
+<tr><td>DL7400 EVK</td><td>USB3 upstream + 4× DP/HDMI</td><td>plug &amp; play</td></tr>
+<tr><td>Audio kit</td><td>HT517 (I2S/J32) + speaker; mic = C920</td><td>Xiaozhi-kit guide</td></tr>
+<tr><td>External supplies</td><td>12V backlight (via driver board) / 3.3V panel+resets / 1.8V LAMTL</td><td>Wiring Reference §4</td></tr>
+</table>
+</div>
+
+<h2>7. Current Running State (measured 2026-07-28)</h2>
+<div class="card">
+<table>
+<tr><th>Item</th><th>State</th></tr>
+<tr><td>Auto-start services</td><td>astra-voice / astra-translate / dl-face / vision-wake / cleanup.timer ✅; astra-mode, astra-xiaozhi, dl-clock disabled</td></tr>
+<tr><td>Displays</td><td>DL7400 multi-screen ✅ + TM10.5 LVDS desktop ✅ (180°, CST clock)</td></tr>
+<tr><td>Touch</td><td>0x2C claimed, IRQ porta10, evtest reporting, calibrated ✅</td></tr>
+<tr><td>boot</td><td><code>boot_td7800_touch.subimg</code> (sha 0aa90172…) both slots; rollback backups on board</td></tr>
+<tr><td>Power-cycle recovery</td><td><b>9/9 self-check passed</b></td></tr>
+</table>
+</div>
+
+<h2>8. Known Open Issues (merged)</h2>
+<div class="card">
+<table>
+<tr><th>#</th><th>Issue</th><th>Priority</th></tr>
+<tr><td>1</td><td><b>KWS wake word not integrated</b> — false triggers burn cloud API; assets ready, only wiring-in missing</td><td>★ Highest</td></tr>
+<tr><td>2</td><td>No AEC echo cancellation</td><td>High</td></tr>
+<tr><td>3</td><td>DL7400 no self-heal (reported to DisplayLink)</td><td>Medium (vendor)</td></tr>
+<tr><td>4</td><td>On-board mic ZTS6672 driver issue (FAE)</td><td>Medium</td></tr>
+<tr><td>5</td><td>TTS licensing (espeak-ng GPLv3)</td><td>Medium</td></tr>
+<tr><td>6</td><td>New image not flash-verified on real hardware</td><td>Medium</td></tr>
+<tr><td>7</td><td>LVDS jumpers → twisted pairs</td><td>Low</td></tr>
+<tr><td>8</td><td>Cleanall verification of the TD7800 patch</td><td>Low</td></tr>
+<tr><td>9</td><td>Rootfs trio into Yocto</td><td>Low</td></tr>
+</table>
+</div>
+
+<h2>9. Document Navigator (the cure for scatter)</h2>
+<div class="card nav">
+<p><b>Top level</b>: this document (CN/EN, md+html) → <i>SL1680 Project Summary 2026-07-23</i> (CN/EN, the v2.6 voice-terminal deep dive)</p>
+<p><b>TD7800 panel topic</b>: <i>Display Bring-up Summary</i> (CN/EN) → <i>Hardware Wiring Reference</i> (CN/EN) → <i>TC358775 Config &amp; Debug Record</i> → <i>TD7800 SPI Source Code</i> → backup README (79-file inventory)</p>
+<p><b>Reporting &amp; comparisons</b>: <i>SL1680+DL7400 Achievement Report</i> (CN/EN) · <i>SL1680 vs ESP32</i> · robot-finger / capacitive-tactile surveys · iCub paper digest</p>
+<p><b>Operations</b>: <i>Backup &amp; Recovery Manual</i> · <code>SL1680_td7800_boot/README</code> (flash &amp; rollback) · <code>meta-dlsdk/VERSION</code> · <code>backups/CHANGELOG.md</code></p>
+</div>
+
+<h2>10. Roadmap</h2>
+<div class="card"><ol>
+<li><b>Integrate KWS</b> (kills false triggering and unlocks pause-by-voice)</li>
+<li>Real-hardware flash verification + rootfs trio into Yocto → a "one-flash, full-function" deliverable for colleagues</li>
+<li>Robotics: SL1680 torso compute + TM10.5 face + DL7400 teleop console + finger actuators — aligned with Synaptics' "high-speed interfaces × robotics" narrative</li>
+</ol></div>
+
+<footer>SL1680 Project Overview v2.7 · 2026-07-28 · Chinese edition: SL1680项目总览_2026-07-28</footer>
+</div>
+</body>
+</html>

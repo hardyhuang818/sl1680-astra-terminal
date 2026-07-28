@@ -1,0 +1,142 @@
+<meta charset="utf-8">
+<title>SL1680 小智语音系统 · 实施总结 v1.0</title>
+<style>
+  :root{--ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;--rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;--measured:#B06A12;--measured-bg:#FDF3E3;--verified:#1B6E80;--verified-bg:#E4F3F6;--untested:#A8305A;--untested-bg:#FBE9EF;--good:#1F6B4A;--bad:#A8305A;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;}
+  @media (prefers-color-scheme:dark){:root{--ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;--rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;--measured:#E8A33D;--measured-bg:#2B2114;--verified:#4FB3C8;--verified-bg:#132A30;--untested:#E06A92;--untested-bg:#2E151F;--good:#5FBF8F;--bad:#E06A92;}}
+  :root[data-theme="light"]{--ground:#FAF9FB;--panel:#FFFFFF;--panel-2:#F3F1F6;--ink:#1C1826;--ink-2:#4A4458;--ink-3:#7A7391;--rule:#E2DEEA;--rule-2:#CFC9DC;--accent:#C4571A;--accent-soft:#FBEDE3;--measured:#B06A12;--measured-bg:#FDF3E3;--verified:#1B6E80;--verified-bg:#E4F3F6;--untested:#A8305A;--untested-bg:#FBE9EF;--good:#1F6B4A;--bad:#A8305A;}
+  :root[data-theme="dark"]{--ground:#14111A;--panel:#1C1826;--panel-2:#241F2F;--ink:#EDEAF3;--ink-2:#B5AEC6;--ink-3:#847C99;--rule:#2E2840;--rule-2:#413954;--accent:#E8873D;--accent-soft:#2A1E14;--measured:#E8A33D;--measured-bg:#2B2114;--verified:#4FB3C8;--verified-bg:#132A30;--untested:#E06A92;--untested-bg:#2E151F;--good:#5FBF8F;--bad:#E06A92;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px 90px}
+  .mast{border-bottom:2px solid var(--ink);padding:52px 0 22px;margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px}
+  h1{font-size:clamp(26px,4vw,40px);line-height:1.2;margin:0 0 18px;letter-spacing:-.01em;text-wrap:balance;font-weight:680}
+  .ver{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 10px;border-radius:3px;vertical-align:6px;margin-left:10px}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 26px;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .meta b{color:var(--ink-2);font-weight:500}
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 40px}
+  .legend div{background:var(--panel);padding:12px 15px}
+  .legend .lt{font-family:var(--mono);font-size:11.5px;font-weight:600;display:block;margin-bottom:2px}
+  .legend .ld{font-size:12px;color:var(--ink-3)}
+  .l-m .lt{color:var(--measured)} .l-v .lt{color:var(--verified)} .l-u .lt{color:var(--untested)}
+  .c{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 6px;border-radius:2px;white-space:nowrap;display:inline-block;vertical-align:1px}
+  .c-m{color:var(--measured);background:var(--measured-bg)} .c-v{color:var(--verified);background:var(--verified-bg)} .c-u{color:var(--untested);background:var(--untested-bg)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:58px 0 0;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+  h3{font-size:19px;margin:30px 0 12px;font-weight:640}
+  p{margin:0 0 14px;max-width:76ch} ul,ol{margin:0 0 14px;padding-left:22px;max-width:80ch} li{margin-bottom:7px}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);padding:1.5px 5px;border-radius:2px;color:var(--ink-2)}
+  strong{font-weight:660}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:14px 16px;overflow-x:auto;margin:0 0 20px;color:var(--ink-2)}
+  pre b{color:var(--accent)}
+  .scroll{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--panel-2)}
+  td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  .hi{background:var(--measured-bg)} .yes{color:var(--good);font-weight:600} .no{color:var(--bad);font-weight:600}
+  .note{border:1px solid var(--rule-2);background:var(--panel);padding:15px 18px;margin:0 0 20px}
+  .note.key{border-left:3px solid var(--accent);background:var(--accent-soft)}
+  .note.warn{border-left:3px solid var(--untested);background:var(--untested-bg)}
+  .note p:last-child{margin-bottom:0}
+  .foot{margin-top:60px;padding-top:22px;border-top:2px solid var(--ink);font-size:13px;color:var(--ink-3)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <p class="kicker">SL1680 · 小智语音系统 · 实施总结</p>
+  <h1>一天：从分析 xiaozhi 到全双工+MCP+双模真机跑通<span class="ver">v1.0</span></h1>
+  <div class="meta"><span><b>日期</b> 2026-07-19</span><span><b>板子</b> 192.168.5.126</span><span><b>PC</b> RTX 4090 @ 192.168.5.166</span></div>
+</header>
+
+<div class="legend">
+  <div class="l-m"><span class="lt">■ 实测</span><span class="ld">板上/PC上跑出来的</span></div>
+  <div class="l-v"><span class="lt">■ 已核实</span><span class="ld">一手源码/图纸</span></div>
+  <div class="l-u"><span class="lt">■ 受阻/待办</span><span class="ld">物理层或 Phase 4</span></div>
+</div>
+
+<h2>〇 · 最终架构（全部实测）<span class="c c-m">实测</span></h2>
+<pre>人走近 ──NPU视觉──→ SIGUSR1 ─┐（顺带解除暂停）
+说话 ──C920麦──→ Opus/60ms ──→ <b>astra_xiaozhi</b> ⇄ WebSocket ⇄ <b>xiaozhi-server</b>(Docker)
+                                   │                          ├ SenseVoice ASR(容器CPU)
+听到回复 ←─Razer喇叭─← Opus ←──────┘                          ├ <b>Qwen3-30B-A3B</b>(4090,无思考)
+     │                                                        └ EdgeTTS
+     ├ MCP 设备控制：查状态/调音量/切屏/看护开关/<b>暂停聊天</b>
+     ├ dl_face 表情+字幕（多屏驱动+热插拔自愈）
+     └ PC 关机/断网 → 看门狗 8 秒自动降级本地全栈 → 恢复自动升回</pre>
+
+<h2>一 · 六个里程碑</h2>
+<div class="scroll"><table>
+  <tr><th>#</th><th>里程碑</th><th>要点</th></tr>
+  <tr><td>M1</td><td>硬件与能力核查 <span class="c c-v">已核实</span></td><td>RDK 14页+DL7400 21页图纸读完。新结论：<strong>载板无音频codec/无SD</strong>；DL7400 每口 DP+HDMI combo、纯输出</td></tr>
+  <tr><td>M2</td><td>xiaozhi 分析 <span class="c c-v">已核实</span></td><td>ESP32 强在<strong>瘦客户端+云大脑+MCP+生态</strong>，与算力无关；SL1680 走"胖客户端"（断网也能扛）</td></tr>
+  <tr><td>M3</td><td>Phase 0 服务端 <span class="c c-m">实测</span></td><td>Docker+SenseVoice+LM Studio 闭环三连测过；挖出假35B、双system 两大雷</td></tr>
+  <tr class="hi"><td>M4</td><td>模型换正 <span class="c c-m">实测</span></td><td>官方 qwen3-30b-a3b-2507：无思考、89.7 tok/s、<strong>首帧 11~21s → 1.25~1.43s</strong></td></tr>
+  <tr class="hi"><td>M5</td><td>Phase 1-3 板端 <span class="c c-m">实测</span></td><td>astra_xiaozhi(~700行自包含C)；<strong>MCP 5工具全过</strong>(真实CPU 66°C/真切屏)；<strong>全双工活了</strong>(助手跟房间视频声聊天+识别粤语)；视觉唤醒"欢迎光临呀"；双模双向实弹通过</td></tr>
+  <tr><td>M6</td><td>四问排障 <span class="c c-m">实测</span></td><td>屏(软件已修+物理层定位)/字幕(状态词bug)/自启(差Docker一个勾)/语音停止(pause_chat)</td></tr>
+</table></div>
+
+<h2>二 · 组件版本与状态</h2>
+<div class="scroll"><table>
+  <tr><th>组件</th><th>版本</th><th>位置</th><th>状态</th></tr>
+  <tr><td>astra_xiaozhi</td><td><strong>v1.0</strong>（协议+MCP+唤醒+暂停+重试）</td><td>板 /usr/bin + astra-xiaozhi/</td><td class="yes">服务运行中</td></tr>
+  <tr><td>dl_face</td><td><strong>v2.0</strong>（多屏+热插拔+paused/offline态）</td><td>板 /usr/bin + meta-dlsdk</td><td class="yes">4K@60 单屏（等第二块线）</td></tr>
+  <tr><td>astra_mode</td><td><strong>v1.0</strong>（curl 探测 8s）</td><td>板 /usr/bin</td><td class="yes">enabled</td></tr>
+  <tr><td>vision_wake</td><td><strong>v1.1</strong>（双目标）</td><td>板 /usr/bin</td><td class="yes">enabled</td></tr>
+  <tr><td>xiaozhi-server</td><td>0.9.5 + config <strong>v1.0</strong></td><td>PC Docker</td><td class="yes">restart=unless-stopped</td></tr>
+  <tr><td>LLM</td><td>qwen/qwen3-30b-a3b-2507 Q4</td><td>LM Studio（自启+JIT）</td><td class="yes">8K ctx 满GPU</td></tr>
+  <tr><td>astra_voice 本地兜底</td><td>不变</td><td>板 /usr/bin</td><td class="yes">enabled（看门狗调度）</td></tr>
+</table></div>
+<p><strong>速查</strong>：改服务端配置 <code>xiaozhi-server/data/.config.yaml</code> → <code>docker restart xiaozhi-esp32-server</code>｜重编板端 <code>wsl -d Ubuntu-22.04 bash build-wsl.sh</code>｜看日志 <code>journalctl -u astra-xiaozhi -f</code></p>
+
+<h2>三 · 实测数据汇总 <span class="c c-m">实测</span></h2>
+<div class="scroll"><table>
+  <tr><th>指标</th><th>数值</th></tr>
+  <tr class="hi"><td>语音首帧延迟（云端模式）</td><td><strong>1.25~1.43s</strong>（思考模型时代 11~21s）</td></tr>
+  <tr><td>30B 生成速度</td><td>89.7 tok/s（21.1GB 显存满 GPU）</td></tr>
+  <tr><td>MCP 工具调用</td><td>5 工具注册、4/4 场景 LLM 选择零失误</td></tr>
+  <tr><td>双模切换</td><td>探测 8s 周期，断→本地/恢复→云端均 ≤16s</td></tr>
+  <tr><td>双屏</td><td>DL7400 枚举 1 台（Redmi 4K@60 已亮）；第二台物理层缺席</td></tr>
+  <tr><td>板端二进制</td><td>astra_xiaozhi 77KB，零新增运行时依赖</td></tr>
+</table></div>
+
+<h2>四 · 今日坑清单（16 连，复用价值最高）<span class="c c-m">实测</span></h2>
+<ol>
+  <li><strong>假 35B</strong>：<code>@q8_0</code> 实为 Qwen3-4B NSFW 微调+不匹配 mmproj（必崩）；<code>@q3_k_m</code> 才是真 35B-A3B。model_name 必须带量化后缀</li>
+  <li><strong>服务端 0.9.5 双 system bug</strong>：增强提示词拆两条 system → LM Studio 严格模板 400（"第一轮必成之后必挂"）。修：<code>prompt_template</code> 指向<strong>不存在的文件</strong>（空串会回落默认）</li>
+  <li>lms load 必限 <code>--context-length</code>；<code>--gpu max</code> 对超显存文件必 OOM</li>
+  <li><strong>Sec-WebSocket-Key 解码必须恰 16 字节</strong>，否则 400</li>
+  <li><strong>下行采样率跟服务端 hello 走</strong>（本次 16000，别硬编码 24k）</li>
+  <li>板子 SFTP 子系统坏 → PC 起 http.server 板上 wget 拉是最稳部署</li>
+  <li>busybox 四连：无 timeout、head -c 不支持、nc 无 -w、<strong>wget -T 管不住 connect 挂起</strong>（探活必须 curl -m）</li>
+  <li><strong>glibc signal() 默认 SA_RESTART</strong>：信号处理必须 sigaction；EINTR 分支查退出标志，否则 SIGTERM 拖 90s 还把对端服务搞成 failed</li>
+  <li>SSH 单行 <code>$(pgrep -f xxx)</code> 匹配到外层 shell → 用 <code>systemctl show -p MainPID</code></li>
+  <li><strong>MCP 时序竞态</strong>：tools/list 应答之后再提问，否则 LLM 无工具可用会瞎编</li>
+  <li>工具输出<strong>单位写死</strong>（"446/3959MB"会被复述成"446GB"）</li>
+  <li>工具名只用 [a-zA-Z0-9_]（服务端 sanitize 换点号）</li>
+  <li><strong>dl_face 全词比对状态</strong>（listening/thinking/speaking/paused），缩写不认——字幕不显示的真因</li>
+  <li>dl_face 交叉编译：gst 头在 gst-plugins-base 自己的 image/；传递依赖用 <code>-Wl,--allow-shlib-undefined</code></li>
+  <li>Git Bash 改写 /tmp 参数、拆坏 wsl 传参 → 一律 PowerShell + 脚本文件</li>
+  <li><strong>环境音误触发</strong>：房间有视频声助手会连续对话（还接了粤语）——KWS/门限是产品化必做</li>
+</ol>
+
+<h2>五 · 遗留与下一步</h2>
+<div class="note warn">
+<p><strong>需要人工的两件小事</strong> 🔴</p>
+<p>① <strong>第二块屏</strong>：查线/显示器输入源/换口——插好后热插拔自动点亮；② <strong>Docker Desktop</strong> 勾选 "Start when you sign in"（断电自愈最后一块）。</p>
+</div>
+<ul>
+  <li><strong>KWS 唤醒词/能量门限</strong>（治环境音误触发，产品化第一优先）</li>
+  <li><strong>AEC 回声消除</strong>（上 AEC 才能"插话打断"）</li>
+  <li>服务端 close_connection_no_voice_time 调大（减少空闲重连）</li>
+  <li>对话脸迁原生 HDMI 满帧／云侧 MCP（Home Assistant 等）</li>
+</ul>
+
+<h2>版本历史</h2>
+<div class="scroll"><table>
+  <tr><th>版本</th><th>日期</th><th>内容</th></tr>
+  <tr><td><strong>v1.0</strong></td><td>2026-07-19</td><td>首版：Phase 0-3 全部完成——服务端+官方30B、板端客户端、MCP 设备控制(5工具)、全双工语音、视觉唤醒、双模切换、双屏/字幕/自启/暂停四问排障</td></tr>
+</table></div>
+
+<div class="foot">所有"实测"数据均为 2026-07-19 当日真机验证 · 配套：《SL1680硬件与能力核查报告》《系统现状与操作手册》 · 完整坑背景见记忆库</div>
+</div>

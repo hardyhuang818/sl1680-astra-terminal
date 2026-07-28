@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 + LAMTL + TM10.5-TD7800 硬件接线总表</title>
+<style>
+  :root { --c1:#14407a; --c2:#1e5fa8; --bg:#f5f7fa; --card:#fff; --ink:#22303e; --line:#d8e1ea; --warn:#b4540a; --ok:#0f7b3f; --use:#e8f1fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
+  .wrap { max-width:1120px; margin:0 auto; padding:28px 20px 80px; }
+  header { background:linear-gradient(120deg,var(--c1),var(--c2)); color:#fff; border-radius:14px; padding:24px 30px; margin-bottom:24px; }
+  header h1 { margin:0 0 6px; font-size:24px; }
+  header .sub { opacity:.92; font-size:14px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); padding:3px 12px; border-radius:20px; font-size:13px; margin:10px 8px 0 0; }
+  h2 { color:var(--c1); border-left:5px solid var(--c2); padding-left:12px; margin:34px 0 12px; font-size:19px; }
+  h3 { color:#173f6b; margin:20px 0 8px; font-size:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:12px 0; overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13.5px; background:#fff; }
+  th { background:#e8eef6; color:#14407a; text-align:left; padding:7px 10px; border:1px solid var(--line); white-space:nowrap; }
+  td { padding:6px 10px; border:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td { background:#fafbfd; }
+  td.used { background:var(--use) !important; font-weight:600; }
+  code, pre { font-family:Consolas,"Courier New",monospace; }
+  code { background:#eef2f7; border:1px solid #dde5ee; border-radius:4px; padding:1px 6px; font-size:12.5px; }
+  pre { background:#0f1c2c; color:#d5e5f5; border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:12.5px; line-height:1.5; }
+  pre.overview { background:#ffffff; color:#14283c; border:2px solid var(--c2); font-size:15px; font-weight:600; line-height:1.75; letter-spacing:.2px; }
+  .callout { border-left:4px solid var(--warn); background:#fff7ef; padding:10px 16px; border-radius:0 10px 10px 0; margin:12px 0; font-size:14px; }
+  .callout.green { border-color:var(--ok); background:#effaf3; }
+  .warn { color:var(--warn); font-weight:700; }
+  footer { margin-top:36px; font-size:12.5px; color:#5f7186; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>SL1680 + LAMTL(MIPI→LVDS) + TM10.5-TD7800 硬件接线总表</h1>
+  <div class="sub">跳线对照基准 · 按本表接线已实测点亮（显示 + 触摸）· 2026-07-28</div>
+  <div>
+    <span class="badge">A段 DSI 4-lane</span>
+    <span class="badge">B段 LVDS 单链×5对</span>
+    <span class="badge">C段 触摸 I2C+INT</span>
+    <span class="badge">D段 SPI 调试</span>
+    <span class="badge">外供 12V / 3.3V / 1.8V</span>
+  </div>
+</header>
+
+<h2>0. 连接总览</h2>
+<div class="card"><pre class="overview"><code>                        ┌──────────────────────────────┐
+  SL1680 dolphin RDK    │  LAMTL 转接板 (TC358775)      │        TM10.5-TD7800 面板
+┌─────────────────┐     │  J1: 30P FPC  DSI 输入        │      ┌──────────────────────┐
+│ J208: 22P FPC   │─A──▶│  J2: 6P      背光通路(未用)   │─B──▶ │ U4: 40+2P LVDS+触摸  │
+│   (MIPI-DSI)    │     │  J3: 2×15P   LVDS 输出        │      │ U5: 40+2P 电源/SPI/复位│
+│ J32: 40P 排针   │──┬──┘  J4: 3P      VCC_LVDS跳线(未用)│      │ U3: 10+2P 背光 LED    │
+└─────────────────┘  │                                        └──────────────────────┘
+                     ├─C─▶ 触摸 I2C+INT（U4.34/35/36/38）
+                     └─D─▶ SPI 调试（U5.1/2/3/4）
+  外部电源: 12V(背光直供U3) · 3.3V(面板VDD/RESX/TP_RST) · 1.8V(LAMTL) —— 全部与板共地</code></pre>
+<p>U4/U5 经 <b>FPC-DIP 转接小板</b>引出后杜邦跳接（实测可跑；产品化建议 B 段换双绞线）。</p></div>
+
+<h2>1. A 段：SL1680 J208 → LAMTL J1（MIPI-DSI）</h2>
+<div class="card">
+<h3>J208（22P 0.5mm FPC）</h3>
+<table>
+<tr><th>脚</th><th>信号</th><th>去向</th></tr>
+<tr><td class="used">1</td><td class="used">PWR_3V3_CTL（受控 3.3V 电源轨）</td><td class="used">→ J1.6/7</td></tr>
+<tr><td>2 / 3</td><td>TW0_SDA / TW0_SCL（i2c-0）</td><td>本工程未用（触摸走 J32.3/5）</td></tr>
+<tr><td>4,7,10,13,16,19,22</td><td>GND</td><td>共地</td></tr>
+<tr><td>5</td><td>GPIO_DSI（扩展器 GPIO0_7）</td><td>未用</td></tr>
+<tr><td class="used">6</td><td class="used">PWR_ON_DSI（扩展器 GPIO0_1，显示使能）</td><td class="used">→ J1.13</td></tr>
+<tr><td class="used">8 / 9</td><td class="used">TD3p / TD3n</td><td class="used">→ J1.17 / J1.16</td></tr>
+<tr><td class="used">11 / 12</td><td class="used">TD2p / TD2n</td><td class="used">→ J1.20 / J1.19</td></tr>
+<tr><td class="used">14 / 15</td><td class="used">TCKp / TCKn（DSI 时钟）</td><td class="used">→ J1.23 / J1.22</td></tr>
+<tr><td class="used">17 / 18</td><td class="used">TD1p / TD1n</td><td class="used">→ J1.26 / J1.25</td></tr>
+<tr><td class="used">20 / 21</td><td class="used">TD0p / TD0n</td><td class="used">→ J1.29 / J1.28</td></tr>
+</table>
+<h3>LAMTL J1（30P 0.5mm FPC）</h3>
+<table>
+<tr><th>脚</th><th>信号</th><th>实际接法</th></tr>
+<tr><td>1–3</td><td>VCC12V_LCM</td><td>未用（背光不走 LAMTL）</td></tr>
+<tr><td>4–5</td><td>VCC5V_LCM</td><td>未用</td></tr>
+<tr><td class="used">6–7</td><td class="used">VCC3V3_LCM</td><td class="used">← J208.1</td></tr>
+<tr><td class="used">8</td><td class="used">VCC1V8_LCM</td><td class="used">← 外部 1.8V ⚠️</td></tr>
+<tr><td>9 / 10</td><td>I2C_SDA/SCL_LCM（1.8V 域）</td><td><b>不接</b>——桥片配置经 DSI 下发</td></tr>
+<tr><td>11 / 12</td><td>LCM_BL_ADJ / LCM_BL_EN</td><td>未用</td></tr>
+<tr><td class="used">13</td><td class="used">LCM_PWR_EN</td><td class="used">← J208.6。<span class="warn">1.8V 电平域</span></td></tr>
+<tr><td class="used">14</td><td class="used">LCM_RST</td><td class="used"><span class="warn">← 1.8V 拉高。禁 3.3V（ESD 倒灌实测抬轨到 2.38V）</span></td></tr>
+<tr><td>15,18,21,24,27,30</td><td>GND</td><td>共地</td></tr>
+<tr><td class="used">16 / 17</td><td class="used">MIPI D3N / D3P</td><td class="used">← J208.9 / 8</td></tr>
+<tr><td class="used">19 / 20</td><td class="used">D2N / D2P</td><td class="used">← J208.12 / 11</td></tr>
+<tr><td class="used">22 / 23</td><td class="used">CLKN / CLKP</td><td class="used">← J208.15 / 14</td></tr>
+<tr><td class="used">25 / 26</td><td class="used">D1N / D1P</td><td class="used">← J208.18 / 17</td></tr>
+<tr><td class="used">28 / 29</td><td class="used">D0N / D0P</td><td class="used">← J208.21 / 20</td></tr>
+</table>
+<div class="callout green">记法：J208 差分对从高脚号到低脚号依次 D0、D1、CLK、D2、D3；J1 反向排列，p↔P、n↔N 直连不交叉。</div>
+</div>
+
+<h2>2. B 段：LAMTL J3 → 面板 U4（LVDS 单链）</h2>
+<div class="card">
+<h3>LAMTL J3（PH2.0 2×15 排针）</h3>
+<table>
+<tr><th>脚</th><th>信号（丝印）</th><th>实际接法</th></tr>
+<tr><td>1–3</td><td>VCC_LVDS（J4 跳线选 3.3/5V）</td><td><b>未用</b>（U4 无电源脚，面板电从 U5 进；J4 跳线因此无关）</td></tr>
+<tr><td>4–6, 13–14, 25–26</td><td>GND</td><td>共地（每对差分至少伴一根）</td></tr>
+<tr><td class="used">7 / 8</td><td class="used">OD0N / OD0P（A0−/A0+）</td><td class="used">→ U4.18 / 19</td></tr>
+<tr><td class="used">9 / 10</td><td class="used">OD1N / OD1P</td><td class="used">→ U4.21 / 22</td></tr>
+<tr><td class="used">11 / 12</td><td class="used">OD2N / OD2P</td><td class="used">→ U4.24 / 25</td></tr>
+<tr><td class="used">15 / 16</td><td class="used">ODCKN / ODCKP（时钟对）</td><td class="used">→ U4.27 / 28</td></tr>
+<tr><td class="used">17 / 18</td><td class="used">OD3N / OD3P</td><td class="used">→ U4.30 / 31</td></tr>
+<tr><td>19–24, 27–30</td><td>ED0~ED3 / EDCK（第二链 B 组）</td><td><b>全不接</b>（单链只用第一链=OD 组）</td></tr>
+</table>
+<h3>面板 U4（FH75-40S-0.5SH，40+2P）</h3>
+<table>
+<tr><th>脚</th><th>信号</th><th>实际接法</th></tr>
+<tr><td>1,4,7,10,13,16,17,20,23,26,29,32,33,37,41,42</td><td>GND</td><td>共地</td></tr>
+<tr><td>2/3, 5/6, 8/9, 11/12, 14/15</td><td>LVD0B~3B / LVDCLKB（B 口）</td><td><b>全不接</b>（面板即单口设计）</td></tr>
+<tr><td class="used">18 / 19</td><td class="used">LVD0A− / +</td><td class="used">← J3.7 / 8</td></tr>
+<tr><td class="used">21 / 22</td><td class="used">LVD1A− / +</td><td class="used">← J3.9 / 10</td></tr>
+<tr><td class="used">24 / 25</td><td class="used">LVD2A− / +</td><td class="used">← J3.11 / 12</td></tr>
+<tr><td class="used">27 / 28</td><td class="used">LVDCLKA− / +</td><td class="used">← J3.15 / 16</td></tr>
+<tr><td class="used">30 / 31</td><td class="used">LVD3A− / +</td><td class="used">← J3.17 / 18</td></tr>
+<tr><td class="used">34</td><td class="used">/INT TP（触摸中断）</td><td class="used">→ J32.12</td></tr>
+<tr><td class="used">35</td><td class="used">/RST TP（触摸复位）</td><td class="used"><span class="warn">→ 3.3V 拉高（TDDI，不给 SoC 控）</span></td></tr>
+<tr><td class="used">36</td><td class="used">TP_SCL</td><td class="used">→ J32.5</td></tr>
+<tr><td class="used">38</td><td class="used">TP_SDA</td><td class="used">→ J32.3</td></tr>
+<tr><td>39</td><td>NC</td><td>空</td></tr>
+<tr><td>40</td><td>FSEL（INTL：L=1帧/H=2帧极性翻转）</td><td>悬空（默认，未见异常）</td></tr>
+</table>
+</div>
+
+<h2>3. C/D 段与面板电源：U5 / U3 / J32</h2>
+<div class="card">
+<h3>面板 U5（FH75-40S-0.5SH：电源 / SPI / 总复位）</h3>
+<table>
+<tr><th>脚</th><th>信号</th><th>实际接法</th></tr>
+<tr><td class="used">1</td><td class="used">SCK（显示 SPI 时钟）</td><td class="used">← J32.23（SPI2_CLK）</td></tr>
+<tr><td class="used">2</td><td class="used">SDA（MOSI）</td><td class="used">← J32.19（SPI2_SDO）</td></tr>
+<tr><td class="used">3</td><td class="used">SDO（MISO）</td><td class="used">→ J32.21（SPI2_SDI）</td></tr>
+<tr><td class="used">4</td><td class="used">SS（片选）</td><td class="used">← J32.24（SPI2_SS0n）</td></tr>
+<tr><td>7 / 8</td><td>ATREN / ERR（FAIL_DET 输出）</td><td>未接（ERR 可留作 LVDS 故障观测点）</td></tr>
+<tr><td class="used">9</td><td class="used">RST TFT（RESX，<b>整颗 TD7800 总复位</b>）</td><td class="used"><span class="warn">→ 3.3V 拉高。头号坑：悬空=触摸+显示+SPI 全哑</span></td></tr>
+<tr><td>10–13</td><td>GSPD / GSPU / MUTE / HVR</td><td>未接</td></tr>
+<tr><td class="used">15–18</td><td class="used">VCC_1~4（面板逻辑电）</td><td class="used">← 外部 3.3V</td></tr>
+<tr><td>20–23, 25</td><td>GND_1~5</td><td>共地</td></tr>
+<tr><td>24</td><td>NTC</td><td>未接</td></tr>
+<tr><td>27 / 28</td><td>A_1 / A_2（背光阳极）</td><td>背光外供正极（与 U3 同网络）</td></tr>
+<tr><td>30–32</td><td>C1 / C2 / C3（背光阴极）</td><td>背光外供负极</td></tr>
+</table>
+<p style="font-size:12.5px;color:#5f7186;">U5 个别脚号如需精确核对，以 TM10.5 面板原理图截图为准。</p>
+<h3>面板 U3（FH52-10S-0.5SH：背光 LED 口）</h3>
+<table>
+<tr><th>脚</th><th>信号</th><th>说明</th></tr>
+<tr><td class="used">1–3</td><td class="used">A1/A2/A3（LED 阳极，并联）</td><td class="used">背光正极——本项目背光由外部电源<b>直供</b>（未走 LAMTL J2）</td></tr>
+<tr><td>5 / 6</td><td>NTC+ / NTC−(GND)</td><td>热敏，未用</td></tr>
+<tr><td class="used">8–10</td><td class="used">C1/C2/C3（LED 阴极三通道）</td><td class="used">背光负极。⚠️ 建议恒流驱动，直压注意限流</td></tr>
+<tr><td>4, 7</td><td>NC</td><td>空</td></tr>
+<tr><td>11/12</td><td>GND（壳）</td><td>共地</td></tr>
+</table>
+<h3>SL1680 J32 排针占用总表（40P；⚠️ 非树莓派脚位约定）</h3>
+<table>
+<tr><th>脚</th><th>信号</th><th>当前占用</th></tr>
+<tr><td>1</td><td>3.3V</td><td>（曾接板载麦 VDD，已停用）可作 TP_RST / RESX 拉高源</td></tr>
+<tr><td>2</td><td>5V</td><td>HT517 功放 Vin（语音链路）</td></tr>
+<tr><td class="used">3</td><td class="used">TW0_SDA</td><td class="used">触摸 SDA（← U4.38）</td></tr>
+<tr><td>4</td><td>5V</td><td>空闲</td></tr>
+<tr><td class="used">5</td><td class="used">TW0_SCL</td><td class="used">触摸 SCL（← U4.36）</td></tr>
+<tr><td>6</td><td>GND</td><td>功放 GND</td></tr>
+<tr><td>7</td><td>PWM[1]</td><td>空闲（背光 PWM 备用）</td></tr>
+<tr><td>8 / 10</td><td>UART0 Tx/Rx</td><td>调试串口</td></tr>
+<tr><td class="used">9</td><td class="used">GND</td><td class="used">触摸 GND</td></tr>
+<tr><td>11 / 13 / 15</td><td>I2S2 BCLK/LRCK/DI</td><td>（曾接板载麦，已停用）</td></tr>
+<tr><td class="used">12</td><td class="used">GPIO10（SoC porta 线 10）</td><td class="used">触摸 INT（← U4.34）</td></tr>
+<tr><td>14,20,25,30,34,39</td><td>GND</td><td>共地可用</td></tr>
+<tr><td>16 / 18</td><td>ADCI[0]/PWM[2]、ADCI[1]/GPIO2</td><td>空闲</td></tr>
+<tr><td>17</td><td>3.3V</td><td>空闲（第二路 3.3V 取电点）</td></tr>
+<tr><td class="used">19</td><td class="used">SPI2_SDO</td><td class="used">面板 SPI MOSI（→ U5.2）</td></tr>
+<tr><td class="used">21</td><td class="used">SPI2_SDI</td><td class="used">面板 SPI MISO（← U5.3）</td></tr>
+<tr><td>22</td><td>GPIO37</td><td>空闲</td></tr>
+<tr><td class="used">23</td><td class="used">SPI2_CLK</td><td class="used">面板 SPI SCK（→ U5.1）</td></tr>
+<tr><td class="used">24</td><td class="used">SPI2_SS0n</td><td class="used">面板 SPI CS（→ U5.4）</td></tr>
+<tr><td>26 / 36</td><td>SPI2_SS1n / SS3n</td><td>空闲</td></tr>
+<tr><td>27–29</td><td>PDM</td><td>空闲</td></tr>
+<tr><td>31 / 32 / 33</td><td>GPIO39 / GPIO38 / GPIO36</td><td>空闲</td></tr>
+<tr><td>35</td><td>I2S1_LRCK</td><td>功放 DI1（LRC）</td></tr>
+<tr><td>38</td><td>I2S1_BCLK</td><td>功放 DI0（BCLK）</td></tr>
+<tr><td>40</td><td>I2S1_DO</td><td>功放 DI2（DIN）</td></tr>
+</table>
+</div>
+
+<h2>4. 电源汇总（全部共地）</h2>
+<div class="card">
+<table>
+<tr><th>电源</th><th>来源</th><th>去向</th><th>备注</th></tr>
+<tr><td>12V</td><td>外部电源</td><td>背光 LED（U3/U5 的 A/C 网络）</td><td>建议恒流；直供实测可用</td></tr>
+<tr><td>3.3V</td><td>外部电源</td><td>U5.15–18 VCC、<b>U5.9 RESX 拉高</b>、U4.35 TP_RST 拉高</td><td>面板逻辑电不从 U4/J3 走</td></tr>
+<tr><td>1.8V</td><td>外部电源</td><td>LAMTL J1.8</td><td>TC358775 LVDS PHY/VDDIO 域</td></tr>
+<tr><td>1.8V 电平</td><td>同上</td><td>J1.13 PWR_EN、J1.14 RST 高电平</td><td class="warn">3.3V 会经 ESD 倒灌抬轨（实测 2.38V）</td></tr>
+<tr><td>3.3V（板出）</td><td>J208.1 PWR_3V3_CTL</td><td>LAMTL J1.6/7</td><td>随显示电源时序通断</td></tr>
+<tr><td>使能（板出）</td><td>J208.6 PWR_ON_DSI</td><td>LAMTL J1.13</td><td>开机自动拉高</td></tr>
+<tr><td>共地</td><td>所有外部电源负极 + 板 GND + 面板 GND</td><td>—</td><td>任意两地 ≈0Ω</td></tr>
+</table>
+</div>
+
+<h2>5. 接线警示（按踩坑代价排序）</h2>
+<div class="card">
+<ol>
+<li><span class="warn">U5.9 RESX 必须拉高 3.3V</span>——悬空 = 整颗 TD7800 复位，触摸/显示/SPI 三链路同时全哑（本工程最大的坑）</li>
+<li><span class="warn">LAMTL 的 RST/PWR_EN 用 1.8V 电平</span>——3.3V 经 RESX 的 ESD 二极管倒灌，把 1.8V 轨抬到 2.38V，LVDS PHY 超标</li>
+<li><b>TDDI 复位不可交给 SoC</b>——U4.35 与 U5.9 都硬件拉高；软件触摸节点故意无 reset-gpio</li>
+<li><b>LVDS 单链走 OD 组（第一链）</b>，ED 组与面板 B 口全不接；P/N 绝不可对调</li>
+<li>FPC 排线注意同面/异面触点方向，压接前认 pin1</li>
+<li>差分对建议双绞、≤30cm、每对伴地（杜邦散线实测能跑但属边缘状态）</li>
+<li>J4 跳线（VCC_LVDS）本方案未使用——面板电不从 J3 取</li>
+</ol>
+</div>
+
+<footer>SL1680 项目 · 硬件接线总表 v1.0 · 2026-07-28 · 实测依据：TM10.5 点亮工程（六层根因复盘见《TM10.5_TD7800屏点亮_总结》）· 蓝底行 = 实际占用的脚位</footer>
+</div>
+</body>
+</html>
