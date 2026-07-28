@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 故障排查实录 · 2026-07-28</title>
+<style>
+  :root { --c1:#7a2e2e; --c2:#a34242; --bg:#faf7f6; --card:#fff; --ink:#2f2626; --line:#e8dcda;
+          --warn:#b4540a; --ok:#0f7b3f; --star:#c2410c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); line-height:1.65; }
+  .wrap { max-width:1080px; margin:0 auto; padding:28px 20px 80px; }
+  header { background:linear-gradient(120deg,var(--c1),var(--c2)); color:#fff; border-radius:14px; padding:26px 30px; margin-bottom:24px; }
+  header h1 { margin:0 0 8px; font-size:25px; }
+  header .sub { opacity:.93; font-size:14.5px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); padding:3px 12px; border-radius:20px; font-size:13px; margin:10px 8px 0 0; }
+  h2 { color:var(--c1); border-left:5px solid var(--c2); padding-left:12px; margin:34px 0 12px; font-size:19px; }
+  h3 { color:#5d2626; margin:20px 0 8px; font-size:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:12px 0; overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13.5px; background:#fff; }
+  th { background:#f4e9e7; color:#6b2a2a; text-align:left; padding:7px 10px; border:1px solid var(--line); }
+  td { padding:6px 10px; border:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td { background:#fdfbfa; }
+  code, pre { font-family:Consolas,"Courier New",monospace; }
+  code { background:#f4eeed; border:1px solid #e9dedc; border-radius:4px; padding:1px 6px; font-size:12.5px; }
+  pre { background:#241a1a; color:#f0e2df; border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:12.8px; line-height:1.55; }
+  pre code { background:none; border:none; color:inherit; padding:0; }
+  .callout { border-left:4px solid var(--warn); background:#fff7ef; padding:10px 16px; border-radius:0 10px 10px 0; margin:12px 0; font-size:14px; }
+  .callout.star { border-left-width:6px; border-color:var(--star); background:#fff3ec; }
+  .callout.green { border-color:var(--ok); background:#effaf3; }
+  .warn { color:var(--warn); font-weight:700; }
+  .star { color:var(--star); font-weight:700; }
+  footer { margin-top:36px; font-size:12.5px; color:#8a6f6c; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>SL1680 故障排查实录 · 2026-07-28</h1>
+  <div class="sub">一天之内定位并修复 <b>9 个真 bug</b>，全部有实测证据、已回灌仓库（v2.8，tag 已推 GitHub）</div>
+  <div>
+    <span class="badge">现象 → 排查 → 真根因 → 修复 → 教训</span>
+    <span class="badge">4 个"系统说谎"型 bug</span>
+    <span class="badge">最难的一个绕了 6 轮</span>
+  </div>
+</header>
+
+<h2>速查表</h2>
+<div class="card">
+<table>
+<tr><th>#</th><th>现象</th><th>真根因</th><th>一句话修法</th></tr>
+<tr><td>1</td><td>Astra 完全听不见</td><td>C920 USB 音频端点 EPROTO(-71)，软件复位救不回</td><td><b>物理拔插</b> USB</td></tr>
+<tr><td>2</td><td>语音识别准确率骤降</td><td>采到的音频<b>削顶</b>（增益 +38dB，峰值打满 32767）</td><td>麦增益降到 +29dB</td></tr>
+<tr><td>3</td><td>"打开摄像头"不响应</td><td>ASR 丢字成"开摄像头"，规则表无此说法</td><td>补同义词 + 裸动词</td></tr>
+<tr><td>4</td><td>调音量无效却回"已调到最大"</td><td><b>中文数字</b>"百分之百"没解析 → 落云端 → <b>云端假装执行</b></td><td>加中文数字解析</td></tr>
+<tr><td>5</td><td>音量总是自动变小</td><td>服务 ExecStartPre 每次启动强制设 30%</td><td>默认值改 90%</td></tr>
+<tr><td>6</td><td>新 4K 屏不亮</td><td>首选模式 4K@<b>160Hz</b> + SDK EDID 缓存</td><td>重启 dl-face 重新枚举</td></tr>
+<tr><td>7</td><td>天气查不到（第一层）</td><td><b>DNS 被路由 Fake-IP 劫持</b>（198.18.0.0/15 不可路由）</td><td>固定公共 DNS</td></tr>
+<tr><td>8</td><td>天气仍查不到（真根因）</td><td><b>astra_voice.c 内置规则截胡</b>，astra_llm.py 根本没被调用</td><td>删除过时兜底规则</td></tr>
+<tr><td>9</td><td>天气答"我市"含糊</td><td>搜索查询<b>没带城市</b></td><td>城市定位 + Open-Meteo</td></tr>
+</table>
+</div>
+
+<h2>1 · 麦克风完全失聪</h2>
+<div class="card">
+<p><b>现象</b>：语音助手不响应，systemd 每 3 秒重拉，每次白烧 12.5 秒加载模型。</p>
+<p><b>排查</b>：<code>arecord</code> 直接录音也失败 → 不是应用问题。dmesg 实锤：</p>
+<pre><code>usb 1-1.4: 3:1: usb_set_interface failed (-71)   ← 从开机 53 秒起反复出现
+usb 1-1.4: can't set config #1, error -71        ← 最终整个设备配置失败</code></pre>
+<p><code>-71</code> = EPROTO，USB 协议级错误。视频接口还活着，只有音频接口死了。</p>
+<p><b>尝试过且无效</b>：<code>unbind/bind</code>、<code>authorized</code> 强制重配置、端口级断电。</p>
+<div class="callout"><b>教训</b>：USB EPROTO 级故障，kernel 的所有软复位手段都无效——判据是 dmesg 里的 <code>-71</code>，见到就直接拔插。另：C920 的音频是<b>等时端点</b>，总线紧张时最先饿死（它从开机 53 秒就在报错，unbind 只是把它推下悬崖）。</div>
+</div>
+
+<h2>2 · 语音识别准确率骤降</h2>
+<div class="card">
+<p><b>排查</b>：分析板上存档的语音段 <code>/home/voice/segs/*.wav</code>：</p>
+<pre><code>seg_004.wav  RMS=16932  peak=32767  削顶 2717 个采样点  ★
+seg_005.wav  RMS=14390  peak=32767  削顶 2115 个采样点  ★
+seg_006.wav  RMS=15546  peak=32767  削顶 3048 个采样点  ★</code></pre>
+<p><b>根因</b>：麦克风增益 48/60 = <b>+38dB</b>，近距离说话打爆 16bit 满量程。削顶波形破坏高频信息，对声学模型是毁灭性的——典型表现就是<b>吞字</b>（"打开"→"开"）。</p>
+<div class="callout green"><b>教训</b>：ASR 变差先看<b>波形</b>，不要先怀疑模型。存档语音段（<code>--save-dir</code>）这个设计救了命，值得一直开着。</div>
+</div>
+
+<h2>4 · 音量指令无效但回复"已调到最大" ⭐</h2>
+<div class="card">
+<p><b>排查</b>：读 <code>try_volume()</code> 代码：</p>
+<pre><code>m = re.search(r"(\d+)", text)     # ← 只认阿拉伯数字</code></pre>
+<p>ASR 输出的是「音量调到<b>百分之百</b>」——<b>全是汉字，没有一个阿拉伯数字</b>。匹配失败 → 返回 None → 静默落到云端 LLM → <b>LLM 张口就来"已经调到最大了"，什么都没做</b>。</p>
+<p><b>修复后实测</b>：</p>
+<pre><code>[你 ] 音量调到百分之百。
+[机器] 好的，音量调到100%。      ← 真执行了</code></pre>
+<div class="callout star"><b>教训（最阴险的一类）</b>：本地规则没命中时<b>静默回落云端</b>，而云端 LLM 会<b>一本正经地假装执行</b>。系统日志一切正常，用户却发现没生效。这和"echo 已装其实没装""脚本无条件 exit 0"是同一种病：<b>报告与事实不符</b>。</div>
+</div>
+
+<h2>6 · 新换的 4K 屏不亮</h2>
+<div class="card">
+<p><b>排查</b>：<code>dl_edid</code> 读 EDID（DLSDK 单进程独占，须先停 dl-face）：</p>
+<pre><code>显示器名: Mi Monitor
+首选模式: 3840x2160 @160Hz     ← 教科书级复现我们记录过的陷阱
+支持模式: 26 个（含 @60Hz）</code></pre>
+<p>但 dl_face 日志显示它<b>正确钳到了 60Hz</b>。真正的问题是：</p>
+<pre><code>[dl_face] 热插拔回调注册: 失败 (status=2, handle=NULL)</code></pre>
+<p><b>根因</b>：DLSDK 三缺陷之一——<b>热插拔回调恒失败 + EDID/显示器列表全是缓存</b>。dl_face 枚举一次就再没更新，换屏它根本不知道。</p>
+<p><b>修复</b>：重启 dl-face 重新枚举，两块屏立刻按 @60Hz 点亮（语音"重新检测屏幕"同效）。</p>
+</div>
+
+<h2>7 · 天气查不到（第一层：DNS）</h2>
+<div class="card">
+<pre><code>nslookup open.bigmodel.cn  →  198.18.26.109</code></pre>
+<p><code>198.18.0.0/15</code> 是 <b>RFC 2544 保留的基准测试网段</b>，不是真实公网 IP——这是代理软件（Surge/Clash 类）的 "Fake IP" 特征。板子 DNS 是 <code>198.18.0.2</code>（家庭路由下发），但板子不走代理，于是<b>解析到不可路由的假地址，所有云端 API 超时</b>。</p>
+<div class="callout"><b>教训</b>：板子换网络环境后<b>先 <code>nslookup</code></b>。看到 198.18.x.x 就是这个坑。这类故障症状是"超时"，极易误判成 API key 失效或服务挂了。</div>
+</div>
+
+<h2>8 · 天气仍查不到——真根因 ⭐⭐⭐</h2>
+<div class="card">
+<p>DNS 修好后，<b>手动跑脚本成功（1-2 秒返回真实天气），服务里依然回"我现在没有联网"</b>。</p>
+<h3>排查绕了六轮，因为每一层都在说谎</h3>
+<table>
+<tr><th>轮次</th><th>假设</th><th>结果</th></tr>
+<tr><td>1</td><td>网络不通</td><td>ping 正常</td></tr>
+<tr><td>2</td><td>DNS 假 IP</td><td><b>真问题，修了，但不是主因</b></td></tr>
+<tr><td>3</td><td>搜索 API 失败</td><td>我的测试<b>没带环境变量</b>——测试本身有缺陷</td></tr>
+<tr><td>4</td><td>子进程超时</td><td>猜的，实测只要 3 秒，不成立</td></tr>
+<tr><td>5</td><td><code>strings</code> 搜不到那句话</td><td><b>strings 默认只认 ASCII，中文根本搜不出来</b></td></tr>
+<tr><td>6</td><td><b>加调用日志</b></td><td><b>日志文件为空 = astra_llm.py 根本没被调用</b></td></tr>
+</table>
+<h3>破局的两个动作</h3>
+<p><b>① 给 astra_llm.py 加调用日志</b>（astra_voice 调它时写死 <code>2&gt;/dev/null</code>，把诊断信息全扔了）：</p>
+<pre><code>13:11:44  IN      --stream 今天天气怎么样？
+13:11:45  OUT-WX  广州现在雷阵雨，28度，体感34度，湿度88%……</code></pre>
+<p>日志为空就是铁证——不是调用失败，是<b>压根没调用</b>。</p>
+<p><b>② 用 <code>grep -a</code> 而不是 <code>strings</code> 搜二进制</b>：</p>
+<pre><code>$ grep -aoE "我现在没有联网[^\"]{0,30}" /usr/bin/astra_voice
+我现在没有联网，查不到实时天气，抱歉。      ← ★ 内置规则，实锤</code></pre>
+<h3>真根因</h3>
+<pre><code>// astra_voice.c 的 factual_reply()
+// 天气 —— 无数据源，诚实说不知道，绝不编
+if (strstr(heard, "天气") || strstr(heard, "气温") || ...) {
+    snprintf(out, cap, "我现在没有联网，查不到实时天气，抱歉。");
+    return 1;      // ← 直接返回，cloud_reply 永远轮不到
+}
+
+// 调用顺序
+if (factual_reply(...)) return;    // ① 天气在这里就被截了
+if (cloud_reply(...)) return;      // ② 联网能力在这里，永远执行不到</code></pre>
+<div class="callout star">
+<b>⭐ 最贵的教训</b><br><br>
+<b>这条规则写的时候是完全正确的</b>——当时确实没有天气数据源，写它就是为了防止模型编造"晴朗气温适宜"这种幻觉。<br><br>
+但<b>能力补齐之后没人回来删它</b>。于是当年的诚实变成了今天的谎言，而且遮蔽得毫无痕迹：astra_llm.py 连调用都不会被调到，日志、错误码、返回值全都正常。<br><br>
+<b>规矩</b>：实现"没有能力时的诚实兜底"时，就要同时在代码里留下"能力补齐后必须删除此处"的标记。
+</div>
+<h3>顺带发现的部署坑</h3>
+<p>板上原 <code>astra_voice</code> 是 <b>34MB 静态链接</b>老产物，recipe 现在产出 <b>67KB 动态链接</b>版——板子 rootfs 里<b>根本没有 sherpa 的 .so</b>（旧镜像早于 sherpa recipe）。处理：装到 <code>/usr/lib/sherpa</code> + <code>ld.so.conf.d</code> 注册 + service 加 <code>LD_LIBRARY_PATH</code> 三重保险。<b>新镜像自带 sherpa-onnx 包，无此问题。</b></p>
+</div>
+
+<h2>9 · 天气回答含糊 → 接入 Open-Meteo</h2>
+<div class="card">
+<p><b>根因</b>：<code>web_search(text)</code> 把用户原话直接当搜索词，"今天天气怎么样"里<b>没有城市</b>，抓回来的是随机某地新闻稿，模型只能照抄成"我市"。</p>
+<p><b>修复</b>：① 城市定位（内置 30 城，用户说了就用他说的）；② <b>换掉整条数据链路</b>：</p>
+<table>
+<tr><th></th><th>旧：搜索 + LLM 总结</th><th>新：Open-Meteo</th></tr>
+<tr><td>耗时</td><td>5-7 秒（<b>超时被判定云端失败</b>）</td><td><b>1-2 秒</b></td></tr>
+<tr><td>数据</td><td>网页新闻稿，可能几天前</td><td>官方气象，实时</td></tr>
+<tr><td>编造风险</td><td>模型从行文里抠数字</td><td><b>零</b>——结构化 JSON 套模板</td></tr>
+<tr><td>成本</td><td>搜索 ¥0.01 + LLM token</td><td><b>免费，不需要 API key</b></td></tr>
+<tr><td>能力</td><td>只能"今天怎么样"</td><td>今天/明天、体感、湿度、降雨概率、自动提醒带伞</td></tr>
+</table>
+<p><b>实测</b>：</p>
+<pre><code>今天天气怎么样 → 广州现在雷阵雨，28度，体感34度，湿度88%，今天25到30度，降雨概率100%，记得带伞。[1秒]
+深圳今天天气   → 深圳现在雷阵雨，28度，体感34度，湿度81%，今天25到30度，降雨概率86%，记得带伞。
+明天天气如何   → 广州明天雷阵雨伴冰雹，气温25到30度，降雨概率100%，记得带伞。
+北京冷不冷     → 北京现在小雨，34度，体感39度，湿度52%，今天26到35度，降雨概率41%，记得带伞。</code></pre>
+</div>
+
+<h2>贯穿全天的三条元教训</h2>
+<div class="card">
+<h3>① 系统会说谎，而且是"正常地"说谎</h3>
+<p>今天有 <b>4 个 bug</b> 属于"报告与事实不符"：云端 LLM 假装执行音量指令（#4）；<code>astra_setvol.sh</code> 无条件 <code>exit 0</code>（#5）；内置规则说"没有联网"其实网络好好的（#8）；我自己的测试没带环境变量却当成"API 失败"的证据（#8 第 3 轮）。</p>
+<p><b>这类 bug 最贵</b>，因为日志、返回码、监控全是绿的。<b>唯一的破法是拿到执行现场</b>——加调用日志、回读核对、字节级校验。</p>
+<h3>② 诊断信息不能扔</h3>
+<p><code>astra_voice</code> 调 LLM 时写死 <code>2&gt;/dev/null</code>，把 stderr 全丢了。查天气时 <code>[search] failed</code> 这种关键线索完全看不见，只能一层层手工复现，多花至少一小时。<b>已给 astra_llm.py 加常驻调用日志。</b></p>
+<h3>③ 工具本身也会骗你</h3>
+<p><code>strings</code> 默认只提取 ASCII 字符串，<b>中文一个都搜不到</b>。我因此得出"二进制里没有这句话，所以是模型生成的"这个<b>错误结论</b>，导致后面几轮方向跑偏。<b>正确姿势：搜二进制里的中文用 <code>grep -a</code>。</b></p>
+</div>
+
+<h2>本次改动清单（已全部回灌 v2.8）</h2>
+<div class="card">
+<table>
+<tr><th>文件</th><th>改动</th></tr>
+<tr><td><code>astra_voice.c</code></td><td>删除天气拦截规则（附长注释说明来龙去脉）</td></tr>
+<tr><td><code>astra_llm.py</code></td><td>Open-Meteo 天气直答 / 中文数字 / 摄像头同义词 / 城市定位 / 提示词 / 调用日志</td></tr>
+<tr><td><code>astra-voice.service</code></td><td>麦增益 80%→50%、音量默认 30%→90%、加 <code>LD_LIBRARY_PATH</code></td></tr>
+<tr><td><code>astra_setvol.sh</code></td><td>诚实化：回读核对，失败非零退出</td></tr>
+<tr><td><code>99-astra-dns.conf</code></td><td>固定公共 DNS（做成 systemd-conf.bbappend 进镜像）</td></tr>
+<tr><td><code>tzdata.bbappend</code> 等</td><td>rootfs 三件套进 Yocto（详见 VERSION v2.8）</td></tr>
+</table>
+<p>GitHub：<code>hardyhuang818/sl1680-astra-terminal</code> @ tag <b>v2.8</b></p>
+</div>
+
+<footer>SL1680 故障排查实录 · 2026-07-28 · 姊妹篇：《SL1680项目总览》《TM10.5_TD7800屏点亮总结》</footer>
+</div>
+</body>
+</html>
