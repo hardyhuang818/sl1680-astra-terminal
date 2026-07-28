@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TD7800 触摸根因定位与视觉唤醒修复 — 2026-07-28</title>
+<style>
+  :root{
+    --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+    --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+    --good:#0f7b40; --goodbg:#eaf7f0;
+    --bad:#b91c1c;  --badbg:#fdeceb;
+    --warn:#b45309; --warnbg:#fff8e6;
+    --codebg:#0d1b2e; --codefg:#d8e4f5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+    line-height:1.8;font-size:16px}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+
+  header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+    color:#fff;border-radius:14px;padding:36px 34px;margin-bottom:20px;
+    box-shadow:0 10px 30px rgba(7,32,74,.2)}
+  header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+  header.hero h1{margin:10px 0 10px;font-size:30px;line-height:1.35;font-weight:700}
+  header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+    padding-top:12px;margin-top:14px}
+  header.hero a{color:#cfe6ff}
+
+  .toc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:20px}
+  .toc b{color:#07204a;font-size:14px}
+  .toc ol{margin:8px 0 0;padding-left:22px;columns:2;column-gap:30px;font-size:14.5px}
+  .toc li{margin:3px 0;break-inside:avoid}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:26px 30px;margin-bottom:18px}
+  h2{font-size:21px;margin:0 0 14px;color:#07204a;font-weight:700;
+     display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;
+     min-width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;
+     font-size:15px;font-weight:700;flex:none}
+  h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+  h3:first-of-type{margin-top:8px}
+  p{margin:10px 0}
+  ul,ol{margin:10px 0;padding-left:24px}
+  li{margin:6px 0}
+  code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+    font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62}
+  pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+    overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+    font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+  pre code{background:none;color:inherit;padding:0;font-size:inherit}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+  tbody tr:nth-child(even){background:#fafbfd}
+  td code{white-space:nowrap}
+
+  .box{border-radius:8px;padding:13px 17px;margin:14px 0;font-size:15px;border:1px solid}
+  .box.good{background:var(--goodbg);border-color:#b8e0cb;border-left:4px solid var(--good)}
+  .box.bad{background:var(--badbg);border-color:#f3c4c1;border-left:4px solid var(--bad)}
+  .box.warn{background:var(--warnbg);border-color:#f0d9a0;border-left:4px solid var(--warn);color:#5a4a20}
+  .box .lbl{font-weight:700;font-size:12.5px;display:block;margin-bottom:5px;letter-spacing:.04em}
+  .box.good .lbl{color:var(--good)} .box.bad .lbl{color:var(--bad)} .box.warn .lbl{color:var(--warn)}
+
+  .lead{font-size:17px;color:#252c37;font-weight:500}
+  .flag{display:inline-block;background:#fdeceb;color:var(--bad);border-radius:4px;
+    padding:0 7px;font-size:13px;font-weight:700;white-space:nowrap}
+  .ok{color:var(--good);font-weight:700}
+  .no{color:var(--bad);font-weight:700}
+  .dim{color:var(--sub);font-size:14px}
+  .sha{font-family:Consolas,monospace;font-size:12.5px;color:#0a3d62;word-break:break-all}
+
+  footer{margin-top:26px;padding:20px 24px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;font-size:13.5px;color:var(--sub)}
+  footer a{color:var(--accent)}
+
+  @media (max-width:640px){
+    .wrap{padding:16px 12px 60px}
+    header.hero{padding:24px 20px} header.hero h1{font-size:22px}
+    section{padding:20px 17px} .toc ol{columns:1}
+  }
+  @media print{
+    body{background:#fff} section,footer,.box{break-inside:avoid} header.hero{box-shadow:none}
+    pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">SL1680 · 调试记录 · 晚场</div>
+  <h1>TD7800 触摸根因定位与视觉唤醒修复</h1>
+  <div class="meta">
+    2026-07-28　|　SL1680 (Synaptics Astra Dolphin RDK) + TM10.5-TD7800 LVDS 触摸屏　|
+    meta-dlsdk <strong>v2.9</strong>　|
+    分支 <a href="https://github.com/hardyhuang818/sl1680-astra-terminal/compare/main...feat/td7800-reset-level-domain"><code style="background:rgba(255,255,255,.16);color:#eaf3ff">feat/td7800-reset-level-domain</code></a><br>
+    <span style="opacity:.85">本文只记录本场工作；当天早些时候的九个运行时 bug 见
+    <code style="background:rgba(255,255,255,.16);color:#eaf3ff">SL1680_故障排查实录_2026-07-28.md</code></span>
+  </div>
+</header>
+
+<div class="toc">
+  <b>目录</b>
+  <ol>
+    <li><a href="#s0">结论先行</a></li>
+    <li><a href="#s1">触摸：为什么确定是硬件</a></li>
+    <li><a href="#s2">视觉唤醒：服务在跑却从不触发</a></li>
+    <li><a href="#s3">触摸驱动 ISR 死锁</a></li>
+    <li><a href="#s4">dts 复位脚的三次变更</a></li>
+    <li><a href="#s5">改动清单</a></li>
+    <li><a href="#s6">当前状态</a></li>
+    <li><a href="#s7">待办：硬件</a></li>
+    <li><a href="#s8">本次的操作失误</a></li>
+    <li><a href="#s9">可复用的方法</a></li>
+  </ol>
+</div>
+
+<section id="s0">
+  <h2><span class="num">0</span>结论先行</h2>
+  <table>
+    <thead><tr><th>#</th><th>问题</th><th>根因</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>TD7800 触摸长期不报点</td>
+          <td><strong>电平域不匹配</strong>：SL1680 的 1.8V GPIO 物理上驱动不了 TD7800 的 3.3V 域复位输入</td>
+          <td><span class="ok">✅</span> 定性完成，软件已改回正确形态；永久解需加电平转换</td></tr>
+      <tr><td>2</td><td>视觉唤醒服务 active 但从不触发</td>
+          <td>喂给 NPU 的帧在推理前已被 <code>multifilesink</code> 删除，<strong>静默失败</strong></td>
+          <td><span class="ok">✅</span> 已修，实测端到端跑通</td></tr>
+      <tr><td>3</td><td>触摸驱动 ISR 死锁</td>
+          <td><code>dev_set_up_app_fw()</code> 在中断线程上下文同步走 I2C + 拿 mutex</td>
+          <td><span class="ok">✅</span> 已修，补丁入库</td></tr>
+      <tr><td>4</td><td>复位脚交给 VPP 驱动管</td>
+          <td>VPP 停在"复位置位"，我们的显示链路走不到它释放复位的代码路径</td>
+          <td><span class="ok">✅</span> 已回退</td></tr>
+    </tbody>
+  </table>
+  <div class="box good">
+    <span class="lbl">最有价值的一句</span>
+    软件侧我逐条核对了 pad 映射、pinmux、pinconf、GPIO 方向、驱动死锁，<strong>全部正确</strong> ——
+    因为问题从来不在那一层。
+  </div>
+</section>
+
+<section id="s1">
+  <h2><span class="num">1</span>触摸：为什么最后确定是硬件</h2>
+
+  <h3>1.1 症状</h3>
+  <ul>
+    <li>I2C 地址 <code>0x2c</code> 能应答，驱动能读出固件 ID <code>td7800-12.7.1</code></li>
+    <li>但<strong>中断计数恒 0</strong>，ATTN(<code>gpio586</code>) 恒 <code>in hi</code>（IRQ 配 <code>TRIGGER_LOW</code>，等于芯片从不请求上报）</li>
+    <li>每次断电重上表现都不一样：有时半死，有时完全不在 I2C 上</li>
+    <li>显示侧一直正常</li>
+  </ul>
+
+  <h3>1.2 软件侧逐条排除</h3>
+  <table>
+    <thead><tr><th>检查项</th><th>手段</th><th>结论</th></tr></thead>
+    <tbody>
+      <tr><td>pad↔GPIO 映射</td><td>读 <code>pinctrl-dolphin.c</code> 的 pad 表</td><td><span class="ok">正确</span></td></tr>
+      <tr><td>pinmux</td><td><code>debug/pinctrl/*/pinctrl-handles</code></td><td><span class="ok">正确</span>，<code>gpio_keys</code> 已应用 <code>STS1_* → gpio</code></td></tr>
+      <tr><td>pinconf</td><td><code>pinconf-groups</code></td><td><span class="ok">正确</span>，<code>3mA drive + input enabled</code></td></tr>
+      <tr><td>GPIO 方向</td><td><code>debug/gpio</code></td><td><span class="ok">out</span></td></tr>
+      <tr><td>驱动死锁</td><td>dmesg</td><td>已修，<code>helper work(yes)</code>，0 死锁告警</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box good">
+    <span class="lbl">金手法 · pad 表标定</span>
+    找一个<em>已知能稳定驱动</em>的脚反推 bank 起始号。<code>hdtx5v-gpio = &lt;&amp;portb 23&gt;</code>，
+    其 pmux 组 <code>USB2_DRV_VBUS</code> 在 pad 表里是 <strong>GPIO55</strong> → portb 起始 = 55 − 23 = <strong>GPIO32</strong>。
+  </div>
+
+  <table>
+    <thead><tr><th>pad</th><th>pad 表 GPIO</th><th>portb line</th><th>DTS 用法</th><th>高速采样</th></tr></thead>
+    <tbody>
+      <tr><td>USB2_DRV_VBUS</td><td>55</td><td>23</td><td><code>&lt;&amp;portb 23&gt;</code></td><td>稳定</td></tr>
+      <tr><td>STS1_CLK</td><td>39</td><td>7</td><td><code>vol_down</code></td><td>稳定</td></tr>
+      <tr><td><strong>STS1_SOP</strong> = J32.32 = <code>TCH_RESET_N</code></td><td><strong>38</strong></td><td><strong>6</strong></td><td>hog</td><td><span class="flag">★飘★</span></td></tr>
+      <tr><td><strong>STS1_VALD</strong> = J32.33 = <code>RESET_N</code></td><td><strong>36</strong></td><td><strong>4</strong></td><td>hog</td><td><span class="flag">★飘★</span></td></tr>
+      <tr><td>I2S2_DI1 = J32.12 = TP_INT</td><td>10</td><td>porta 10</td><td><code>&lt;&amp;porta 10&gt;</code></td><td>正常</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box warn">
+    <span class="lbl">两个坑</span>
+    ① 别照抄 mainline 的 <code>berlin-bg4ct.c</code> —— 那是另一颗 SoC，它说 <code>STS1_SOP = GPIO26</code>。
+    SL1680 的 compatible 是 <code>syna,dolphin-soc-pinctrl</code>。<br>
+    ② berlin-pinctrl <strong>注册 0 个 pin、0 条 gpio-range</strong>（<code>gpio-ranges</code> 文件为空）→
+    gpiolib 无法自动 mux，每个 GPIO 用途都必须在 DT 里显式给 <code>pinctrl-0</code>；<code>pinmux-select</code> 也用不了。
+  </div>
+
+  <h3>1.3 决定性的对照实验</h3>
+  <p><code>gpio-dwapb</code> 的 <code>get()</code> 读的是 <strong>EXT_PORT（真实焊盘电平）</strong>，不是输出影子寄存器。
+  所以一条 <code>out</code> 线读出随机值，就说明<strong>焊盘根本没被驱动</strong>。</p>
+  <p class="dim">高速采样 60 次 @30ms：</p>
+<pre><code>gpio-516 LCD_RST  (STS1_VALD, hog out)  翻转25  ★飘★   ← 接到屏
+gpio-518 TP_RST   (STS1_SOP , hog out)  翻转34  ★飘★   ← 接到屏
+gpio-519 vol_down (STS1_CLK , in     )  翻转 0  稳定    ← 同组，没接出去
+gpio-524 vmmc_sdhc(对照,     out     )  翻转 0  稳定
+gpio-535 hdmitx5v (对照,     out     )  翻转 0  稳定</code></pre>
+  <p>同一个 pmux 组、同一颗 portb 控制器，<strong>飘的正好是接出去到屏的那两条</strong>。指向电气而非配置。</p>
+
+  <h3>1.4 万用表定性</h3>
+  <table>
+    <thead><tr><th>脚</th><th>实测</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr><td>J32.32 <code>TCH_RESET_N</code></td><td><strong>1.57V</strong></td><td><span class="no">禁区</span></td></tr>
+      <tr><td>J32.33 <code>RESET_N</code></td><td><strong>2.28V</strong></td><td><span class="no">禁区</span>，离 VIH 只差 30mV</td></tr>
+      <tr><td>J32.1 / J32.2</td><td>3.3V / 5V</td><td>正常</td></tr>
+    </tbody>
+  </table>
+  <p>TD7800B datasheet：</p>
+  <ul>
+    <li><code>RESET_N</code> / <code>TCH_RESET_N</code> 属 <strong>IOVCC 域</strong>（Table 44 第 6 项「System interface」）</li>
+    <li><strong>IOVCC = 2.7 ~ 3.6V</strong>（Table 50）</li>
+    <li><strong><code>VIH1 = 0.70 × IOVCC</code></strong>，<code>VIL1 = 0.30 × IOVCC</code>（Table 51）→
+      3.3V 供电时<strong>合法高电平最低 2.31V，合法低电平最高 0.99V</strong></li>
+  </ul>
+  <div class="box bad">
+    <span class="lbl">核心矛盾</span>
+    <strong>1.57V 和 2.28V 双双落在 0.99 ~ 2.31V 的禁区里</strong> —— 芯片看到的既不是高也不是低。<br>
+    而 SL1680 的 <code>STS1_*</code> 是 <strong>1.8V 域</strong> pad，输出高最多 1.8V，<strong>物理上给不出 2.31V</strong>。<br><br>
+    <code>2.28V = 1.8V + 0.48V</code> 正是 pad 上端 ESD 二极管的正向压降 —— 说明<strong>面板侧 3.3V 上拉在往
+    1.8V pad 里倒灌电流</strong>，被 ESD 结构钳位在 VDDIO + Vf。这是持续的潜在损伤路径。
+  </div>
+  <div class="box warn">
+    <span class="lbl">前科</span>
+    同一块板 7 月 27 日：<code>TC358_RST</code> / <code>TC358_PWR_EN</code> 接 3.3V，把 <code>VCC1V8_LCM</code>
+    顶到 <strong>2.38V</strong>。<strong>凡是 SL1680 直连面板的控制脚，都要先确认电压域。</strong>
+  </div>
+
+  <h3>1.5 决定性验证</h3>
+  <p>拔掉 J32.32 / J32.33 两根杜邦线后：</p>
+<pre><code>触摸中断:  0  →  2626
+dmesg:  syna_dev_process_unexpected_reset: Device has been reset  ×2</code></pre>
+  <p>拔线产生的复位脉冲让触摸引擎活了，两次意外复位被自愈驱动接住（0 死锁）。<strong>假设成立。</strong></p>
+  <p>这一条同时解释了所有此前想不通的现象：</p>
+  <ul>
+    <li>I2C 从机块能应答固件 ID，但触摸引擎不跑 → 复位处于不确定态</li>
+    <li>ATTN 永远不拉低 → 引擎没启动</li>
+    <li>每次断电重上表现都不一样 → 2.28V 离阈值只差 30mV，任何漂移都会翻</li>
+    <li>GPIO 读回来是 47% 占空的噪声 → 焊盘被外部拉扯，SoC 没能真正驱动</li>
+  </ul>
+</section>
+
+<section id="s2">
+  <h2><span class="num">2</span>视觉唤醒：服务在跑，但从不触发</h2>
+
+  <h3>2.1 症状</h3>
+  <p><code>systemctl is-active vision-wake</code> = active，但<strong>开机 30 分钟一条检测日志都没有</strong>，从未触发欢迎语。</p>
+
+  <h3>2.2 根因</h3>
+  <p>手动跑一次就暴露了：</p>
+<pre><code>$ synap_cli_od -m .../model.synap --score-threshold 0.4 /tmp/vw_270.jpg
+E:SyNAP: InputData():102: Input file not found: /tmp/vw_270.jpg</code></pre>
+  <p>把同一帧 <code>cp</code> 成稳定副本再推理则完全正常（<code>Detection time: 52.95 ms</code>）。</p>
+  <table>
+    <thead><tr><th>环节</th><th>时间</th></tr></thead>
+    <tbody>
+      <tr><td><code>multifilesink max-files=4</code> @ <code>framerate=5/1</code></td><td>一帧只活 <strong>0.8 秒</strong></td></tr>
+      <tr><td><code>synap_cli_od</code> 从 fork/exec 到真正打开输入文件</td><td>要先加载 <strong>30MB</strong> 模型，接近 <strong>1 秒</strong></td></tr>
+    </tbody>
+  </table>
+  <p>正好卡在边界上 → 时灵时不灵，失败时<strong>静默返回空</strong> → 框高为空 → <code>pct = 0</code> →
+  永远达不到 45% 阈值 → 从不触发。</p>
+
+  <div class="box bad">
+    <span class="lbl">放大这个 bug 的是日志设计</span>
+    心跳只在 <code>pct &gt; 0</code> 时才打，所以"<strong>推理静默失败</strong>"和"<strong>确实没人</strong>"
+    长得一模一样 —— 30 分钟看不出异常。
+  </div>
+
+  <h3>2.3 修法</h3>
+<pre><code># 修前
+OUT=$(synap_cli_od -m $MODEL --score-threshold 0.4 "$F" 2&gt;/dev/null)
+
+# 修后
+cp "$F" /tmp/vw_cur.jpg 2&gt;/dev/null || { sleep 0.3; continue; }
+OUT=$(synap_cli_od -m $MODEL --score-threshold 0.4 /tmp/vw_cur.jpg 2&gt;&amp;1)
+case "$OUT" in *"not found"*|*Error*) echo "[vwake] 推理失败(跳过): ..."; continue;; esac</code></pre>
+  <p>外加：没人时也每 ~40 tick 打一条"在跑，当前无人"，让"在跑"和"卡死"可区分。</p>
+  <p><strong>修完 5 秒内即报</strong> <code>[vwake] 框高=75% (阈值45%, armed=1)</code>。端到端也跑通了：</p>
+<pre><code>[vwake] 框高=94%  →  astra_voice: [唤醒] 检测到有人靠近，播欢迎语
+[vwake] 人已离开，重新武装
+[vwake] 在跑，当前无人 (armed=1)          ← 新加的心跳</code></pre>
+  <div class="box good">
+    <span class="lbl">教训</span>
+    任何"只在成功时才打日志"的循环，都会把静默失败伪装成正常运行。
+  </div>
+</section>
+
+<section id="s3">
+  <h2><span class="num">3</span>触摸驱动：ISR 上下文死锁</h2>
+  <p>内核报：</p>
+<pre><code>INFO: task irq/49-synaptic blocked for more than 983 seconds</code></pre>
+  <p><code>syna_dev_process_unexpected_reset()</code> 在<strong>中断线程上下文</strong>里同步调用
+  <code>dev_set_up_app_fw()</code>，而后者要走 I2C 并拿 mutex → IRQ 线程被永久卡住。</p>
+  <p>补丁（60 行，<code>meta-tcm2-touch/.../0001-enable-helper-and-fix-isr-deadlock.patch</code>）：</p>
+  <ol>
+    <li><code>syna_tcm2.h</code>：<code>/* #define ENABLE_HELPER */</code> → <code>#define ENABLE_HELPER</code></li>
+    <li><code>syna_tcm2.c</code>：</li>
+  </ol>
+<pre><code>#if defined(ENABLE_HELPER)
+    if (!tcm-&gt;helper.workqueue)
+        tcm-&gt;dev_set_up_app_fw(tcm);
+#else
+    tcm-&gt;dev_set_up_app_fw(tcm);
+#endif</code></pre>
+  <p>有 workqueue 就交给 helper，没有才保持原行为。</p>
+  <div class="box good">
+    <span class="lbl">实测有效</span>
+    拔线产生的那两次意外复位就是它接住的，0 死锁告警。
+  </div>
+</section>
+
+<section id="s4">
+  <h2><span class="num">4</span>dts 复位脚的三次变更（走过的弯路）</h2>
+  <table>
+    <thead><tr><th>版本</th><th>做法</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td><code>TP_RST</code> 用 <code>gpio-hog</code> 常拉高（<code>vol_up</code> 键占了这个 pad，改成 hog 夺回）</td>
+          <td>触摸一度恢复</td></tr>
+      <tr><td>B</td><td><code>LCD_RESET</code> 交给 <code>&amp;avio/vpp</code> 的 <code>mipirst-gpios</code></td>
+          <td><span class="no">❌</span> 驱动确实接管了，但停在 <code>out lo + ACTIVE_LOW</code>（复位一直按着）。
+              我们的链路是 DSI→TC358775→LVDS，<strong>走不到 VPP 调
+              <code>avio_module_mipirst_set_gpio_val(0)</code> 释放复位的那条路径</strong></td></tr>
+      <tr><td>C</td><td>两个都改成 <code>gpio-hog</code> 常拉高</td>
+          <td><span class="no">❌</span> 焊盘读数仍是噪声 —— 此时才发现是电平域问题</td></tr>
+      <tr><td><strong>D（最终）</strong></td><td><strong>两个 hog 全部移除</strong>，复位交给面板侧上拉</td>
+          <td><span class="ok">✅</span> 拔线后触摸 2626 中断</td></tr>
+    </tbody>
+  </table>
+  <p>最终 dts 在原位留下了完整注释：电平域数据、失败过的方案、以及恢复 SoC 控制所需的条件。</p>
+</section>
+
+<section id="s5">
+  <h2><span class="num">5</span>改动清单</h2>
+
+  <h3>仓库（分支 <code>feat/td7800-reset-level-domain</code>，commit <code>c2e529b</code>）</h3>
+  <table>
+    <thead><tr><th>文件</th><th>改动</th></tr></thead>
+    <tbody>
+      <tr><td><code>meta-dlsdk/recipes-kernel/linux/files/0001-...patch</code></td>
+          <td>186 → <strong>248 行</strong>：移除两个复位 <code>gpio-hog</code> + 完整注释</td></tr>
+      <tr><td><code>meta-dlsdk/recipes-ai/astra-voice/files/vision_wake.sh</code></td>
+          <td>帧竞态修复 + 显式错误日志 + 无人心跳</td></tr>
+      <tr><td><code>meta-dlsdk/VERSION</code></td><td>v2.9 条目</td></tr>
+      <tr><td><code>meta-tcm2-touch/</code>（新）</td><td>触摸驱动层<strong>首次入库</strong>，含 60 行 ISR 死锁补丁</td></tr>
+      <tr><td><code>.gitignore</code></td><td>加 <code>pptx_build/</code>、<code>synaptics_blog_assets_original/</code>、
+          <code>tmp/</code>、<code>*.ko</code>、<code>~$*</code></td></tr>
+      <tr><td><code>tools/_wslout/*</code>（21 个）</td>
+          <td>本次定位用的脚本：pad 表标定、pinmux dump、GPIO 高速采样对照、补丁重生成等</td></tr>
+      <tr><td><code>tools/make_robotics_pptx.py</code></td><td>Synaptics 博客 deck 生成器</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box warn">
+    <span class="lbl">补丁重生成方法（重要）</span>
+    <strong>不能用 <code>git diff</code></strong> —— Yocto 的 <code>do_patch</code> 已经把旧补丁提交进
+    <code>kernel-source</code> 的 git HEAD，<code>git diff</code> 只会输出<strong>增量</strong>
+    （实测 70 行 vs 应有 248 行）。正确做法是拿 TD7800 工作开始前的基线 dts 作为 <code>a/</code> 侧做完整
+    <code>diff -u</code>，并做<strong>干跑重放验证</strong>：<br>
+    <code>基线 + 补丁 == 当前 dts</code>　←　<code>patch --dry-run</code> 后 <code>cmp</code>，字节级一致 ✓
+  </div>
+
+  <h3>板端</h3>
+  <table>
+    <thead><tr><th>项</th><th>sha256 / 说明</th></tr></thead>
+    <tbody>
+      <tr><td>最终 <code>dolphin-rdk.dts</code></td>
+          <td class="sha">41412f2e17fe438743a765971de04b111ee935e6b083c2f45735d7ef25ad5585</td></tr>
+      <tr><td><code>boot_nohog.subimg</code><br><span class="dim">已烧 p8/p9，回读校验通过</span></td>
+          <td class="sha">dc24f81e6364e151a293f468101c172f475d0f6daa8974b5e906b6ad90666026</td></tr>
+      <tr><td><code>synaptics_tcm2.ko</code>（自愈驱动）</td>
+          <td class="sha">7bcbe2c807e47b2beb9f0e9580d4479e4e9248fa701356efc177d15b10d6bf31</td></tr>
+      <tr><td><code>/usr/bin/vision_wake.sh</code></td><td>已修，备份 <code>.bak_race</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s6">
+  <h2><span class="num">6</span>当前状态（demo 可用）</h2>
+  <table>
+    <thead><tr><th>项</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>显示</strong></td><td>DSI-1 <code>connected + enabled</code>，1280×720，面板 PowerMode
+          <code>0x1F</code>（sleep_out + display_on），weston <code>transform=rotate-180</code></td></tr>
+      <tr><td><strong>触摸</strong></td><td>probe 完整成功（<code>td7800-12.7.1</code>、<code>helper work(yes)</code>、
+          <code>Device connected</code>），累计 357 中断，
+          <code>LIBINPUT_CALIBRATION_MATRIX=-1 0 1 0 1 0</code> 已生效，weston 已绑 DSI-1</td></tr>
+      <tr><td><strong>语音</strong></td><td>astra-voice 在跑，ASR 收音正常</td></tr>
+      <tr><td><strong>视觉唤醒</strong></td><td>完整状态机跑通：靠近 → 欢迎语 → 离开 → 重新武装</td></tr>
+      <tr><td><strong>记忆/定时</strong></td><td>astra-timer 在跑</td></tr>
+      <tr><td><strong>多屏</strong></td><td>dl-face 在跑</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s7">
+  <h2><span class="num">7</span>待办：硬件</h2>
+
+  <h3>7.1 现状的风险</h3>
+  <p>复位脚现在硬接 3.3V，<strong>能跑但上电不保证稳</strong>。</p>
+  <p>datasheet Table 57 要求上电复位低电平宽度 <strong><code>tRW1 ≥ 3000µs</code></strong>
+  （Figure 32：<code>RESET_N</code> / <code>TCH_RESET_N</code> 在 IOVCC/VCI/LVDSVCI 爬升期间必须保持低）。
+  直连 VCC 时复位与电源轨同时上升，低电平宽度 ≈ 0 → NVM 加载可能不完成 → 上电黑屏 / 触摸不上 I2C。</p>
+  <p><strong>现场应急</strong>（不用改焊接）：</p>
+  <ol>
+    <li><strong>软件路线</strong>：weston 重启（触发 modeset → VPP 重发 TC358775 初始化）+
+        SPI 发 <code>29h</code> Display-On、<code>11h</code> Sleep-Out</li>
+    <li><strong>硬件路线</strong>：拔掉两根复位线 → 等 2~3 秒 → 先插回 J32.32（TP_RST）→ 停 1 秒 →
+        再插 J32.33（LCD_RESET）</li>
+  </ol>
+  <div class="box bad">
+    <span class="lbl">⚠ 安全提醒</span>
+    复位线<strong>直连 3.3V 时绝不能碰 GND</strong> —— 那是直接短路电源。
+  </div>
+
+  <h3>7.2 短期正解：RC 上电延时</h3>
+<pre><code>3.3V ──[ 10k ]──┬── 复位脚 (J32.32 / J32.33)
+                │
+              [ 1µF ]
+                │
+               GND</code></pre>
+  <ul>
+    <li>τ = 10k × 1µF = <strong>10ms</strong>，爬到 VIH(2.31V) 约需 <strong>12ms</strong>，
+        对 <code>tRW1 ≥ 3ms</code> 有 <strong>4 倍余量</strong></li>
+    <li>要让 LCD_RESET 比 TP_RST 晚 10ms，把 J32.33 那颗电容换成 <strong>2.2µF</strong>（约 26ms）</li>
+    <li>加了 RC 之后这两根线才可以安全地碰地做手动复位（电流被 10k 限住）</li>
+  </ul>
+
+  <h3>7.3 长期正解：电平转换</h3>
+  <p>要把复位交回 SoC 用软件精确控时序，必须先加 <strong>1.8V → 3.3V 电平转换</strong>：</p>
+  <ul>
+    <li><strong>推荐 <code>74LVC2T45</code></strong>（<code>VCCA</code>=1.8V、<code>VCCB</code>=3.3V、
+        <code>DIR</code> 固定 A→B），双通道正好两条线，推挽输出顶得住面板上拉</li>
+    <li>或每条线一颗 <strong>2N7002</strong> + 10k 上拉到 3.3V</li>
+    <li><span class="no">❌ 不要用 <code>TXB0102</code> / <code>TXS0102</code></span> ——
+        自动方向器件驱动能力弱，会被面板侧上拉误判方向</li>
+  </ul>
+  <p>装好后按 Table 57 做时序：上电复位低电平宽度 <code>tRW1 ≥ 3ms</code>，
+  <code>LCD_RST</code> 比 <code>TP_RST</code> 延后 10ms 释放。</p>
+
+  <h3>7.4 顺带要查的</h3>
+  <div class="box warn">
+    TD7800 的 <code>TCH_IO_SCL</code> / <code>TCH_IO_SDA</code> <strong>也在 IOVCC(3.3V) 域</strong>
+    （Table 44 第 6 项）。目前 I2C 能通，说明总线上拉在 3.3V —— 也就是说 SL1680 的 1.8V I2C pad
+    一直在承受 3.3V。虽然一直没出问题，但属于同一类隐患，做板时应一并处理。
+  </div>
+</section>
+
+<section id="s8">
+  <h2><span class="num">8</span>本次的操作失误（记录以免重犯）</h2>
+  <table>
+    <thead><tr><th>失误</th><th>后果</th><th>教训</th></tr></thead>
+    <tbody>
+      <tr><td>裸读 <code>/dev/mem</code> 的 pinctrl 寄存器区（<code>0xf7ea8000</code>）</td>
+          <td><strong>内核挂死，只能断电重上</strong></td>
+          <td>这类寄存器有访问保护或需先使能时钟；看 pinmux 用
+              <code>/sys/kernel/debug/pinctrl/*/</code> 就够，零风险</td></tr>
+      <tr><td>明知 unbind/rebind 路径不可靠，仍跑了第二次</td>
+          <td>触摸刚恢复（2626 中断）又被打断，probe 走不完</td>
+          <td>这个驱动 rebind 时 probe 不完整；要重置驱动用模块重载，别用 sysfs rebind</td></tr>
+      <tr><td><code>rmmod</code> 在已损坏状态下调用</td>
+          <td>segfault，模块卡在半加载态，只能重启</td>
+          <td>驱动已处于异常状态时不要再叠加操作</td></tr>
+      <tr><td>用 <code>git diff</code> 生成 Yocto 补丁</td>
+          <td>只出 70 行（应为 248），差点把完整补丁覆盖成增量</td>
+          <td><code>do_patch</code> 会把补丁提交进 kernel-source 的 git HEAD；
+              必须对<strong>原始基线</strong>做 diff 并重放验证</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s9">
+  <h2><span class="num">9</span>可复用的方法（金手法）</h2>
+  <ol>
+    <li><strong>pad↔GPIO 标定</strong>：找一个已知能稳定驱动的脚反推 bank 起始号，别靠注释推。</li>
+    <li><strong>判断焊盘有没有被真正驱动</strong>：<code>gpio-dwapb</code> 的 <code>get()</code> 读 EXT_PORT
+        （真实焊盘电平）。一条 <code>out</code> 线读出随机值 = 焊盘没被驱动。配合"同组没接出去的线作对照"，
+        能一眼分开配置问题和电气问题。</li>
+    <li><strong>电平域快速判据</strong>：读数 ≈ <code>VDDIO + 0.5V</code> → 高压侧上拉在往低压 pad 倒灌，
+        被 ESD 二极管钳位。</li>
+    <li><strong>补丁重放验证</strong>：<code>patch --dry-run</code> 后 <code>cmp</code>，确认
+        "基线 + 补丁 == 当前源码"，避免补丁悄悄失真。</li>
+    <li><strong>静默失败的识别</strong>：服务 active + 零日志 ≠ 正常。任何只在成功路径打日志的循环
+        都要补一条"我还活着"的心跳。</li>
+  </ol>
+</section>
+
+<footer>
+  <strong>相关文档</strong>：
+  <code>SL1680_故障排查实录_2026-07-28.md</code>（当天早些时候的九个运行时 bug）·
+  <code>TM10.5_TD7800屏点亮_总结_2026-07-28.md</code>（屏点亮全过程，五层根因）·
+  <code>SL1680_TD7800_LAMTL_硬件接线总表_2026-07-28.md</code>（三板逐脚接线基准）·
+  <code>TD7800_SPI_读ID与BIST_源代码_2026-07-28.md</code>（SPI 调试通道）·
+  <code>SL1680项目总览_2026-07-28.md</code>（项目顶层文档）<br><br>
+  <em>本文引用的 TD7800B datasheet（PN: 505-001033-01 Rev J）内容受 Synaptics NDA 约束，
+  仅供内部工程参考，请勿外发。</em><br>
+  整理：2026-07-28
+</footer>
+
+</div>
+</body>
+</html>
