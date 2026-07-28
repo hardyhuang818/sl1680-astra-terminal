@@ -3,6 +3,41 @@
 # 这份 layer 的"真相"是板子，不是仓库 —— 历史上仓库多次落后于板端实际运行版本。
 # 每次同步到 WSL 构建树时在这里追加一条，并跑 tools/export_live.sh 核对 sha256。
 
+v2.8  2026-07-28  ★ 交付级镜像 + 一天修掉 9 个真 bug
+  【Yocto 集成】rootfs 三件套进镜像，两个遗留项关闭：
+    recipes-extended/timezone/tzdata.bbappend       DEFAULT_TIMEZONE=Asia/Shanghai
+      ⚠ 文件名不能带版本通配(tzdata_%.bbappend 会 "No recipes available")
+    recipes-graphics/wayland/weston-init.bbappend   DSI-1 transform=rotate-180 (追加不覆盖)
+      ⚠ 真身是 /etc/xdg/weston/weston.ini.weston-init (update-alternatives),
+        debugfs 不跟符号链接 -> 验收要直接查真身文件, 否则误报"缺失"
+    recipes-bsp/panel-config/                       触摸 X 轴镜像校准 udev 规则
+    recipes-core/systemd-conf/systemd-conf.bbappend 固定公共 DNS (见下 DNS 坑)
+    packagegroup 加 tzdata + panel-config
+    ⚠ linux-syna.bbappend 必须写成 linux-syna_%.bbappend (配方带版本号 6.12.62)
+    cleanall 干净构建验证通过：186 行补丁自动应用, DTB/subimg 字节级校验全绿
+  【astra_voice.c】删除 factual_reply 里的天气拦截规则(见下"最贵的教训")
+  【astra_llm.py】五处：中文数字音量 / 摄像头同义词 / 城市定位 / 提示词去"根据资料" /
+    **Open-Meteo 天气直答**(免key、1-2秒、结构化、不经LLM) / 调用日志 _trace
+  【service】麦增益 80%→50%(削顶) / 音量默认 30%→90% / LD_LIBRARY_PATH=/usr/lib/sherpa
+  【astra_setvol.sh】诚实化：回读核对, 失败非零退出(旧版无条件 exit 0)
+  板端 sha256:
+    5ecc0727dc06ed9ae39de54f27f3a51a5bb2b836e202f1050e1cd6d4ddb230d2  astra_llm.py
+    f109b79c8adca2920cd0562363f91c7c838c712dcf953b834beb13a82089c350  astra-voice.service
+    86f77f7d5eea7e44821860db13061de24ece8409c79e7271f8c9cac088a2fca2  astra_setvol.sh
+    375ba4b55e7d8889444d81b77e861fa3297e3f3a46646554d72bae82f342992e  astra_voice(新构建)
+  ⚠ 板上原 astra_voice 是 34MB 静态链接老产物, recipe 产出 67KB 动态版 ->
+    板子 rootfs 里没有 sherpa .so, 需装 /usr/lib/sherpa + ld.so.conf.d + service 环境变量。
+    新镜像自带 sherpa-onnx 包, 无此问题。
+
+  ═══ 最贵的教训：能力补齐后必须删掉"没有能力时的诚实兜底" ═══
+  astra_voice.c 的 factual_reply() 里有一条 "我现在没有联网，查不到实时天气" ——
+  写它时确实没有数据源，是为了防幻觉，当时**完全正确**；但它排在 cloud_reply 之前，
+  等于把后来做好的联网能力永久遮蔽：astra_llm.py 连调用都不会被调到。
+  排查耗时六轮，因为每层都在说谎：DNS 假IP(真问题但非主因) / 我的测试没带环境变量(测试本身有缺陷) /
+  超时猜测(错) / **strings 默认不认中文, 搜不到内置规则(必须 grep -a)**。
+  最终靠给 astra_llm.py 加调用日志才见底 —— 日志文件为空 = 根本没被调用。
+  配套教训：astra_voice 调 LLM 时写死 2>/dev/null, 把诊断信息全扔了。
+
 v2.7  2026-07-28  ★ TM10.5-TD7800 LVDS 屏点亮（经 LAMTL/TC358775 桥）
   新增:
     recipes-kernel/linux/linux-syna.bbappend

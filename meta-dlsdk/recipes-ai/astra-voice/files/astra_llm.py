@@ -112,6 +112,30 @@ def _vol_set(pct):
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return pct
 
+
+_CN_D = {"零":0,"〇":0,"一":1,"幺":1,"二":2,"两":2,"三":3,"四":4,"五":5,
+         "六":6,"七":7,"八":8,"九":9}
+def _cn_num(s):
+    """中文数字 -> int(0-100)，失败返回 None。ASR 输出的是「百分之百」这类
+    汉字数字，之前只用数字正则匹配，整条指令静默落到云端 LLM，
+    云端还会假装执行(「好的，音量已经调到最大了」)。"""
+    s = (s or "").strip()
+    if not s:
+        return None
+    if s in ("百", "一百"):
+        return 100
+    if "十" in s:
+        a, _, b = s.partition("十")
+        tens = _CN_D.get(a, 1) if a else 1
+        ones = _CN_D.get(b, 0) if b else 0
+        return tens * 10 + ones
+    n = 0
+    for ch in s:
+        if ch not in _CN_D:
+            return None
+        n = n * 10 + _CN_D[ch]
+    return n
+
 def try_volume(text):
     if not any(k in text for k in ["音量","声音","大声","小声","静音","调大","调小","响","轻"]):
         return None
@@ -120,6 +144,18 @@ def try_volume(text):
         return "当前音量%d%%。" % cur
     if "静音" in text:
         _vol_set(0); return "好的，已静音。"
+    # 中文数字：百分之百 / 百分之五十 / 调到八十
+    _CN = "[零〇一二两三四五六七八九十百幺]+"
+    m = re.search("百分之(" + _CN + ")", text) or \
+        re.search("(?:调到|设为|设置到|设置为|到)(" + _CN + ")", text)
+    if m:
+        v = _cn_num(m.group(1))
+        if v is not None:
+            return "好的，音量调到%d%%。" % _vol_set(v)
+    if any(k in text for k in ["最大", "最响", "最高", "开到最大"]):
+        return "好的，音量调到%d%%。" % _vol_set(100)
+    if any(k in text for k in ["最小", "最低"]):
+        return "好的，音量调到%d%%。" % _vol_set(10)
     m = re.search(r"(\d+)", text)
     if m and any(k in text for k in ["调到","设为","设置","%","到"]):
         return "好的，音量调到%d%%。" % _vol_set(m.group(1))
@@ -188,15 +224,123 @@ def web_search(query, count=5, timeout=12):
     return out
 
 GROUND_PROMPT = (
-    "下面是刚刚从网上搜到的实时资料。请**只根据这些资料**回答用户的问题，"
+    "下面是刚刚从网上搜到的实时资料。请**只根据这些资料**回答用户的问题。"
+    "直接说结论，**不要说「根据资料」「据搜索」这类开场白**——这是语音播报，"
+    "听起来要像人随口回答。"
     "用一到两句简短的中文口语，不要表情符号不要换行。"
-    "资料里如果有具体数字(气温、价格等)就直接说出来。"
+    "资料里如果有具体数字(气温、价格等)就直接说出来，"
+    "有城市名就说出城市名，不要说「我市」这种含糊说法。"
     "如果资料里找不到答案，就直说不知道 —— **绝对不许编造任何数字或事实**。"
 )
 
+# 常见城市名 —— 用户句子里已经点名城市时就不再补默认城市
+_CITIES = ("北京","上海","广州","深圳","杭州","南京","成都","重庆","武汉","西安",
+           "苏州","天津","长沙","郑州","青岛","东莞","佛山","宁波","合肥","厦门",
+           "福州","昆明","济南","大连","珠海","中山","惠州","汕头","香港","澳门")
+
+def _localize(text):
+    """给天气/空气这类【离开地点就没意义】的查询补上城市。
+    之前把「今天天气怎么样」原样丢给搜索引擎，抓回来的是随机某地的新闻，
+    模型只能照抄成「我市……」——用户根本不知道说的是哪个市。"""
+    if any(c in text for c in _CITIES):
+        return text
+    if not any(k in text for k in ("天气","气温","下雨","降雨","空气质量","雾霾","紫外线","台风")):
+        return text
+    city = os.environ.get("ASTRA_CITY", "").strip()
+    return ("%s %s" % (city, text)) if city else text
+
+
+# ─────────────────────────────────────────────────────────────
+# 天气直答：Open-Meteo（免 API key、结构化、不经大模型）
+# 为什么不用"搜索+模型总结"：搜索抓的是新闻稿(可能是几天前的)，
+# 模型还得从行文里抠数字，有编造风险，一次要 3 秒且花两笔钱。
+# 气象 API 0.3 秒返回权威结构化数据，直接套模板念出来。
+# ─────────────────────────────────────────────────────────────
+_CITY_LL = {
+    "北京":(39.9042,116.4074), "上海":(31.2304,121.4737), "广州":(23.1291,113.2644),
+    "深圳":(22.5431,114.0579), "杭州":(30.2741,120.1551), "南京":(32.0603,118.7969),
+    "成都":(30.5728,104.0668), "重庆":(29.5630,106.5516), "武汉":(30.5928,114.3055),
+    "西安":(34.3416,108.9398), "苏州":(31.2989,120.5853), "天津":(39.3434,117.3616),
+    "长沙":(28.2282,112.9388), "郑州":(34.7466,113.6254), "青岛":(36.0671,120.3826),
+    "东莞":(23.0207,113.7518), "佛山":(23.0219,113.1214), "宁波":(29.8683,121.5440),
+    "合肥":(31.8206,117.2272), "厦门":(24.4798,118.0894), "福州":(26.0745,119.2965),
+    "昆明":(24.8801,102.8329), "济南":(36.6512,117.1201), "大连":(38.9140,121.6147),
+    "珠海":(22.2707,113.5767), "中山":(22.5170,113.3927), "惠州":(23.1115,114.4152),
+    "汕头":(23.3535,116.6820), "香港":(22.3193,114.1694), "澳门":(22.1987,113.5439),
+}
+_WMO = {0:"晴", 1:"晴间多云", 2:"多云", 3:"阴", 45:"有雾", 48:"有雾凇",
+        51:"零星小雨", 53:"小雨", 55:"中雨", 56:"冻毛毛雨", 57:"冻雨",
+        61:"小雨", 63:"中雨", 65:"大雨", 66:"冻雨", 67:"强冻雨",
+        71:"小雪", 73:"中雪", 75:"大雪", 77:"米雪",
+        80:"阵雨", 81:"强阵雨", 82:"暴雨", 85:"阵雪", 86:"强阵雪",
+        95:"雷阵雨", 96:"雷阵雨伴冰雹", 99:"强雷阵雨伴冰雹"}
+
+def _geo(city):
+    """先查内置表(零网络)，查不到再问 Open-Meteo 地理编码。"""
+    if city in _CITY_LL:
+        return _CITY_LL[city], city
+    try:
+        u = ("https://geocoding-api.open-meteo.com/v1/search?name=%s&count=1&language=zh"
+             % urllib.parse.quote(city))
+        with urllib.request.urlopen(u, timeout=8) as r:
+            d = json.load(r)
+        it = (d.get("results") or [None])[0]
+        if it:
+            return (it["latitude"], it["longitude"]), it.get("name", city)
+    except Exception as e:
+        sys.stderr.write("[geo] %s\n" % str(e)[:120])
+    return None, city
+
+def weather_direct(text):
+    """命中天气问句就直接查气象 API 作答；不命中/失败返回 None。"""
+    if not any(k in text for k in ("天气", "气温", "下雨", "降雨", "冷不冷", "热不热")):
+        return None
+    city = next((c for c in _CITY_LL if c in text), "") or \
+           os.environ.get("ASTRA_CITY", "广州").strip()
+    (ll, name) = _geo(city)
+    if not ll:
+        return None
+    tomorrow = any(k in text for k in ("明天", "明日"))
+    days = 2 if tomorrow else 1
+    u = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s"
+         "&current=temperature_2m,relative_humidity_2m,apparent_temperature,"
+         "precipitation,weather_code,wind_speed_10m"
+         "&daily=weather_code,temperature_2m_max,temperature_2m_min,"
+         "precipitation_probability_max"
+         "&timezone=Asia%%2FShanghai&forecast_days=%d" % (ll[0], ll[1], days))
+    try:
+        with urllib.request.urlopen(u, timeout=10) as r:
+            d = json.load(r)
+    except Exception as e:
+        sys.stderr.write("[weather] %s\n" % str(e)[:150])
+        return None
+    try:
+        dl = d["daily"]; i = 1 if (tomorrow and len(dl["weather_code"]) > 1) else 0
+        lo = round(dl["temperature_2m_min"][i])
+        hi = round(dl["temperature_2m_max"][i])
+        code = dl["weather_code"][i]
+        pop = dl.get("precipitation_probability_max", [None]*(i+1))[i]
+        desc = _WMO.get(code, "")
+        if tomorrow:
+            out = "%s明天%s，气温%d到%d度" % (name, desc, lo, hi)
+        else:
+            cur = d["current"]
+            t = round(cur["temperature_2m"]); ap = round(cur["apparent_temperature"])
+            rh = round(cur["relative_humidity_2m"])
+            out = "%s现在%s，%d度" % (name, desc, t)
+            if abs(ap - t) >= 2:
+                out += "，体感%d度" % ap
+            out += "，湿度%d%%，今天%d到%d度" % (rh, lo, hi)
+        if pop is not None and pop >= 40:
+            out += "，降雨概率%d%%，记得带伞" % round(pop)
+        return out + "。"
+    except Exception as e:
+        sys.stderr.write("[weather] parse %s\n" % str(e)[:120])
+        return None
+
 def answer_with_search(text):
     """联网作答。搜不到就返回 None，让调用方回落到普通问答。"""
-    hits = web_search(text)
+    hits = web_search(_localize(text))
     if not hits:
         return None
     ctx = "\n".join("- %s：%s" % (t, c) for t, c, _ in hits)
@@ -320,8 +464,10 @@ def try_device(text):
     # --- 屏幕模式(要真的执行) ---
     # 切屏幕必须【动词+名词】同时出现。只匹配"摄像头/监控"太松了 ——
     # 嘈杂环境下 ASR 误识别很容易撞上，屏1 会莫名跳到摄像头画面。
-    _CAM_VERBS_ON  = ("打开", "开启", "切到", "切换", "显示", "调出", "看看", "看一下")
-    _CAM_VERBS_OFF = ("关闭", "关掉", "退出", "取消", "停止", "关了")
+    # ASR 常吃掉动词首字("打开"->"开")，故补裸「开/关」；
+    # 它们必须与摄像头名词同现才生效，误触风险可控。
+    _CAM_VERBS_ON  = ("打开", "开启", "切到", "切换", "显示", "调出", "看看", "看一下", "开")
+    _CAM_VERBS_OFF = ("关闭", "关掉", "退出", "取消", "停止", "关了", "关")
     _CAM_NOUNS     = ("摄像头", "监控", "camera")
     _FACE_NOUNS    = ("表情", "脸")
 
@@ -331,13 +477,15 @@ def try_device(text):
     # 短指令精确匹配：ASR 经常把开头动词吃掉("打开摄像头" -> "摄像头")。
     # 用【整句去标点后完全相等】判断，"电大监控"这类误识别不会命中。
     _SHORT_CMD = t.strip().strip("。，、！？!?,. \t")
-    if _SHORT_CMD in ("摄像头", "监控", "摄像机", "打开摄像头", "打开监控"):
+    if _SHORT_CMD in ("摄像头", "监控", "摄像机", "打开摄像头", "打开监控",
+                      "开摄像头", "开监控", "开启摄像头", "打开摄像机", "看摄像头"):
         ok, cam = _set_screen("camera")
         if not ok:
             return "抱歉，切换失败了。"
         where = "第二块屏" if cam == 1 else "屏幕"
         return "好的，已在%s打开监控画面，视觉唤醒先暂停了。" % where
-    if _SHORT_CMD in ("表情", "表情脸", "换回表情", "关闭监控", "关摄像头"):
+    if _SHORT_CMD in ("表情", "表情脸", "换回表情", "关闭监控", "关摄像头",
+                      "关监控", "关掉摄像头", "关闭摄像头"):
         ok, _ = _set_screen("face")
         return "好的，已切回表情画面，视觉唤醒恢复了。" if ok else "抱歉，切换失败了。"
 
@@ -378,18 +526,36 @@ def try_device(text):
     return None
 
 
+_TRACE_LOG = "/tmp/astra_llm_calls.log"
+def _trace(tag, msg):
+    """把每次调用记进文件。astra_voice 用 2>/dev/null 吞掉了 stderr，
+    出问题时完全看不到现场——这条日志就是为了破这个局。"""
+    try:
+        import time as _t
+        with open(_TRACE_LOG, "a", encoding="utf-8") as f:
+            f.write("%s %-6s %s\n" % (_t.strftime("%H:%M:%S"), tag, str(msg)[:300]))
+    except Exception:
+        pass
+
 def main():
     args = [a for a in sys.argv[1:]]
+    _trace("IN", " ".join(sys.argv[1:]))
     stream = "--stream" in args
     args = [a for a in args if a != "--stream"]
     text = args[0] if args else ""
     if not text.strip(): sys.exit(3)
     _vr = try_volume(text)
     if _vr is not None:
+        _trace("OUT-VOL", _vr)
         print(_vr); sys.exit(0)
     _dr = try_device(text)
     if _dr is not None:
+        _trace("OUT-DEV", _dr)
         print(_dr); sys.exit(0)
+    _wr = weather_direct(text)      # 天气走专用气象 API，快且不会编
+    if _wr is not None:
+        _trace("OUT-WX", _wr)
+        print(_wr); sys.exit(0)
     if needs_search(text):
         _sr = answer_with_search(text)
         if _sr:
@@ -398,6 +564,7 @@ def main():
         if is_hard_realtime(text):
             print("我这会儿联网没查到，不敢瞎说，你等下再问我一次吧"); sys.exit(0)
         # 软实时(只是语气带"最新")回落到普通问答是安全的
+    _trace("PLAIN", "走普通问答(未命中天气/搜索)")
     if stream: run_stream(text)
     else:      run_plain(text)
 

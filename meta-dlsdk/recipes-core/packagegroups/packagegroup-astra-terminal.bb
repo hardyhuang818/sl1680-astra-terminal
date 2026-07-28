@@ -14,7 +14,12 @@ COMPATIBLE_MACHINE = "(dolphin)"
 RDEPENDS:${PN} = "\
     astra-voice \
     dl-face \
+    tzdata \
+    panel-config \
 "
+# tzdata: 时区数据(默认 Asia/Shanghai, 见 recipes-extended/timezone/tzdata bbappend)
+# panel-config: TM10.5-TD7800 触摸校准 udev 规则(X 轴镜像)
+# weston 的 DSI-1 rotate-180 走 recipes-graphics/wayland/weston-init.bbappend
 
 # ═══════════════════════════════════════════════════════════════
 # ⚠️ 装完这个包组还差两样东西，镜像里给不了：

@@ -147,12 +147,14 @@ static int factual_reply(const char *heard, char *out, size_t cap) {
     snprintf(out, cap, "今天是%d月%d号。", tm.tm_mon + 1, tm.tm_mday);
     return 1;
   }
-  // 天气 —— 无数据源，诚实说不知道，绝不编（这正是之前"晴朗气温适宜"幻觉的根源）
-  if (strstr(heard, "天气") || strstr(heard, "气温") || strstr(heard, "下雨") ||
-      strstr(heard, "温度") || strstr(heard, "冷不冷") || strstr(heard, "热不热")) {
-    snprintf(out, cap, "我现在没有联网，查不到实时天气，抱歉。");
-    return 1;
-  }
+  // 天气：**不要**在这里拦。2026-07-28 起 astra_llm.py 接了 Open-Meteo 气象 API
+  // (免 key、结构化、1~2 秒、不经大模型)，天气必须落到 cloud_reply 去查真实数据。
+  //
+  // 这里原本有一条 "我现在没有联网，查不到实时天气" 的兜底 —— 写它时确实没有数据源，
+  // 目的是防幻觉，当时是对的；但它比 cloud_reply 先执行，等于把后来做好的真实能力
+  // 永久遮蔽：astra_llm.py 连调都不会被调到，日志里也看不出任何异常。
+  // 教训：**"没有能力时的诚实兜底"在能力补齐后必须同步删除**，否则它就变成了谎言。
+  // 断网时的诚实回答由 astra_llm.py 内部负责(查不到就直说，绝不回落编造)。
   return 0;
 }
 
