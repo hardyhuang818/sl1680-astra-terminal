@@ -1,0 +1,7 @@
+# DLSDK 二进制清单（NDA 排除件，构建前放入本目录的 files/ 下）
+# 生成: 2026-07-28 · 校验: sha256sum -c 本文件（在 files/ 目录内执行）
+580e678d4f78aeb49ff95b30aa2756fa764bc3945dc04289a5f491de1e7163cf *DL-firmware/ella-dock-release.spkg
+c98e5d64a7efdcf5778dcf0de4032d78947a63aa5cf51c64b82e6edee706f965 *DL-firmware/firefly-monitor-release.spkg
+1530773d5950dd9057351c1096bde6dc8bc26b7b50337809c58998a0741af814 *DL-firmware/navarro-dock-release.spkg
+2a73d9573fb7f957be5771a21c147971776fca76349c78a6e9330acc3ed4ead7 *DL-firmware/ridge-dock-release.spkg
+0ef3e8a32ec85f3872c25aff9ebe25c22f3c8face668ee1772df241e235309cb *libdlsdk.so
