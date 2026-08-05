@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 控制台</title>
+<style>
+  :root{
+    --bg:#0d1526; --panel:#141f36; --panel2:#1a2745; --line:#26355a;
+    --ink:#e8eef8; --sub:#8fa3c4; --accent:#3d8bfd; --teal:#19c6c0;
+    --good:#2ecc71; --warn:#f39c12; --bad:#e74c3c; --off:#3a4a6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;font-size:14px;line-height:1.55}
+  .top{display:flex;align-items:center;gap:12px;padding:10px 18px;
+    background:linear-gradient(90deg,#0a1f44,#123069);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  .top h1{font-size:16px;margin:0}
+  .top .t{font-size:12px;color:#9fc6f5;font-family:Consolas,monospace}
+  .lamp{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--sub);
+    background:#0f1930;border:1px solid var(--line);border-radius:14px;padding:3px 10px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--off)}
+  .dot.on{background:var(--good);box-shadow:0 0 6px var(--good)}
+  .estop{margin-left:auto;background:var(--bad);color:#fff;border:none;border-radius:8px;
+    padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer}
+  .estop:active{transform:scale(.96)}
+  .conn{font-size:11.5px;color:var(--bad)}
+  .conn.ok{color:var(--good)}
+  .wrap{display:grid;grid-template-columns:1fr 1fr 1fr 300px;gap:12px;padding:14px;max-width:1500px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .card h2{font-size:13.5px;margin:0 0 10px;color:#bcd3f5;display:flex;align-items:center;gap:8px}
+  .span2{grid-column:span 2}
+  .logcol{grid-row:span 3}
+  .row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1c2946}
+  .row:last-child{border-bottom:none}
+  .row .name{flex:1}
+  .row .hint{font-size:11px;color:var(--sub)}
+  .tgl{position:relative;width:42px;height:22px;background:var(--off);border-radius:11px;cursor:pointer;
+    transition:background .15s;flex:none}
+  .tgl.on{background:var(--good)}
+  .tgl.busy{opacity:.4;pointer-events:none}
+  .tgl::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;transition:left .15s}
+  .tgl.on::after{left:22px}
+  .chip{font-size:10.5px;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--sub)}
+  .sl{display:flex;align-items:center;gap:10px;margin:9px 0}
+  .sl label{width:88px;font-size:12.5px;color:var(--sub);flex:none}
+  .sl input[type=range]{flex:1;accent-color:var(--accent)}
+  .sl .val{width:46px;text-align:right;font-family:Consolas,monospace;font-size:13px;color:var(--teal)}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:7px;
+    padding:6px 13px;font-size:12.5px;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent)}
+  .btn.warn{border-color:var(--warn);color:var(--warn)}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  input[type=text]{background:#0f1930;border:1px solid var(--line);color:var(--ink);
+    border-radius:7px;padding:6px 10px;font-size:13px;flex:1;min-width:0}
+  .gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .g{background:#0f1930;border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:center}
+  .g b{display:block;font-size:15px;color:var(--teal);font-family:Consolas,monospace}
+  .g span{font-size:10.5px;color:var(--sub)}
+  .cam{background:#0a0f1d;border:1px dashed var(--line);border-radius:8px;min-height:110px;
+    display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:12px;margin:8px 0;overflow:hidden}
+  .cam img{max-width:100%;border-radius:6px}
+  .meter{height:8px;background:#0f1930;border-radius:4px;overflow:hidden;margin:4px 0 6px}
+  .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--accent));transition:width .5s}
+  .log{background:#0a0f1d;border:1px solid var(--line);border-radius:8px;padding:10px;
+    font-family:Consolas,monospace;font-size:11.5px;line-height:1.7;height:560px;overflow-y:auto;color:#a9c1e8}
+  .log .u{color:#7ec8ff}.log .b{color:#8ef0c0}.log .s{color:#7d8db0}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f1930;
+    border:1px solid var(--accent);border-radius:8px;padding:8px 18px;font-size:13px;display:none;z-index:99}
+  @media (max-width:1100px){ .wrap{grid-template-columns:1fr 1fr} .span2{grid-column:span 2} .logcol{grid-row:auto} }
+  @media (max-width:680px){ .wrap{grid-template-columns:1fr} .span2{grid-column:span 1} }
+  /* 触摸屏(TD7800 kiosk / 手机)：手指目标放大一圈 */
+  @media (pointer:coarse){
+    body{font-size:15px}
+    .tgl{width:58px;height:30px;border-radius:15px}
+    .tgl::after{width:26px;height:26px}
+    .tgl.on::after{left:30px}
+    .btn{padding:11px 18px;font-size:14.5px}
+    .estop{padding:12px 24px;font-size:15px}
+    .sl{margin:13px 0}
+    .sl input[type=range]{height:36px}
+    input[type=text]{padding:11px 12px;font-size:15px}
+    .row{padding:10px 0}
+    .log{height:420px}
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>SL1680 控制台</h1>
+  <span class="t" id="clk">--:--:--</span>
+  <span class="conn" id="conn">连接中…</span>
+  <span class="lamp"><span class="dot" id="d-astra-voice"></span>语音</span>
+  <span class="lamp"><span class="dot" id="d-vision-wake"></span>视觉</span>
+  <span class="lamp"><span class="dot" id="d-dl-face"></span>多屏</span>
+  <span class="lamp"><span class="dot" id="d-astra-timer"></span>定时</span>
+  <span class="lamp"><span class="dot" id="d-dl-clock"></span>时钟屏</span>
+  <button class="estop" onclick="post('/api/servo',{action:'alloff'},'舵机已全部松力')">■ 舵机急停</button>
+</div>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>⏻ 功能开关</h2>
+    <div id="svc-list"></div>
+    <div class="btnrow">
+      <button class="btn warn" onclick="if(confirm('重启显示服务？屏幕会闪断几秒'))post('/api/service',{name:'weston',action:'restart'},'weston 已重启')">重启显示服务</button>
+      <button class="btn" onclick="post('/api/panel',{which:'lighton'},'已发送 Display-On')">面板唤醒</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎙️ 语音调节</h2>
+    <div class="sl"><label>播放音量</label>
+      <input type="range" min="0" max="100" value="90" id="vol">
+      <span class="val" id="vol-v">--</span></div>
+    <div class="sl"><label>麦克风增益</label>
+      <input type="range" min="0" max="100" value="50" id="mic">
+      <span class="val" id="mic-v">--</span></div>
+    <div class="hint" style="font-size:11px;color:var(--sub)">⚠ 麦增益 &gt;60% 实测会削顶</div>
+    <div class="btnrow" style="margin-top:10px">
+      <input type="text" id="say" placeholder="输入文字让它说出来…" value="你好，我是 Astra">
+      <button class="btn primary" onclick="post('/api/say',{text:$('say').value},'已发送')">🔊 试说</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn" onclick="post('/api/wake',{},'已触发欢迎语')">触发唤醒</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>👁️ 视觉唤醒</h2>
+    <div class="cam" id="cam">摄像头快照（vision-wake 运行时可用）</div>
+    <div class="hint" style="font-size:11px;color:var(--sub)">最近检测框高</div>
+    <div class="meter"><i id="boxbar"></i></div>
+    <div style="font-family:Consolas,monospace;font-size:12px;color:var(--teal)" id="boxtxt">--</div>
+  </div>
+
+  <div class="card logcol">
+    <h2>📜 实时日志 / 对话流</h2>
+    <div class="log" id="log">加载中…</div>
+  </div>
+
+  <div class="card span2">
+    <h2>📊 状态仪表盘 <span class="chip">2s 轮询</span></h2>
+    <div class="gauges" id="gauges"></div>
+  </div>
+
+  <div class="card">
+    <h2>🦾 舵机 <span class="chip">PCA9685</span></h2>
+    <div class="sl"><label>CH0 角度</label>
+      <input type="range" min="0" max="180" value="90" id="s0">
+      <span class="val" id="s0-v">90°</span></div>
+    <div class="sl"><label>CH1 角度</label>
+      <input type="range" min="0" max="180" value="90" id="s1">
+      <span class="val" id="s1-v">90°</span></div>
+    <div class="sl"><label>转速</label>
+      <input type="range" min="10" max="190" value="190" id="sdps">
+      <span class="val" id="sdps-v">立即</span></div>
+    <div class="hint" style="font-size:11px;color:var(--sub)">
+      180° 位置舵机没有硬件转速——"转速"是软件匀速渐移；拉到最右=全速直达。大行程慢速要走几秒，期间再拖会提示"还在走"。</div>
+    <div class="btnrow">
+      <button class="btn" onclick="post('/api/servo',{action:'init'},'已初始化 50Hz')">初始化</button>
+      <button class="btn" onclick="post('/api/servo',{action:'loop',ch:0,sec:60},'CH0 摆动 60s')">CH0 演示摆动</button>
+      <button class="btn" onclick="post('/api/servo',{action:'stop'},'已停止')">停止摆动</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SVCS = [
+  ["astra-voice","语音助手",""],
+  ["vision-wake","视觉唤醒","与摄像头实况互斥"],
+  ["dl-face","多屏表情","与时钟屏互斥"],
+  ["astra-timer","定时提醒",""],
+  ["dl-clock","时钟屏","与多屏表情互斥"],
+];
+
+function toast(msg, bad){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.borderColor = bad ? "var(--bad)" : "var(--accent)";
+  t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(()=>t.style.display="none", 2500);
+}
+
+async function post(url, body, okmsg){
+  try{
+    const r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
+                               body:JSON.stringify(body||{})});
+    const j = await r.json();
+    toast(j.ok ? (okmsg||"完成") : ("失败: "+j.msg), !j.ok);
+    setTimeout(refresh, 400);
+    return j.ok;
+  }catch(e){ toast("请求失败: "+e, true); return false; }
+}
+
+// 服务开关列表
+function buildSvc(){
+  $("svc-list").innerHTML = SVCS.map(([n,label,hint])=>`
+    <div class="row"><span class="name">${label} <span class="chip">${n}</span>
+      ${hint?`<br><span class="hint">${hint}</span>`:""}</span>
+      <div class="tgl" id="tgl-${n}" onclick="toggleSvc('${n}')"></div></div>`).join("");
+}
+async function toggleSvc(n){
+  const el = $("tgl-"+n);
+  const turnOn = !el.classList.contains("on");
+  el.classList.add("busy");
+  await post("/api/service",{name:n,action:turnOn?"start":"stop"},
+             (turnOn?"已启动 ":"已停止 ")+n);
+  el.classList.remove("busy");
+}
+
+/* 滑块统一走"input + 350ms 防抖提交"：
+   - 老版用 onchange(松手才发)，WPE 触摸拖动不触发它 → 值从未提交，2 秒后被轮询打回旧值
+   - 老版防覆盖用 window[id+"Touched"] 写、又用 let 声明的同名变量读 —— 两个不同的绑定，
+     防护从未生效。改成统一的 TOUCH 对象。 */
+const TOUCH = {}, DEB = {};
+function bindSlider(id, label, poster){
+  const el = $(id);
+  el.addEventListener("input", ()=>{
+    TOUCH[id] = Date.now();
+    label(el.value);
+    clearTimeout(DEB[id]);
+    DEB[id] = setTimeout(()=>poster(+el.value), 350);
+  });
+}
+bindSlider("vol", v=>{ $("vol-v").textContent=v+"%"; },
+           v=>post("/api/volume",{value:v},"音量 "+v+"%"));
+bindSlider("mic", v=>{ $("mic-v").textContent=v+"%";
+                       $("mic-v").style.color=v>60?"var(--warn)":"var(--teal)"; },
+           v=>post("/api/mic",{value:v},"麦增益 "+v+"%"));
+function servoPost(ch, deg){
+  const dps = +$("sdps").value;
+  if(dps >= 190)      // 最右挡 = 立即(全速直达)
+    post("/api/servo",{action:"angle",ch:ch,deg:deg},"CH"+ch+" → "+deg+"°");
+  else
+    post("/api/servo",{action:"move",ch:ch,deg:deg,dps:dps},
+         "CH"+ch+" → "+deg+"° @"+dps+"°/s");
+}
+bindSlider("s0", v=>{ $("s0-v").textContent=v+"°"; }, v=>servoPost(0,v));
+bindSlider("s1", v=>{ $("s1-v").textContent=v+"°"; }, v=>servoPost(1,v));
+$("sdps").addEventListener("input", ()=>{
+  const v = +$("sdps").value;
+  $("sdps-v").textContent = v >= 190 ? "立即" : v + "°/s";
+});
+
+function fmtUp(s){
+  const d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60);
+  return (d? d+"d ":"") + h + "h " + m + "m";
+}
+
+async function refresh(){
+  let j;
+  try{
+    const r = await fetch("/api/status");
+    j = await r.json();
+    $("conn").textContent = "已连接"; $("conn").className = "conn ok";
+  }catch(e){
+    $("conn").textContent = "连接断开"; $("conn").className = "conn"; return;
+  }
+  $("clk").textContent = j.time;
+  for(const [n] of SVCS){
+    const s = j.services[n]||{};
+    $("d-"+n).className = "dot"+(s.active?" on":"");
+    const t = $("tgl-"+n);
+    if(t && !t.classList.contains("busy")) t.classList.toggle("on", !!s.active);
+  }
+  // 滑块回显（用户 5 秒内碰过就别覆盖 —— 防抖提交+服务端落账需要时间）
+  const idle = id => Date.now() - (TOUCH[id]||0) > 5000;
+  if(j.volume!=null && idle("vol")){ $("vol").value=j.volume; $("vol-v").textContent=j.volume+"%"; }
+  if(j.mic!=null && idle("mic")){ $("mic").value=j.mic; $("mic-v").textContent=j.mic+"%"; }
+  // 框高
+  if(j.vwake_box!=null){ $("boxbar").style.width=j.vwake_box+"%"; $("boxtxt").textContent=j.vwake_box+"%"; }
+  else { $("boxbar").style.width="0"; $("boxtxt").textContent="--（vision-wake 未运行或暂无人）"; }
+  // 快照：预加载成功才换图 —— 加载失败/半张时保留上一帧，不出现裂图图标
+  if(j.snapshot_age_s!=null && j.snapshot_age_s<30){
+    const im = new Image();
+    im.onload = () => {
+      let cur = $("cam").querySelector("img");
+      if(!cur){ $("cam").innerHTML=""; $("cam").appendChild(im); }
+      else cur.src = im.src;
+    };
+    im.src = "/api/snapshot?t=" + Date.now();
+  }
+  // 仪表盘
+  const g = [];
+  for(const r of (j.rails||[]))
+    g.push([ (r.mv/1000).toFixed(3)+" V"+(r.ma!=null?" · "+r.ma+" mA":""), r.name ]);
+  if(j.load1!=null) g.push([j.load1.toFixed(2), "负载 (4 核)"]);
+  if(j.mem_total_kb) g.push([((j.mem_total_kb-j.mem_avail_kb)/1048576).toFixed(1)+" / "+(j.mem_total_kb/1048576).toFixed(1)+" G","内存"]);
+  if(j.disk_used_pct!=null) g.push([j.disk_used_pct+"%","rootfs"]);
+  g.push([fmtUp(j.uptime_s),"uptime"]);
+  if(j.touch_irq!=null) g.push([j.touch_irq,"触摸中断累计"]);
+  g.push([ (j.camera?"✓":"✗")+" / "+(j.pca9685?"✓":"✗"), "C920 / PCA9685" ]);
+  $("gauges").innerHTML = g.map(([b,s])=>`<div class="g"><b>${b}</b><span>${s}</span></div>`).join("");
+  // 日志
+  const lg = $("log");
+  const atBottom = lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 30;
+  lg.innerHTML = (j.log||[]).map(l=>{
+    const cls = l.includes("[你") ? "u" : l.includes("[机器") ? "b" : "s";
+    return `<div class="${cls}">${l.replace(/</g,"&lt;")}</div>`;
+  }).join("") || "（暂无日志）";
+  if(atBottom) lg.scrollTop = lg.scrollHeight;
+}
+
+buildSvc();
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

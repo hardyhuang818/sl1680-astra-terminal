@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Astra SL1680 Build Environment & Command Guide</title>
+<style>
+:root{
+  --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+  --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+  --good:#0f7b40; --goodbg:#eaf7f0; --bad:#b91c1c; --badbg:#fdeceb;
+  --warn:#b45309; --warnbg:#fff8e6; --codebg:#0d1b2e; --codefg:#d8e4f5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.8;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+  color:#fff;border-radius:14px;padding:34px 32px;margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(7,32,74,.2)}
+header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+header.hero h1{margin:10px 0 8px;font-size:29px;line-height:1.35;font-weight:700}
+header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+  padding-top:12px;margin-top:14px}
+main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 32px 30px}
+h2{font-size:21px;margin:34px 0 12px;color:#07204a;font-weight:700;
+   padding-top:18px;border-top:1px solid var(--line)}
+main > h2:first-of-type{border-top:none;padding-top:6px;margin-top:14px}
+h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+h4{font-size:15px;margin:18px 0 6px;color:#0d2a52}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:26px}
+li{margin:6px 0}
+a{color:var(--accent)}
+code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62;
+  word-break:break-word}
+pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+  overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;word-break:normal}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfd}
+td.star{background:#fff8e6}
+blockquote{background:var(--warnbg);border:1px solid #f0d9a0;border-left:4px solid var(--warn);
+  border-radius:8px;padding:12px 18px;margin:16px 0;color:#5a4a20}
+blockquote p{margin:6px 0}
+blockquote code{background:#f6ecd5;color:#6b5320}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#0b2b5b}
+footer{margin-top:22px;padding:18px 24px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px;color:var(--sub)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  header.hero{padding:22px 18px} header.hero h1{font-size:21px}
+  main{padding:6px 16px 22px}
+}
+@media print{
+  body{background:#fff} main,footer,blockquote,table{break-inside:avoid}
+  header.hero{box-shadow:none}
+  pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">SL1680 · BUILD ENVIRONMENT GUIDE</div>
+  <h1>Astra SL1680 Build Environment & Command Guide</h1>
+  <div class="meta"><strong>Date</strong>: 2026-08-01　<strong>Target</strong>: Synaptics Astra SL1680 (Dolphin RDK)<br><strong>SDK version</strong>: <code>scarthgap_6.12_v2.3.0</code> (Yocto 5.0 scarthgap / kernel 6.12.62)<br><strong>Audience</strong>: colleagues setting up the same build environment. Every number in this document<br>was taken from the actual build machine in use — not copied from official docs.</div>
+</header>
+<main>
+<h2>0. The Big Picture</h2>
+<pre><code>┌─ Windows 11 ────────────────────────────────────────────────┐
+│  D:\...\sl1680-astra-terminal\   ← git repo (docs + our layers) │
+│                                                              │
+│  ┌─ WSL2: Ubuntu 22.04 ────────────────────────────────┐    │
+│  │  /home/astra/sdk/            ← official SDK (pinned)  │    │
+│  │    ├─ poky/                    Yocto 5.0.9            │    │
+│  │    ├─ meta-synaptics/          official BSP layer     │    │
+│  │    ├─ meta-openembedded/ etc.  ships with SDK         │    │
+│  │    ├─ meta-dlsdk/        ★ OUR layer (linked in)      │    │
+│  │    ├─ meta-tcm2-touch/   ★ OUR layer (touch driver)   │    │
+│  │    └─ build-sl1680/            build directory        │    │
+│  │         └─ tmp/deploy/images/sl1680/   artifacts      │    │
+│  └──────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────┘
+                    │ scp / dd
+                    ▼
+            SL1680 board (192.168.5.126)
+</code></pre>
+<p><strong>Core principle: we do NOT fork the official SDK.</strong> Upstream is pinned to a tag; every
+modification of ours lives in two custom Yocto layers (kernel changes are applied as
+<code>bbappend</code> + patch on top of the official <code>linux-syna</code> recipe). When upstream releases a
+new version, we only swap the tag and re-validate.</p>
+<hr>
+<h2>1. Host Requirements (as measured)</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>This machine</th>
+<th>Recommended minimum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OS</td>
+<td><strong>Ubuntu 22.04.5 LTS</strong> (WSL2)</td>
+<td>Ubuntu 20.04/22.04, bare metal or WSL2</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>24 cores</td>
+<td>≥8 cores (more cores = faster full build)</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>47 GB</td>
+<td>≥16 GB (linking chromium/qt is memory-hungry)</td>
+</tr>
+<tr>
+<td>Disk</td>
+<td>1 TB (357 GB used; <code>tmp/</code> alone is <strong>159 GB</strong>)</td>
+<td><strong>≥500 GB free</strong>, SSD</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.10.12</td>
+<td>≥3.8</td>
+</tr>
+<tr>
+<td>git</td>
+<td>2.34.1</td>
+<td>≥2.28</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>WSL2 users: keep the SDK on the <strong>native WSL filesystem</strong> (<code>/home/...</code>), never on
+<code>/mnt/c</code> — cross-filesystem IO slows the build by an order of magnitude. This machine
+mounts a dedicated 1 TB virtual disk (<code>/dev/sdd</code>) for WSL.</p>
+</blockquote>
+<h3>1.1 Package dependencies (standard Yocto scarthgap set + a few extras)</h3>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y gawk wget git diffstat unzip texinfo gcc build-essential \
+  chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils \
+  iputils-ping python3-git python3-jinja2 python3-subunit zstd liblz4-tool \
+  file locales libacl1 bmap-tools
+sudo locale-gen en_US.UTF-8
+</code></pre>
+<hr>
+<h2>2. Getting the Source (four idempotent steps)</h2>
+<pre><code class="language-bash"># 1) Official SDK — the version MUST be pinned; never build from master
+git clone --branch scarthgap_6.12_v2.3.0 https://github.com/synaptics-astra/sdk ~/sdk
+cd ~/sdk
+# poky/meta-synaptics etc. ship inside the SDK; if they are submodules:
+git submodule update --init --recursive 2&gt;/dev/null || true
+
+# 2) Our repository (contains meta-dlsdk / meta-tcm2-touch + all docs)
+git clone git@github.com:hardyhuang818/sl1680-astra-terminal.git ~/sl1680-astra-terminal
+
+# 3) Hook the layers in (idempotent script; symlinks the layer dirs + edits bblayers.conf)
+~/sl1680-astra-terminal/tools/setup_sdk.sh ~/sdk
+
+# 4) Verify the layers are registered
+cd ~/sdk &amp;&amp; source poky/oe-init-build-env build-sl1680
+bitbake-layers show-layers | grep -E &quot;dlsdk|tcm2&quot;
+</code></pre>
+<h3>2.1 Version anchors (for auditing)</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Astra SDK</td>
+<td>tag <code>scarthgap_6.12_v2.3.0</code></td>
+</tr>
+<tr>
+<td>poky</td>
+<td>yocto-5.0.9 (ships with SDK)</td>
+</tr>
+<tr>
+<td>meta-synaptics</td>
+<td><code>d552818</code> (ships with SDK — do not upgrade independently)</td>
+</tr>
+<tr>
+<td>kernel (linux-syna)</td>
+<td>6.12.62</td>
+</tr>
+<tr>
+<td>Our layers</td>
+<td><code>meta-dlsdk</code> (changelog in its <code>VERSION</code> file, currently v2.9) + <code>meta-tcm2-touch</code></td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 Final shape of bblayers.conf (for cross-checking)</h3>
+<p>On top of the layers the SDK ships with, only two lines are appended at the end:</p>
+<pre><code>  /home/astra/sdk/meta-tcm2-touch \
+  /home/astra/sdk/meta-dlsdk \
+</code></pre>
+<h3>2.3 Key local.conf entries (SDK template defaults — listed for verification)</h3>
+<pre><code>MACHINE ??= &quot;sl1680&quot;
+PACKAGE_CLASSES ?= &quot;package_deb&quot;
+INIT_MANAGER = &quot;systemd&quot;
+LICENSE_FLAGS_ACCEPTED = &quot;commercial Synaptics-EULA ...&quot;
+IMAGE_FSTYPES += &quot; synaimg ext4 ext4.gz&quot;
+INITRAMFS_IMAGE_BUNDLE = &quot;1&quot;
+</code></pre>
+<p>The only switch we ever touch: <code>ASTRA_TERMINAL_PACKAGES = ""</code> (empty = skip our
+voice/multi-display applications and fall back to the stock image).</p>
+<hr>
+<h2>3. Build Commands</h2>
+<p><strong>Every new terminal must enter the environment first</strong> (bitbake only exists after sourcing):</p>
+<pre><code class="language-bash">cd ~/sdk &amp;&amp; source poky/oe-init-build-env build-sl1680
+</code></pre>
+<h3>3.1 Full image (first build: 3–6 hours depending on machine)</h3>
+<pre><code class="language-bash">bitbake astra-media
+</code></pre>
+<p>Artifacts land in <code>tmp/deploy/images/sl1680/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SYNAIMG/</code></td>
+<td><strong>Complete flashing bundle</strong> (~2.5 GB) for the official USB flashing tool</td>
+</tr>
+<tr>
+<td><code>astra-media-sl1680.rootfs.ext4</code></td>
+<td>standalone rootfs image</td>
+</tr>
+<tr>
+<td><code>linux_bootimgs.subimg</code></td>
+<td><strong>boot bundle</strong> (kernel + DTB + initramfs) — can be dd'ed alone</td>
+</tr>
+<tr>
+<td><code>Image-sl1680.bin</code> / <code>*.dtb</code></td>
+<td>raw kernel / device tree</td>
+</tr>
+</tbody>
+</table>
+<h3>3.2 Fast kernel iteration (most-used daily loop, <strong>~75 seconds</strong> total)</h3>
+<p>After editing <code>dolphin-rdk.dts</code> or kernel sources:</p>
+<pre><code class="language-bash">bitbake linux-syna -C compile        # capital C: force re-run from compile (re-builds dts)
+bitbake linux-syna -c deploy -f      # force re-deploy artifacts
+</code></pre>
+<blockquote>
+<p>⚠️ You are editing sources under <code>tmp/work-shared/sl1680/kernel-source/</code> —
+<strong>this directory is volatile</strong>; a <code>cleanall</code> wipes it. Every change must be captured
+back into a patch under <code>meta-dlsdk/recipes-kernel/linux/files/</code>
+(see §5.6 for the correct way to generate that patch).</p>
+</blockquote>
+<p>After building, <strong>verify the DTB at byte level</strong> (a green build ≠ your change took effect):</p>
+<pre><code class="language-bash">python3 - &lt;&lt;'EOF'
+b = open(&quot;/home/astra/sdk/build-sl1680/tmp/deploy/images/sl1680/dolphin-rdk.dtb&quot;,&quot;rb&quot;).read()
+print(&quot;my node present:&quot;, b&quot;synaptics,tcm-i2c&quot; in b)
+EOF
+</code></pre>
+<h3>3.3 Single-package builds (after editing a recipe)</h3>
+<pre><code class="language-bash">bitbake astra-voice                  # main voice application
+bitbake sherpa-onnx                  # local ASR/TTS runtime
+bitbake dl-face                      # DL7400 conversation UI
+bitbake synaptics-tcm2               # touch driver kernel module (meta-tcm2-touch)
+</code></pre>
+<h3>3.4 Cleaning (light to heavy)</h3>
+<pre><code class="language-bash">bitbake &lt;recipe&gt; -c clean            # wipe work dir, keep sstate
+bitbake &lt;recipe&gt; -c cleansstate      # also wipe sstate (forces a real rebuild)
+bitbake &lt;recipe&gt; -c cleanall         # also wipe downloads (re-downloads everything! use sparingly)
+</code></pre>
+<blockquote>
+<p>To verify "does my patch apply from scratch", <code>cleansstate</code> + rebuild is enough —
+do <strong>not</strong> reach for <code>cleanall</code> by default.</p>
+</blockquote>
+<h3>3.5 Debugging &amp; inspection</h3>
+<pre><code class="language-bash">bitbake &lt;recipe&gt; -e | grep ^SRC_URI=          # expanded value of any variable
+bitbake &lt;recipe&gt; -c devshell                  # drop into the recipe's build shell
+bitbake-layers show-recipes &quot;*tcm*&quot;           # which layer provides a recipe
+bitbake-layers show-appends linux-syna        # who appends to it
+oe-pkgdata-util find-path &quot;*/astra_voice&quot;     # which package owns a file
+</code></pre>
+<p>Build logs: <code>tmp/work/&lt;arch&gt;/&lt;recipe&gt;/&lt;ver&gt;/temp/log.do_&lt;task&gt;</code></p>
+<hr>
+<h2>4. Flashing</h2>
+<h3>4.1 Full flash (USB tool — first time / major versions)</h3>
+<p>On the Windows side use the official <code>usb-tool-astra-update</code> (board in USB flashing mode)
+and feed it the whole <code>SYNAIMG/</code> directory. ~2.5 GB, under 10 minutes.</p>
+<h3>4.2 Boot-only flash (kernel/DTS iteration, 30 seconds)</h3>
+<p>dd directly while the board is running (both A/B slots) + <strong>sha256 read-back verification</strong>:</p>
+<pre><code class="language-bash">scp tmp/deploy/images/sl1680/linux_bootimgs.subimg root@192.168.5.126:/tmp/
+ssh root@192.168.5.126 'sh -s' &lt;&lt;'EOF'
+IMG=/tmp/linux_bootimgs.subimg
+SZ=$(wc -c &lt; $IMG)
+dd if=$IMG of=/dev/mmcblk0p8 bs=1M 2&gt;/dev/null
+dd if=$IMG of=/dev/mmcblk0p9 bs=1M 2&gt;/dev/null
+sync
+python3 -c &quot;
+import hashlib
+exp = hashlib.sha256(open('$IMG','rb').read()).hexdigest()
+for d in ('/dev/mmcblk0p8','/dev/mmcblk0p9'):
+    got = hashlib.sha256(open(d,'rb').read($SZ)).hexdigest()
+    print(d, 'OK' if got==exp else 'MISMATCH!')
+&quot;
+EOF
+</code></pre>
+<p>Then <strong>power-cycle the board</strong> (see §5.1 — soft reboot is unreliable on this board).</p>
+<h3>4.3 Two things the image does NOT contain</h3>
+<table>
+<thead>
+<tr>
+<th>Missing</th>
+<th>How to provide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~2 GB of voice models (kept out of the image)</td>
+<td>Copy to <code>/home/voice/</code> on the board after flashing; manifest in <code>meta-dlsdk/recipes-ai/astra-voice/files/README_models.md</code></td>
+</tr>
+<tr>
+<td>DLSDK binaries (DisplayLink NDA)</td>
+<td>Place into <code>meta-dlsdk/recipes-graphics/dlsdk/files/</code> before building; file list + sha256 in <code>BINARIES_MANIFEST.txt</code> there. If you don't need DL7400, set <code>ASTRA_TERMINAL_PACKAGES = ""</code> in local.conf</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>5. Pitfalls (every one of these actually bit us, sorted by pain)</h2>
+<h3>5.1 Soft reboot is unreliable on this board</h3>
+<p><code>reboot -f</code>, <code>systemctl reboot -ff</code>, sysrq — all ineffective. <strong>Plan every boot-flash
+around a manual power cycle</strong>, and batch your changes into as few reboots as possible.</p>
+<h3>5.2 bbappend filename wildcard rules (the two traps are exact opposites)</h3>
+<ul>
+<li><code>linux-syna</code> recipe <strong>is versioned</strong> (6.12.62) → the append MUST be <strong><code>linux-syna_%.bbappend</code></strong> (with <code>_%</code>)</li>
+<li><code>tzdata</code> recipe <strong>is unversioned</strong> → the append MUST be <strong><code>tzdata.bbappend</code></strong> (without <code>_%</code>)
+Both mistakes produce the same message — <code>No recipes available for ...</code> — and bitbake
+never tells you it's the filename.</li>
+</ul>
+<h3>5.3 cmake FetchContent is hard-disabled by Yocto (looks like a network failure)</h3>
+<p><code>cmake.bbclass</code> sets <code>FETCHCONTENT_FULLY_DISCONNECTED=ON</code> by default. Third-party
+downloads fail in do_configure with errors that look like connectivity problems — but no
+network call ever happened. Fix: list every third-party tarball in <code>SRC_URI</code> (with sha256)
++ a <code>do_configure:prepend</code> that copies them into the source tree where
+<code>possible_file_locations</code> expects them. Reference implementation (14 packages):
+<code>meta-dlsdk/recipes-ai/sherpa-onnx/sherpa-onnx_1.13.4.bb</code>.</p>
+<h3>5.4 A .so without SOVERSION silently lands in the -dev package</h3>
+<p>The build is green, packages are produced — but the .so is missing on the board because
+it was classified into <code>-dev</code>. The symptom appears very far from the cause. See the
+<code>SOLIBS</code>/<code>FILES</code> handling in the sherpa-onnx recipe.</p>
+<h3>5.5 Four image-integration traps (a green build ≠ a working image)</h3>
+<p>① two packages shipping the same file → do_rootfs conflict; ② two services fighting over
+one device (DLSDK is single-process exclusive); ③ package installed but service not
+enabled (<code>SYSTEMD_AUTO_ENABLE</code> only works inside the recipe —
+<code>SYSTEMD_AUTO_ENABLE:pn-X</code> in conf files does <strong>not</strong> work); ④ acceptance must read the
+produced ext4 with debugfs — never trust the build manifest.</p>
+<h3>5.6 Never generate kernel patches with <code>git diff</code></h3>
+<p>Yocto's <code>do_patch</code> commits the old patch into the kernel-source git HEAD, so <code>git diff</code>
+only emits the <strong>delta</strong> (measured: 70 lines instead of the correct 248). Correct method:
+run a full <code>diff -u</code> against the <strong>pristine baseline</strong> dts, then dry-run-replay to verify:</p>
+<pre><code class="language-bash"># baseline + patch == current source, byte-identical, or it doesn't count
+patch -p1 --dry-run &lt; new.patch &amp;&amp; patch -p1 -s &lt; new.patch &amp;&amp; cmp patched-file current-file
+</code></pre>
+<h3>5.7 debugfs does not follow symlinks</h3>
+<p>The real weston.ini is <code>/etc/xdg/weston/weston.ini.weston-init</code> (managed by
+update-alternatives). When auditing an image with debugfs, inspect the real file, or you
+will falsely report "config missing".</p>
+<h3>5.8 WSL specifics</h3>
+<ul>
+<li>When invoking WSL from Windows for anything non-trivial, <strong>write a script file</strong> —
+  inline commands get shredded by two layers of PowerShell/bash quoting</li>
+<li>Git Bash rewrites <code>/home/...</code> paths into Windows paths; invoke wsl from PowerShell</li>
+</ul>
+<hr>
+<h2>6. Board vs. Repository (team convention)</h2>
+<p><strong>The board is the source of truth.</strong> Anything debugged directly on the board must be
+flowed back into the repository and audited by sha256:</p>
+<pre><code class="language-bash">tools/export_live.sh        # pull board files and diff against the repo
+</code></pre>
+<ul>
+<li>Version history: <code>meta-dlsdk/VERSION</code> (one entry per milestone, with board-side sha256)</li>
+<li>Per milestone: git commit + tag (v2.7, v2.8, v2.9…)</li>
+<li>Day-by-day changes: <code>backups/CHANGELOG.md</code></li>
+</ul>
+<h2>7. Reference Documents</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SETUP_SDK.md</code></td>
+<td>The minimal four-step reproduction recipe</td>
+</tr>
+<tr>
+<td><code>SL1680项目总览_2026-07-28.md</code></td>
+<td>Top-level project overview (EN version available)</td>
+</tr>
+<tr>
+<td><code>meta-dlsdk/VERSION</code></td>
+<td>Version history with per-release details</td>
+</tr>
+<tr>
+<td><code>SL1680_故障排查实录_2026-07-28.md</code></td>
+<td>Runtime troubleshooting log</td>
+</tr>
+<tr>
+<td><code>TD7800触摸根因与视觉唤醒修复_2026-07-28.md</code></td>
+<td>Full methodology of the voltage-domain root cause</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>Data taken from the actual build machine (Ubuntu 22.04.5 / 24 cores / 47 GB RAM /
+tmp at 159 GB), verified 2026-08-01.</em>
+<em>DLSDK binaries and panel vendor materials are under NDA — do not distribute with this document.</em></p>
+</main>
+<footer>由 <code>md2html.py</code> 生成 · 源文件 <code>Astra_Build_Environment_Guide_2026-08-01_EN.md</code></footer>
+</div>
+</body>
+</html>

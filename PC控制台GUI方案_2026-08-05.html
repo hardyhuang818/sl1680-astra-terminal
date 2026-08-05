@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 PC 控制台 GUI 方案</title>
+<style>
+:root{
+  --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+  --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+  --good:#0f7b40; --goodbg:#eaf7f0; --bad:#b91c1c; --badbg:#fdeceb;
+  --warn:#b45309; --warnbg:#fff8e6; --codebg:#0d1b2e; --codefg:#d8e4f5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.8;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+  color:#fff;border-radius:14px;padding:34px 32px;margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(7,32,74,.2)}
+header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+header.hero h1{margin:10px 0 8px;font-size:29px;line-height:1.35;font-weight:700}
+header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+  padding-top:12px;margin-top:14px}
+main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 32px 30px}
+h2{font-size:21px;margin:34px 0 12px;color:#07204a;font-weight:700;
+   padding-top:18px;border-top:1px solid var(--line)}
+main > h2:first-of-type{border-top:none;padding-top:6px;margin-top:14px}
+h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+h4{font-size:15px;margin:18px 0 6px;color:#0d2a52}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:26px}
+li{margin:6px 0}
+a{color:var(--accent)}
+code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62;
+  word-break:break-word}
+pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+  overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;word-break:normal}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfd}
+td.star{background:#fff8e6}
+blockquote{background:var(--warnbg);border:1px solid #f0d9a0;border-left:4px solid var(--warn);
+  border-radius:8px;padding:12px 18px;margin:16px 0;color:#5a4a20}
+blockquote p{margin:6px 0}
+blockquote code{background:#f6ecd5;color:#6b5320}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#0b2b5b}
+footer{margin-top:22px;padding:18px 24px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px;color:var(--sub)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  header.hero{padding:22px 18px} header.hero h1{font-size:21px}
+  main{padding:6px 16px 22px}
+}
+@media print{
+  body{background:#fff} main,footer,blockquote,table{break-inside:avoid}
+  header.hero{box-shadow:none}
+  pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">SL1680 · PC 控制台方案</div>
+  <h1>SL1680 PC 控制台 GUI 方案</h1>
+  <div class="meta"><strong>日期</strong>：2026-08-05　<strong>结论先行</strong>：<strong>可以做，而且不用装任何新东西。</strong><br>板子上 python3 + systemd + 现成脚本已经覆盖了所有控制点，缺的只是一层"远程可点"的壳。</div>
+</header>
+<main>
+<h2>1. 三条技术路线对比</h2>
+<table>
+<thead>
+<tr>
+<th>路线</th>
+<th>做法</th>
+<th>优点</th>
+<th>缺点</th>
+<th>判断</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A. PC 原生程序包 SSH</td>
+<td>Windows 程序（如 PyQt）把按钮翻译成 ssh 命令</td>
+<td>板子零改动</td>
+<td>每台 PC 要装环境；每次点击开一条 ssh，慢（实测 1~2s/次）；密码管理麻烦</td>
+<td>备选</td>
+</tr>
+<tr>
+<td><strong>B. 板端 Web 控制台</strong> ★</td>
+<td>板子跑一个 <strong>python3 标准库 HTTP 服务</strong>（约 300 行，无任何依赖），PC/手机浏览器打开 <code>http://192.168.5.126:8080</code></td>
+<td>PC <strong>零安装</strong>；手机也能用；一次开发到处用；实时状态推送容易</td>
+<td>板子加一个 service（无依赖，风险极低）</td>
+<td><strong>推荐</strong></td>
+</tr>
+<tr>
+<td>C. 完整前后端框架</td>
+<td>FastAPI/Vue 等</td>
+<td>好看</td>
+<td>板上没 pip，装依赖是大工程；杀鸡用牛刀</td>
+<td>否</td>
+</tr>
+</tbody>
+</table>
+<p><strong>推荐 B 的关键依据</strong>（都是已验证的事实）：
+- 板上 <code>python3 3.12.9</code> 自带 <code>http.server</code>/<code>json</code>/<code>subprocess</code>，<strong>零依赖</strong>就能起 API 服务
+- 所有控制动作板上已有现成命令（见 §2 清单），API 层只是薄薄一层转发
+- 板子和 PC 在同一局域网（<code>192.168.5.126</code>），在外可走已有的 WireGuard
+- 前端单文件 HTML（我们已有同款样式体系），浏览器打开即用</p>
+<hr>
+<h2>2. 可控点清单（全部基于板上已有能力，无需新驱动）</h2>
+<h3>2.1 功能开关（systemctl，全部现成）</h3>
+<table>
+<thead>
+<tr>
+<th>开关</th>
+<th>背后命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>语音助手</td>
+<td><code>systemctl start/stop astra-voice</code></td>
+<td></td>
+</tr>
+<tr>
+<td>视觉唤醒</td>
+<td><code>systemctl start/stop vision-wake</code></td>
+<td>与"摄像头实况"互斥，UI 要做联动</td>
+</tr>
+<tr>
+<td>多屏表情界面</td>
+<td><code>systemctl start/stop dl-face</code></td>
+<td>DLSDK 单进程独占，与 dl-clock 互斥</td>
+</tr>
+<tr>
+<td>定时提醒守护</td>
+<td><code>systemctl start/stop astra-timer</code></td>
+<td></td>
+</tr>
+<tr>
+<td>开机自启</td>
+<td><code>systemctl enable/disable &lt;svc&gt;</code></td>
+<td>与"立即启停"分开两列</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 语音调节（现成脚本/ALSA）</h3>
+<table>
+<thead>
+<tr>
+<th>控制</th>
+<th>背后命令</th>
+<th>UI 形态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>播放音量</td>
+<td><code>astra_setvol.sh &lt;0-100&gt;</code>（带回读核对）</td>
+<td>滑块 + 当前值</td>
+</tr>
+<tr>
+<td>麦克风增益</td>
+<td><code>amixer -c &lt;N&gt; sset Mic &lt;0-100&gt;%</code></td>
+<td>滑块（默认 50%，超过会削顶——UI 标红区）</td>
+</tr>
+<tr>
+<td>采音门槛 RMS</td>
+<td>astra_voice 配置（当前 1150）</td>
+<td>滑块 + "太轻被跳过"计数实时显示</td>
+</tr>
+<tr>
+<td>TTS 试说</td>
+<td>写 <code>/tmp/astra_say.txt</code> + <code>SIGUSR2</code>（记忆系统已用此通道）</td>
+<td>文本框 + "说"按钮</td>
+</tr>
+<tr>
+<td>唤醒测试</td>
+<td><code>kill -USR1 &lt;pid&gt;</code>（视觉唤醒同款信号）</td>
+<td>按钮</td>
+</tr>
+</tbody>
+</table>
+<h3>2.3 视觉唤醒参数</h3>
+<table>
+<thead>
+<tr>
+<th>控制</th>
+<th>现状</th>
+<th>UI 形态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>触发框高阈值</td>
+<td><code>vision_wake.sh 45 2</code> 的第 1 参数</td>
+<td>滑块 30~80%，改后自动重启服务</td>
+</tr>
+<tr>
+<td>防抖帧数</td>
+<td>第 2 参数</td>
+<td>数字 1~5</td>
+</tr>
+<tr>
+<td>实时框高</td>
+<td>journal 心跳日志已有 <code>框高=NN%</code></td>
+<td>实时曲线/数字，<strong>调阈值时的标定神器</strong></td>
+</tr>
+<tr>
+<td>摄像头快照</td>
+<td>复用 <code>/tmp/vw_cur.jpg</code>（检测管道现成产物）</td>
+<td>缩略图 2s 刷新</td>
+</tr>
+</tbody>
+</table>
+<h3>2.4 舵机（pca9685.py 已实测）</h3>
+<table>
+<thead>
+<tr>
+<th>控制</th>
+<th>背后命令</th>
+<th>UI 形态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单通道角度</td>
+<td><code>pca9685.py angle &lt;ch&gt; &lt;0-180&gt;</code></td>
+<td><strong>16 路滑块</strong>（默认折叠只展开已用通道）</td>
+</tr>
+<tr>
+<td>演示摆动</td>
+<td><code>pca9685.py loop &lt;ch&gt; &lt;sec&gt;</code> / <code>stop</code></td>
+<td>按钮对</td>
+</tr>
+<tr>
+<td>全部松力</td>
+<td><code>pca9685.py alloff</code></td>
+<td><strong>红色急停钮</strong>（常驻右上角）</td>
+</tr>
+</tbody>
+</table>
+<h3>2.5 提醒与记忆（记忆系统 v2.9 的文件直读直写）</h3>
+<table>
+<thead>
+<tr>
+<th>控制</th>
+<th>数据源</th>
+<th>UI 形态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>倒计时/每日提醒</td>
+<td><code>timers.json</code> / <code>daily.json</code></td>
+<td>列表 + 删除 + 新增表单</td>
+</tr>
+<tr>
+<td>长期记忆</td>
+<td><code>memory.md</code>（本来就设计为人类可编辑）</td>
+<td>文本编辑器 + 保存</td>
+</tr>
+</tbody>
+</table>
+<h3>2.6 状态仪表盘（只读，全部现成数据源）</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>数据源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>电源轨电压/电流</td>
+<td><strong>板载 INA3221</strong>（<code>/sys/class/hwmon</code>，PWR_3V3/VDDM_1V8 等 6 轨+电流）——舵机接入后看电源健康特别有用</td>
+</tr>
+<tr>
+<td>服务状态灯</td>
+<td><code>systemctl is-active</code> ×5</td>
+</tr>
+<tr>
+<td>CPU/内存/磁盘/uptime</td>
+<td><code>/proc</code></td>
+</tr>
+<tr>
+<td>触摸活着吗</td>
+<td><code>/proc/interrupts</code> 中断计数增量</td>
+</tr>
+<tr>
+<td>摄像头/麦克风在不在</td>
+<td><code>lsusb</code> + <code>/dev/v4l/by-id</code></td>
+</tr>
+<tr>
+<td>I2C 设备图</td>
+<td><code>i2cdetect</code>（触摸 0x2c / INA 0x40-41 / PCA9685 0x70）</td>
+</tr>
+<tr>
+<td>最近对话</td>
+<td><code>journalctl -u astra-voice</code> 尾部（<code>[你]</code>/<code>[机器]</code> 行）</td>
+</tr>
+</tbody>
+</table>
+<h3>2.7 显示链路（应急按钮）</h3>
+<table>
+<thead>
+<tr>
+<th>控制</th>
+<th>背后命令</th>
+<th>场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>重启 weston</td>
+<td><code>systemctl restart weston</code></td>
+<td>桥片重新初始化，屏黑救急</td>
+</tr>
+<tr>
+<td>面板 Display-On</td>
+<td>SPI 发 <code>29h/11h</code>（td7800_spi_tool.sh 现成）</td>
+<td>复位后屏不亮</td>
+</tr>
+<tr>
+<td>BIST 测试图</td>
+<td>同工具 <code>bist_on/off</code></td>
+<td>排查"屏还是链路"问题</td>
+</tr>
+</tbody>
+</table>
+<h3>2.8 明确不放进 UI 的</h3>
+<ul>
+<li><strong>重启板子</strong> —— 软复位不可靠（需人工断电），做成按钮只会造成"点了没反应"的误会；只放"需要断电重启"的提示</li>
+<li>烧录/内核操作 —— 风险高频次低，留在命令行</li>
+<li>板子密码修改等系统级设置</li>
+</ul>
+<hr>
+<h2>3. 架构与界面布局</h2>
+<pre><code>┌─ PC / 手机浏览器 ────────────────────────────────────────┐
+│  http://192.168.5.126:8080  （单文件 HTML+JS，无需安装）    │
+└──────────────┬──────────────────────────────────────────┘
+               │ HTTP GET/POST (JSON) · 2s 轮询状态
+┌──────────────▼──────────────────────────────────────────┐
+│  板端 astra-webctl.service (python3 http.server, ~300行) │
+│    GET  /api/status      ← 一次返回全部仪表盘数据           │
+│    POST /api/service     ← {name, action}                │
+│    POST /api/volume      ← {value}                       │
+│    POST /api/servo       ← {ch, angle} / {action:stop}   │
+│    POST /api/say         ← {text}                        │
+│    GET  /api/snapshot    ← 摄像头快照 jpg                  │
+│    ...                                                   │
+└──────────────────────────────────────────────────────────┘
+</code></pre>
+<p>界面五个区（原型见 <code>SL1680控制台_UI原型_2026-08-05.html</code>）：</p>
+<pre><code>┌────────────────────────────────────────────────┬─────────┐
+│ ① 状态条: 服务灯×5 · 电源轨 · CPU/内存 · [急停]  │         │
+├──────────────┬─────────────────┬───────────────┤ ⑤ 实时  │
+│ ② 功能开关    │ ③ 语音调节        │ ④ 视觉唤醒     │   日志  │
+│  五个 toggle  │  音量/麦/门槛滑块  │  阈值+实时框高  │  对话流 │
+│  +自启开关    │  TTS试说          │  摄像头快照     │         │
+├──────────────┴─────────────────┴───────────────┤         │
+│ ⑥ 舵机 16 路滑块(折叠)  ⑦ 提醒列表  ⑧ 记忆编辑    │         │
+└────────────────────────────────────────────────┴─────────┘
+</code></pre>
+<h2>4. 工作量估算</h2>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>内容</th>
+<th>估时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>板端 API（状态+开关+音量+舵机+说话）+ 前端骨架</td>
+<td>1 天</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>视觉唤醒调参+快照、提醒/记忆编辑、日志流</td>
+<td>1 天</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>显示应急按钮、互斥联动、进 Yocto recipe 自启</td>
+<td>半天</td>
+</tr>
+</tbody>
+</table>
+<p><strong>安全边界</strong>：只监听局域网；板子是测试镜像默认凭据（用户已拍板保留），控制台不再引入新的认证面，但 API 只暴露白名单动作（不开任意命令执行）。</p>
+<hr>
+<h2>5. 与 Robot PDF 的衔接（为什么这个 GUI 值得做）</h2>
+<p>刚学的《Synaptics Tactile Tech for Robot》里，Synaptics 自家的灵巧手 PoC 就配了
+<strong>"Software &amp; GUI：rawdata 报告 / 力值输出 / 滑移检测 / 标定 + Visualization toolkit"</strong>——
+控制台+可视化是机器人演示的标配形态。</p>
+<p>我们的板子已经是他们图里 "Astra Edge Compute + Actuator Ctrl + Camera/Mic 多传感器" 那一块
+（SL1680 + PCA9685 舵机 + C920 + 麦克风）。如果后续拿到 SN6012T/CTS 触觉模块（SPI/I2C，3.3V，
+正好 J32 还有空闲的 SPI2_SS1n/SS3n），这个 Web 控制台就是现成的<strong>触觉数据可视化载体</strong>——
+加一个 <code>/api/tactile</code> 端点画 5×12 力值热力图即可，和他们 Coralboard 上的 GUI 对标。</p>
+<hr>
+<p><em>相关：<code>SL1680功能一页纸_2026-07-31.html</code>（能力总览）· <code>PCA9685_MG90S_接入SL1680_2026-07-31.md</code>（舵机）</em></p>
+</main>
+<footer>由 <code>md2html.py</code> 生成 · 源文件 <code>PC控制台GUI方案_2026-08-05.md</code></footer>
+</div>
+</body>
+</html>

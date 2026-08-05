@@ -3,6 +3,38 @@
 # 这份 layer 的"真相"是板子，不是仓库 —— 历史上仓库多次落后于板端实际运行版本。
 # 每次同步到 WSL 构建树时在这里追加一条，并跑 tools/export_live.sh 核对 sha256。
 
+v3.0  2026-08-05  ★ Web 控制台 + TD7800 触摸 kiosk：屏幕从显示器变成控制台
+  (v2.9 = TD7800 电平域定性, 在 PR #1 分支上, 合并后按日期排序)
+  【新能力域】PC/手机浏览器与 TD7800 触摸屏共用同一套 Web 控制台：
+    - 板端 recipes-connectivity/astra-webctl/：python3 标准库 HTTP 服务(:8080, 零依赖),
+      白名单 API(服务开关/音量/麦增益/TTS试说/唤醒/舵机/面板29h/快照/状态), 无任意命令执行
+    - 触屏 kiosk：cog 0.18.5 + wpewebkit 2.46.7 全屏跑在 DSI-1, weston 的触摸校准/
+      180°翻转自动继承; astra-kiosk.service 等 weston+webctl 就绪后启动
+    - meta-webkit 层(Igalia, **scarthgap 分支** —— master 只兼容 wrynose 会解析失败)
+    - PC 在外访问：板子 8080 经 WireGuard 跳板转发 `ssh -N -L 18080:192.168.8.186:8080
+      root@192.168.5.1`; 手机连 BE3600 WiFi 直开 192.168.8.186:8080
+  【舵机 pca9685.py 三连修】
+    1) 断电重启后芯片默认 SLEEP, 寄存器能写但 PWM 不出 → 写输出前自动唤醒
+    2) MODE1 粘滞位 EXTCLK 意外置 1 时振荡器停转, 普通唤醒无效 → 自动 General-Call
+       SWRST(0x00 地址发 0x06)再初始化 —— datasheet 7.6: EXTCLK 只有断电或 SWRST 能清
+    3) 新增 move <ch> <deg> [°/s]: 软件匀速渐移(180°位置舵机无硬件转速); 当前角度从
+       OFF 寄存器回读, 无需记状态。实测 40°/s 斜率吻合
+  【前端触屏两个坑】
+    - WPE 触摸拖动不触发 onchange → 滑块改"input+350ms 防抖提交"
+    - 防覆盖保护 window[id+"Touched"] 写 / let 变量读 —— 两个不同绑定, 保护从未生效
+      → 统一 TOUCH 对象; 症状: 拖到 54% 两秒后被轮询打回旧值
+  【运维发现】
+    - 板上没有 ldd！grep 对空输出全过 → "依赖齐"误判两轮; 真检查用
+      LD_TRACE_LOADED_OBJECTS=1 直调 ld.so
+    - dpkg 账实不符: 镜像里的库文件在但包名未注册 → --force-depends 合理
+    - astra-packages.synaptics.com 公网 NXDOMAIN(官方包源不存在), apt 路线死
+    - INA3221 只认带 label 的 in1/2/3(总线电压); in4/5/6 是分流电压会随负载大摆
+    - I2C 状态探针与舵机写并发会抢寄存器指针 → 渐移期间跳过探针
+  【其它板端改动】音量默认 90→30(astra-voice.service); vision_wake 找不到摄像头时
+    明确退出重试(不再兜底 video3 假跑); C920 换口后自动恢复验证通过
+  ⚠ 本版 recipe 未跑 cleanall 干净构建(cog 依赖 meta-webkit 层, 板端为 deb 手工安装,
+    源同构建树); 下次镜像构建时验证 astra-webctl recipe + IMAGE_INSTALL
+
 v2.8  2026-07-28  ★ 交付级镜像 + 一天修掉 9 个真 bug
   【Yocto 集成】rootfs 三件套进镜像，两个遗留项关闭：
     recipes-extended/timezone/tzdata.bbappend       DEFAULT_TIMEZONE=Asia/Shanghai

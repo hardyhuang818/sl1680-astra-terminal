@@ -41,6 +41,9 @@ backups/*
 # 结论与关键参数已提炼进 PCA9685_MG90S_接入SL1680_*.md，原件不入库
 PCA9685 and MG90S/
 
+# Synaptics 机器人触觉方案 PPT（页脚明标 Confidential/NDA），要点已提炼进 GUI 方案文档 §5
+Robot/
+
 # ============ 杂项 ============
 __pycache__/
 *.log

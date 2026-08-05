@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 + DL7400 多屏启动命令手册</title>
+<style>
+:root{
+  --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+  --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+  --good:#0f7b40; --goodbg:#eaf7f0; --bad:#b91c1c; --badbg:#fdeceb;
+  --warn:#b45309; --warnbg:#fff8e6; --codebg:#0d1b2e; --codefg:#d8e4f5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.8;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+  color:#fff;border-radius:14px;padding:34px 32px;margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(7,32,74,.2)}
+header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+header.hero h1{margin:10px 0 8px;font-size:29px;line-height:1.35;font-weight:700}
+header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+  padding-top:12px;margin-top:14px}
+main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 32px 30px}
+h2{font-size:21px;margin:34px 0 12px;color:#07204a;font-weight:700;
+   padding-top:18px;border-top:1px solid var(--line)}
+main > h2:first-of-type{border-top:none;padding-top:6px;margin-top:14px}
+h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+h4{font-size:15px;margin:18px 0 6px;color:#0d2a52}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:26px}
+li{margin:6px 0}
+a{color:var(--accent)}
+code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62;
+  word-break:break-word}
+pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+  overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;word-break:normal}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfd}
+td.star{background:#fff8e6}
+blockquote{background:var(--warnbg);border:1px solid #f0d9a0;border-left:4px solid var(--warn);
+  border-radius:8px;padding:12px 18px;margin:16px 0;color:#5a4a20}
+blockquote p{margin:6px 0}
+blockquote code{background:#f6ecd5;color:#6b5320}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#0b2b5b}
+footer{margin-top:22px;padding:18px 24px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px;color:var(--sub)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  header.hero{padding:22px 18px} header.hero h1{font-size:21px}
+  main{padding:6px 16px 22px}
+}
+@media print{
+  body{background:#fff} main,footer,blockquote,table{break-inside:avoid}
+  header.hero{box-shadow:none}
+  pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">SL1680 · 技术文档</div>
+  <h1>SL1680 + DL7400 多屏启动命令手册</h1>
+  <div class="meta"><strong>日期</strong>：2026-08-01　<strong>平台</strong>：SL1680 (Synaptics Astra Dolphin RDK) + DL7400<br><strong>范围</strong>：接上 DisplayLink 多屏后，板上用什么命令启动 / 切换各 demo</div>
+</header>
+<main>
+<h2>0. 结论先行</h2>
+<blockquote>
+<p><strong>硬规则：DLSDK 单进程独占。</strong><br>
+同一时间只能有一个程序占着 DL7400。生产默认是 <code>dl-face</code>；要跑时钟、吞吐实测、读 EDID，必须先停它。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>命令</th>
+<th>是否常驻</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>生产 UI（表情脸 + 字幕，多屏）</td>
+<td><code>systemctl start dl-face</code></td>
+<td>✅ 开机默认自启</td>
+</tr>
+<tr>
+<td>多屏时钟 + 跑马灯</td>
+<td><code>systemctl stop dl-face &amp;&amp; systemctl start dl-clock</code></td>
+<td>手动启</td>
+</tr>
+<tr>
+<td>多屏点亮 / fps 实测</td>
+<td><code>systemctl stop dl-face &amp;&amp; dl_multiscreen_demo</code></td>
+<td>跑完即退</td>
+</tr>
+<tr>
+<td>读 EDID 排查</td>
+<td><code>systemctl stop dl-face &amp;&amp; dl_edid</code></td>
+<td>一次性</td>
+</tr>
+<tr>
+<td>播视频到 DL 屏</td>
+<td><code>systemctl stop dl-face &amp;&amp; dl_player video.mp4</code></td>
+<td>前台</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一键全亮（所有已接屏显示时钟）</strong>：</p>
+<pre><code class="language-bash">systemctl stop dl-face 2&gt;/dev/null
+dl_clock --wait --fps 15 --speed 15 --max-hz 60
+</code></pre>
+<hr>
+<h2>1. 连接后先确认</h2>
+<p>SSH 上板：</p>
+<pre><code class="language-bash">lsusb | grep -i 17e9          # 应能看到 DisplayLink (VID 17e9)
+lsusb -t | head -40           # 确认 USB3：speed 应为 5000
+systemctl is-active dl-face   # 生产界面是否已在跑
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>USB 口</td>
+<td><strong>必须 USB 3.0</strong>。USB2 下 SDK 基本不驱动</td>
+</tr>
+<tr>
+<td>线材</td>
+<td>EVK 原生 USB3 上行最稳；零售坞经 C-to-A 线常只能到 USB2</td>
+</tr>
+<tr>
+<td>显示器</td>
+<td><strong>一台屏只接一根线</strong>（别同时 DP+HDMI，会被枚举成两个假屏）</td>
+</tr>
+<tr>
+<td>固件</td>
+<td>SDK 通过 <code>firmwarePath</code> 自动保活/升级，一般不用手刷</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>2. 生产界面：<code>dl-face</code>（默认）</h2>
+<p>镜像里 <strong>开机自启</strong>。多屏时默认所有屏都是「表情脸 + 中英字幕」；可用文件或语音改角色。</p>
+<h3>2.1 启停</h3>
+<pre><code class="language-bash">systemctl start dl-face
+systemctl restart dl-face
+systemctl stop dl-face
+systemctl status dl-face
+journalctl -u dl-face -n 50 --no-pager
+</code></pre>
+<p>服务实际执行：</p>
+<pre><code class="language-bash">/usr/bin/dl_face --max-hz 60 --fps 5 --wait --status /tmp/astra_status.txt
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--max-hz 60</code></td>
+<td class="star">★ 刷新率上限。别信 EDID preferred（有屏报 4K@160，会卡死）</td>
+</tr>
+<tr>
+<td><code>--fps 5</code></td>
+<td>UI 刷新率（表情/字幕够用）</td>
+</tr>
+<tr>
+<td><code>--wait</code></td>
+<td>开机时 DL7400 未枚举好就等，不直接退</td>
+</tr>
+<tr>
+<td><code>--status PATH</code></td>
+<td>读 <code>astra_voice</code> 写的状态文件，刷字幕</td>
+</tr>
+<tr>
+<td><code>--screen N</code></td>
+<td>只点第 N 块屏（省略 = 全部）</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 多屏角色切换（脸 / 摄像头）</h3>
+<p>控制文件：<code>/tmp/astra_screen_mode.txt</code><br>
+格式：每行 <code>屏号=角色</code></p>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>face</code></td>
+<td>表情脸 + 实时字幕（默认）</td>
+</tr>
+<tr>
+<td><code>camera</code></td>
+<td>C920 摄像头实况（看护监控）</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash"># 屏0 表情脸，屏1 摄像头
+cat &gt; /tmp/astra_screen_mode.txt &lt;&lt; 'EOF'
+0=face
+1=camera
+EOF
+
+# 看当前角色
+cat /tmp/astra_screen_mode.txt
+
+# 全部回到表情脸
+rm -f /tmp/astra_screen_mode.txt
+# 或
+printf '0=face\n1=face\n' &gt; /tmp/astra_screen_mode.txt
+</code></pre>
+<blockquote>
+<p><code>dl_face</code> 约每 <strong>150ms</strong> 读一次该文件，<strong>不用重启服务</strong>就会切角色。<br>
+语音「打开摄像头 / 关掉监控」等，本质也是写这个文件（<code>astra_llm.py</code> 本地拦截）。<br>
+文件在 <code>/tmp</code>，<strong>重启丢失 → 回到双表情脸</strong>（这是期望默认）。</p>
+</blockquote>
+<h3>2.3 只点某一块屏（手动前台）</h3>
+<pre><code class="language-bash">systemctl stop dl-face
+/usr/bin/dl_face --screen 0 --max-hz 60 --fps 5 --wait --status /tmp/astra_status.txt
+</code></pre>
+<hr>
+<h2>3. 多屏时钟：<code>dl_clock</code></h2>
+<p>演示用时钟 + 跑马灯。recipe 里 <strong><code>SYSTEMD_AUTO_ENABLE=disable</code></strong>，不会和 <code>dl-face</code> 抢设备。</p>
+<h3>3.1 推荐（systemd）</h3>
+<pre><code class="language-bash">systemctl stop dl-face
+systemctl start dl-clock
+systemctl status dl-clock
+journalctl -u dl-clock -n 40 --no-pager
+</code></pre>
+<p>切回生产：</p>
+<pre><code class="language-bash">systemctl stop dl-clock
+systemctl start dl-face
+</code></pre>
+<h3>3.2 手动前台（调试）</h3>
+<pre><code class="language-bash">systemctl stop dl-face dl-clock 2&gt;/dev/null
+/usr/bin/dl_clock --wait --fps 15 --speed 15 --max-hz 60
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>默认/建议</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--wait</code></td>
+<td>开机自启必带</td>
+<td>等设备枚举</td>
+</tr>
+<tr>
+<td><code>--fps N</code></td>
+<td>15</td>
+<td>画面刷新</td>
+</tr>
+<tr>
+<td><code>--speed N</code></td>
+<td>15</td>
+<td>跑马灯速度（字/秒）</td>
+</tr>
+<tr>
+<td><code>--max-hz N</code></td>
+<td><strong>60</strong></td>
+<td class="star">★ 模式刷新率上限</td>
+</tr>
+<tr>
+<td><code>--screen N</code></td>
+<td>全部</td>
+<td>只点第 N 块</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>每约 60s 日志会打各屏帧数：<strong>帧数在涨 = 链路通</strong>；<strong>帧数冻结 = 卡死</strong>；<strong>帧数涨但屏黑 = 显示器输入源没切对</strong>。</p>
+</blockquote>
+<hr>
+<h2>4. 多屏吞吐实测：<code>dl_multiscreen_demo</code></h2>
+<p>回答「能带几块屏、什么分辨率、多少 fps」。推动态测试图，<strong>不是</strong>常驻 UI。</p>
+<pre><code class="language-bash">systemctl stop dl-face dl-clock 2&gt;/dev/null
+
+dl_multiscreen_demo                  # 默认每屏 120 帧动态画面
+dl_multiscreen_demo -n 300           # 多推几帧
+dl_multiscreen_demo -w 1920 -h 1080  # 强制分辨率
+dl_multiscreen_demo -s               # 静态画面（标牌场景，编码很轻）
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-n frames</code></td>
+<td>每屏推多少帧（默认 120）</td>
+</tr>
+<tr>
+<td><code>-w</code> / <code>-h</code></td>
+<td>强制宽高（默认用屏 preferred，但内部仍应按 ≤60Hz 理解）</td>
+</tr>
+<tr>
+<td><code>-s</code></td>
+<td>静态模式：只推一次变化，模拟数字标牌</td>
+</tr>
+</tbody>
+</table>
+<p>路径：<code>/usr/bin/dl_multiscreen_demo</code><br>
+源码：<code>meta-dlsdk/recipes-graphics/dl-multiscreen-demo/</code></p>
+<hr>
+<h2>5. 其它 DL7400 相关命令</h2>
+<h3>5.1 读 EDID / 模式（排查「无信号」）</h3>
+<pre><code class="language-bash">systemctl stop dl-face dl-clock 2&gt;/dev/null
+dl_edid
+</code></pre>
+<blockquote>
+<p>动线后屏序和模式号会变，必须重新跑 <code>dl_edid</code>，不要沿用旧编号。</p>
+</blockquote>
+<h3>5.2 播视频 / 图片</h3>
+<pre><code class="language-bash">systemctl stop dl-face
+dl_player /path/to/video.mp4
+</code></pre>
+<p>走 GStreamer 硬解 + 硬件缩放再推 DL 屏。全屏流畅视频在 4K 上大约只有个位数 fps，适合演示片段，不适合当视频墙。</p>
+<h3>5.3 设备卡死复位</h3>
+<p>进程被硬杀、没走 <code>teardown</code> 时，<code>dlsdk_get_devices()</code> 会一直返回 0。</p>
+<pre><code class="language-bash"># 推荐：按 VID 动态查找并 unbind/bind
+/usr/bin/dl-clock-reset.sh
+
+# 然后重新启服务
+systemctl start dl-face
+# 或
+systemctl start dl-clock
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>复位方式</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>echo 0/1 &gt; authorized</code></td>
+<td>❌ 救不回来</td>
+</tr>
+<tr>
+<td><strong>usb 驱动 unbind/bind</strong></td>
+<td>✅ 能救回来</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>6. 推荐操作顺序（接好多屏后）</h2>
+<pre><code class="language-bash"># ① 确认 USB
+lsusb | grep -i 17e9
+
+# ② 生产多屏 UI（默认，通常已在跑）
+systemctl restart dl-face
+
+# ③ 可选：第二块改摄像头
+printf '0=face\n1=camera\n' &gt; /tmp/astra_screen_mode.txt
+
+# ④ 若要做点亮 / 吞吐测试
+systemctl stop dl-face
+dl_multiscreen_demo -n 120
+
+# ⑤ 若要看时钟墙
+systemctl stop dl-face
+systemctl start dl-clock
+# 或: dl_clock --wait --fps 15 --speed 15 --max-hz 60
+
+# ⑥ 测完回到生产
+systemctl stop dl-clock 2&gt;/dev/null
+systemctl start dl-face
+</code></pre>
+<p>一键状态检查（仓库脚本，需自行 scp 上板）：</p>
+<pre><code class="language-bash"># tools/check_screens.sh
+systemctl is-active dl-face
+cat /tmp/astra_screen_mode.txt 2&gt;/dev/null
+lsusb | grep -i 17e9
+for s in astra-voice astra-mode astra-translate dl-face vision-wake; do
+  printf &quot;%-18s %s\n&quot; &quot;$s&quot; &quot;$(systemctl is-active $s)&quot;
+done
+</code></pre>
+<hr>
+<h2>7. 常见坑</h2>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>原因</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>systemctl</code> active 但屏全黑</td>
+<td>两个 dlsdk 程序在抢；或设备卡死</td>
+<td>只留一个；跑 <code>dl-clock-reset.sh</code></td>
+</tr>
+<tr>
+<td><code>get_devices</code> 返回 0</td>
+<td>被占用 / 卡死 / 非 USB3</td>
+<td><code>stop</code> 其它 dl-*；复位 USB；查 <code>lsusb -t</code></td>
+</tr>
+<tr>
+<td>帧数涨但屏黑</td>
+<td>链路 OK，显示器输入源不对</td>
+<td>用屏 OSD 切到正确 HDMI/DP</td>
+</tr>
+<tr>
+<td>跑几帧就死卡</td>
+<td>信了 4K@160 preferred</td>
+<td>所有程序加 <code>--max-hz 60</code></td>
+</tr>
+<tr>
+<td>程序一退屏就黑</td>
+<td>DLSDK 设计如此</td>
+<td>生产必须 systemd 常驻</td>
+</tr>
+<tr>
+<td>中文变方框</td>
+<td>缺 CJK 字体</td>
+<td>镜像需 <code>ttf-wqy-zenhei</code></td>
+</tr>
+<tr>
+<td>摄像头角色起不来</td>
+<td>C920 被 <code>vision-wake</code> 等占用</td>
+<td><code>systemctl stop vision-wake</code> 后再切 camera</td>
+</tr>
+<tr>
+<td>热插拔不自动亮</td>
+<td>本板 hotplug 回调不可用</td>
+<td><code>systemctl restart dl-face</code> 重新枚举</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>8. 和「主板 HDMI demo」的区别</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>DL7400 路径</th>
+<th>主板原生 HDMI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>接口</td>
+<td>DL7400 的 HDMI/DP 口</td>
+<td><strong>SL1680 板载 HDMI 口</strong></td>
+</tr>
+<tr>
+<td>软件</td>
+<td><code>dl_face</code> / <code>dl_clock</code> / <code>dl_multiscreen_demo</code> …</td>
+<td><code>sh /usr/bin/hdmi_demo.sh ai</code></td>
+</tr>
+<tr>
+<td>机制</td>
+<td>用户态 libusb 推像素（无 DRM 节点）</td>
+<td>DRM/KMS + Weston，满帧 60fps</td>
+</tr>
+<tr>
+<td>桌面扩展</td>
+<td>❌ 不能把 Weston 扩过去</td>
+<td>✅ 就是本机桌面</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash"># 这是主板 HDMI，不是 DL7400
+sh /usr/bin/hdmi_demo.sh ai     # gst-ai 图像分类 → 原生 HDMI
+sh /usr/bin/hdmi_demo.sh ui     # Qt QML 演示
+</code></pre>
+<p>屏插错口是最常见的「怎么都点不亮」。</p>
+<hr>
+<h2>9. 相关文件</h2>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta-dlsdk/recipes-graphics/dl-face/</code></td>
+<td>生产 UI + <code>dl-face.service</code></td>
+</tr>
+<tr>
+<td><code>meta-dlsdk/recipes-graphics/dl-clock/</code></td>
+<td>时钟 demo + service（默认不自启）</td>
+</tr>
+<tr>
+<td><code>meta-dlsdk/recipes-graphics/dl-multiscreen-demo/</code></td>
+<td>吞吐实测</td>
+</tr>
+<tr>
+<td><code>meta-dlsdk/recipes-graphics/dl-edid/</code></td>
+<td>EDID 工具</td>
+</tr>
+<tr>
+<td><code>meta-dlsdk/recipes-graphics/dl-player/</code></td>
+<td>视频推屏</td>
+</tr>
+<tr>
+<td><code>meta-dlsdk/recipes-graphics/dlsdk/</code></td>
+<td>libdlsdk + 固件 + udev</td>
+</tr>
+<tr>
+<td><code>/tmp/astra_screen_mode.txt</code></td>
+<td>多屏角色（运行时）</td>
+</tr>
+<tr>
+<td><code>/tmp/astra_status.txt</code></td>
+<td>语音状态字幕源</td>
+</tr>
+<tr>
+<td><code>tools/check_screens.sh</code></td>
+<td>五服务 + 角色一览</td>
+</tr>
+<tr>
+<td><code>SL1680_DL7400_四屏方案总结.md</code></td>
+<td>四屏实测与坑全记录</td>
+</tr>
+<tr>
+<td><code>DisplayLink_Issue_Report_2026-07-23.md</code></td>
+<td>热插拔 / dpaux 黑屏问题报告</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>整理：2026-08-01。命令以当前 <code>meta-dlsdk</code> recipe 与板上 systemd unit 为准。</em></p>
+</main>
+<footer>由 <code>md2html.py</code> 生成 · 源文件 <code>SL1680_DL7400_多屏启动命令_2026-08-01.md</code></footer>
+</div>
+</body>
+</html>

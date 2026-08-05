@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Astra SL1680 建置環境與指令手冊</title>
+<style>
+:root{
+  --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+  --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+  --good:#0f7b40; --goodbg:#eaf7f0; --bad:#b91c1c; --badbg:#fdeceb;
+  --warn:#b45309; --warnbg:#fff8e6; --codebg:#0d1b2e; --codefg:#d8e4f5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.8;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+  color:#fff;border-radius:14px;padding:34px 32px;margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(7,32,74,.2)}
+header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+header.hero h1{margin:10px 0 8px;font-size:29px;line-height:1.35;font-weight:700}
+header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+  padding-top:12px;margin-top:14px}
+main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 32px 30px}
+h2{font-size:21px;margin:34px 0 12px;color:#07204a;font-weight:700;
+   padding-top:18px;border-top:1px solid var(--line)}
+main > h2:first-of-type{border-top:none;padding-top:6px;margin-top:14px}
+h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+h4{font-size:15px;margin:18px 0 6px;color:#0d2a52}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:26px}
+li{margin:6px 0}
+a{color:var(--accent)}
+code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62;
+  word-break:break-word}
+pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+  overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;word-break:normal}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfd}
+td.star{background:#fff8e6}
+blockquote{background:var(--warnbg);border:1px solid #f0d9a0;border-left:4px solid var(--warn);
+  border-radius:8px;padding:12px 18px;margin:16px 0;color:#5a4a20}
+blockquote p{margin:6px 0}
+blockquote code{background:#f6ecd5;color:#6b5320}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#0b2b5b}
+footer{margin-top:22px;padding:18px 24px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px;color:var(--sub)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  header.hero{padding:22px 18px} header.hero h1{font-size:21px}
+  main{padding:6px 16px 22px}
+}
+@media print{
+  body{background:#fff} main,footer,blockquote,table{break-inside:avoid}
+  header.hero{box-shadow:none}
+  pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">SL1680 · 建置環境手冊</div>
+  <h1>Astra SL1680 建置環境與指令手冊</h1>
+  <div class="meta"><strong>日期</strong>：2026-08-01　<strong>適用</strong>：Synaptics Astra SL1680（Dolphin RDK）<br><strong>SDK 版本</strong>：<code>scarthgap_6.12_v2.3.0</code>（Yocto 5.0 scarthgap / kernel 6.12.62）<br><strong>對象</strong>：需要搭建同款建置環境的同事。本文所有資料取自實際運作中的建置主機，並非抄錄官方文件。</div>
+</header>
+<main>
+<h2>0. 一張圖看懂整體結構</h2>
+<pre><code>┌─ Windows 11 ────────────────────────────────────────────────┐
+│  D:\...\sl1680-astra-terminal\        ← git 儲存庫(文件+自有層原始碼) │
+│                                                              │
+│  ┌─ WSL2: Ubuntu 22.04 ────────────────────────────────┐    │
+│  │  /home/astra/sdk/                ← 官方 SDK(鎖定版本)  │    │
+│  │    ├─ poky/                        Yocto 5.0.9        │    │
+│  │    ├─ meta-synaptics/              官方 BSP 層         │    │
+│  │    ├─ meta-openembedded/ 等        官方自帶            │    │
+│  │    ├─ meta-dlsdk/            ★ 我們的層(由儲存庫接入)   │    │
+│  │    ├─ meta-tcm2-touch/       ★ 我們的層(觸控驅動程式)   │    │
+│  │    └─ build-sl1680/                建置目錄             │    │
+│  │         └─ tmp/deploy/images/sl1680/   產出物           │    │
+│  └──────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────┘
+                    │ scp / dd
+                    ▼
+            SL1680 板子 (192.168.5.126)
+</code></pre>
+<p><strong>核心原則：不 fork 官方 SDK。</strong> 上游鎖定在 tag，我們的全部修改都放在兩個自有 Yocto 層裡
+（核心改動以 <code>bbappend</code> + patch 形式套在官方 <code>linux-syna</code> 上）。官方升級時只需換 tag 重新驗證。</p>
+<hr>
+<h2>1. 主機需求（實測配置）</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>本機實際</th>
+<th>最低建議</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>系統</td>
+<td><strong>Ubuntu 22.04.5 LTS</strong>（WSL2）</td>
+<td>Ubuntu 20.04/22.04，實體機或 WSL2 皆可</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>24 核</td>
+<td>≥8 核（核心越多全量建置越快）</td>
+</tr>
+<tr>
+<td>記憶體</td>
+<td>47 GB</td>
+<td>≥16 GB（連結 chromium/qt 時吃記憶體）</td>
+</tr>
+<tr>
+<td>磁碟</td>
+<td>1 TB（已用 357 GB，其中 <code>tmp/</code> 佔 <strong>159 GB</strong>）</td>
+<td><strong>≥500 GB 可用空間</strong>，SSD</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.10.12</td>
+<td>≥3.8</td>
+</tr>
+<tr>
+<td>git</td>
+<td>2.34.1</td>
+<td>≥2.28</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>WSL2 使用者注意：SDK 務必放在 <strong>WSL 原生檔案系統</strong>（<code>/home/...</code>），不要放 <code>/mnt/c</code> ——
+跨檔案系統 IO 會讓建置慢一個數量級。本機的 WSL 虛擬磁碟另外掛了 1TB（<code>/dev/sdd</code>）。</p>
+</blockquote>
+<h3>1.1 相依套件（Yocto scarthgap 標準 + 少量補充）</h3>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y gawk wget git diffstat unzip texinfo gcc build-essential \
+  chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils \
+  iputils-ping python3-git python3-jinja2 python3-subunit zstd liblz4-tool \
+  file locales libacl1 bmap-tools
+sudo locale-gen en_US.UTF-8
+</code></pre>
+<hr>
+<h2>2. 取得原始碼（四步，可重複執行）</h2>
+<pre><code class="language-bash"># 1) 官方 SDK —— 版本必須鎖死，勿用 master
+git clone --branch scarthgap_6.12_v2.3.0 https://github.com/synaptics-astra/sdk ~/sdk
+cd ~/sdk
+# SDK 自帶 poky/meta-synaptics 等子層；若為 submodule 形式:
+git submodule update --init --recursive 2&gt;/dev/null || true
+
+# 2) 我們的儲存庫（含 meta-dlsdk / meta-tcm2-touch 兩個層 + 全部文件）
+git clone git@github.com:hardyhuang818/sl1680-astra-terminal.git ~/sl1680-astra-terminal
+
+# 3) 接層（腳本可重複執行無副作用；做兩件事：symlink 層目錄 + 寫 bblayers.conf）
+~/sl1680-astra-terminal/tools/setup_sdk.sh ~/sdk
+
+# 4) 驗證層都接上了
+cd ~/sdk &amp;&amp; source poky/oe-init-build-env build-sl1680
+bitbake-layers show-layers | grep -E &quot;dlsdk|tcm2&quot;
+</code></pre>
+<h3>2.1 版本錨點（對帳用）</h3>
+<table>
+<thead>
+<tr>
+<th>元件</th>
+<th>版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Astra SDK</td>
+<td>tag <code>scarthgap_6.12_v2.3.0</code></td>
+</tr>
+<tr>
+<td>poky</td>
+<td>yocto-5.0.9（SDK 自帶）</td>
+</tr>
+<tr>
+<td>meta-synaptics</td>
+<td><code>d552818</code>（SDK 自帶，勿單獨升級）</td>
+</tr>
+<tr>
+<td>kernel（linux-syna）</td>
+<td>6.12.62</td>
+</tr>
+<tr>
+<td>我們的層</td>
+<td><code>meta-dlsdk</code>（版本流水見其中 <code>VERSION</code> 檔，目前 v2.9）+ <code>meta-tcm2-touch</code></td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 bblayers.conf 最終形態（供核對）</h3>
+<p>官方自帶層之外，結尾追加兩行即可：</p>
+<pre><code>  /home/astra/sdk/meta-tcm2-touch \
+  /home/astra/sdk/meta-dlsdk \
+</code></pre>
+<h3>2.3 local.conf 關鍵項（SDK 範本預設已帶，列出便於核對）</h3>
+<pre><code>MACHINE ??= &quot;sl1680&quot;
+PACKAGE_CLASSES ?= &quot;package_deb&quot;
+INIT_MANAGER = &quot;systemd&quot;
+LICENSE_FLAGS_ACCEPTED = &quot;commercial Synaptics-EULA ...&quot;
+IMAGE_FSTYPES += &quot; synaimg ext4 ext4.gz&quot;
+INITRAMFS_IMAGE_BUNDLE = &quot;1&quot;
+</code></pre>
+<p>我們唯一會動的開關：<code>ASTRA_TERMINAL_PACKAGES = ""</code>（設空 = 略過語音/多螢幕應用，退回原廠映像檔）。</p>
+<hr>
+<h2>3. 建置指令全集</h2>
+<p><strong>每個新終端機都要先進環境</strong>（bitbake 只在 source 之後可用）：</p>
+<pre><code class="language-bash">cd ~/sdk &amp;&amp; source poky/oe-init-build-env build-sl1680
+</code></pre>
+<h3>3.1 全量映像檔（首次約 3~6 小時，視機器而定）</h3>
+<pre><code class="language-bash">bitbake astra-media
+</code></pre>
+<p>產出物在 <code>tmp/deploy/images/sl1680/</code>：</p>
+<table>
+<thead>
+<tr>
+<th>檔案</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SYNAIMG/</code></td>
+<td><strong>完整燒錄包</strong>（約 2.5GB），搭配官方 USB 燒錄工具</td>
+</tr>
+<tr>
+<td><code>astra-media-sl1680.rootfs.ext4</code></td>
+<td>rootfs 單獨映像檔</td>
+</tr>
+<tr>
+<td><code>linux_bootimgs.subimg</code></td>
+<td><strong>boot 包</strong>（kernel + DTB + initramfs），可單獨 dd</td>
+</tr>
+<tr>
+<td><code>Image-sl1680.bin</code> / <code>*.dtb</code></td>
+<td>裸 kernel / 裝置樹</td>
+</tr>
+</tbody>
+</table>
+<h3>3.2 核心快速疊代（日常最常用，全程<strong>約 75 秒</strong>）</h3>
+<p>改了 <code>dolphin-rdk.dts</code> 或核心原始碼之後：</p>
+<pre><code class="language-bash">bitbake linux-syna -C compile        # 大寫 C：強制從 compile 重跑（含 dts 重編）
+bitbake linux-syna -c deploy -f      # 強制重新部署產出物
+</code></pre>
+<blockquote>
+<p>⚠️ 直接改的是 <code>tmp/work-shared/sl1680/kernel-source/</code> 下的原始碼 ——
+<strong>這個目錄是易失的</strong>，<code>cleanall</code> 就沒了。改完必須回灌成 patch 放進
+<code>meta-dlsdk/recipes-kernel/linux/files/</code>（如何正確產生 patch 見 §5.6）。</p>
+</blockquote>
+<p>改完後<strong>必須做位元組級 DTB 驗證</strong>（建置成功 ≠ 改動生效）：</p>
+<pre><code class="language-bash">python3 - &lt;&lt;'EOF'
+b = open(&quot;/home/astra/sdk/build-sl1680/tmp/deploy/images/sl1680/dolphin-rdk.dtb&quot;,&quot;rb&quot;).read()
+print(&quot;我的節點在嗎:&quot;, b&quot;synaptics,tcm-i2c&quot; in b)
+EOF
+</code></pre>
+<h3>3.3 單一套件建置（改了某個 recipe 之後）</h3>
+<pre><code class="language-bash">bitbake astra-voice                  # 語音主程式
+bitbake sherpa-onnx                  # 本地 ASR/TTS 執行環境
+bitbake dl-face                      # DL7400 對話介面
+bitbake synaptics-tcm2               # 觸控驅動核心模組(meta-tcm2-touch)
+</code></pre>
+<h3>3.4 清理（由輕到重）</h3>
+<pre><code class="language-bash">bitbake &lt;recipe&gt; -c clean            # 清 work 目錄，保留 sstate
+bitbake &lt;recipe&gt; -c cleansstate      # 連 sstate 一起清（強制真重編）
+bitbake &lt;recipe&gt; -c cleanall         # 再連 downloads 一起清（會重新下載！慎用）
+</code></pre>
+<blockquote>
+<p>驗證「patch 能否從零套用」用 <code>cleansstate</code> + 重編即可，<strong>不要</strong>動不動 <code>cleanall</code>。</p>
+</blockquote>
+<h3>3.5 排查與檢查</h3>
+<pre><code class="language-bash">bitbake &lt;recipe&gt; -e | grep ^SRC_URI=          # 看變數展開後的實際值
+bitbake &lt;recipe&gt; -c devshell                  # 進 recipe 的建置環境 shell
+bitbake-layers show-recipes &quot;*tcm*&quot;           # recipe 在哪個層
+bitbake-layers show-appends linux-syna        # 誰 append 了它
+oe-pkgdata-util find-path &quot;*/astra_voice&quot;     # 檔案屬於哪個套件
+</code></pre>
+<p>建置日誌位置：<code>tmp/work/&lt;arch&gt;/&lt;recipe&gt;/&lt;ver&gt;/temp/log.do_&lt;task&gt;</code></p>
+<hr>
+<h2>4. 燒錄</h2>
+<h3>4.1 全量燒錄（USB 工具，第一次/大版本用）</h3>
+<p>Windows 側用官方 <code>usb-tool-astra-update</code>（板子進 USB 燒錄模式），
+把 <code>SYNAIMG/</code> 整個目錄餵給它。約 2.5GB，10 分鐘內。</p>
+<h3>4.2 只刷 boot（核心/DTS 疊代用，30 秒）</h3>
+<p>板子運作中直接 dd（A/B 雙槽都刷）+ <strong>sha256 回讀校驗</strong>：</p>
+<pre><code class="language-bash">scp tmp/deploy/images/sl1680/linux_bootimgs.subimg root@192.168.5.126:/tmp/
+ssh root@192.168.5.126 'sh -s' &lt;&lt;'EOF'
+IMG=/tmp/linux_bootimgs.subimg
+SZ=$(wc -c &lt; $IMG)
+dd if=$IMG of=/dev/mmcblk0p8 bs=1M 2&gt;/dev/null
+dd if=$IMG of=/dev/mmcblk0p9 bs=1M 2&gt;/dev/null
+sync
+python3 -c &quot;
+import hashlib
+exp = hashlib.sha256(open('$IMG','rb').read()).hexdigest()
+for d in ('/dev/mmcblk0p8','/dev/mmcblk0p9'):
+    got = hashlib.sha256(open(d,'rb').read($SZ)).hexdigest()
+    print(d, 'OK' if got==exp else 'MISMATCH!')
+&quot;
+EOF
+</code></pre>
+<p>然後<strong>斷電重上</strong>（見 §5.1，這塊板軟重啟不可靠）。</p>
+<h3>4.3 燒完映像檔後還缺兩樣</h3>
+<table>
+<thead>
+<tr>
+<th>缺什麼</th>
+<th>怎麼補</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>約 2GB 語音模型（不進映像檔）</td>
+<td>另外灌到板子 <code>/home/voice/</code>，清單見 <code>meta-dlsdk/recipes-ai/astra-voice/files/README_models.md</code></td>
+</tr>
+<tr>
+<td>DLSDK 二進位檔（DisplayLink NDA）</td>
+<td>建置前放入 <code>meta-dlsdk/recipes-graphics/dlsdk/files/</code>，清單+sha256 見同目錄 <code>BINARIES_MANIFEST.txt</code>；不用 DL7400 就在 local.conf 設 <code>ASTRA_TERMINAL_PACKAGES = ""</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>5. 踩過的坑（每條都真踩過，按血淚值排序）</h2>
+<h3>5.1 這塊板軟重啟不可靠</h3>
+<p><code>reboot -f</code>、<code>systemctl reboot -ff</code>、sysrq 全部無效。<strong>每次刷完 boot 都按「需要人工斷電重上」來安排</strong>，
+改動盡量攢成一次重啟。</p>
+<h3>5.2 bbappend 檔名的版本萬用字元規則（兩邊坑正好相反）</h3>
+<ul>
+<li><code>linux-syna</code> recipe <strong>帶版本號</strong>（6.12.62）→ append 必須寫 <strong><code>linux-syna_%.bbappend</code></strong>（帶 <code>_%</code>）</li>
+<li><code>tzdata</code> recipe <strong>不帶版本號</strong> → append 必須寫 <strong><code>tzdata.bbappend</code></strong>（不帶 <code>_%</code>）
+寫反的症狀都是 <code>No recipes available for ...</code>，bitbake 不會告訴你是檔名的問題。</li>
+</ul>
+<h3>5.3 cmake FetchContent 被 Yocto 硬關（症狀像斷網）</h3>
+<p><code>cmake.bbclass</code> 預設 <code>FETCHCONTENT_FULLY_DISCONNECTED=ON</code>，第三方套件在 do_configure 階段
+下載失敗，錯誤看起來像網路問題——其實根本沒連網。解法：全部第三方套件寫進 <code>SRC_URI</code>
+（帶 sha256）+ <code>do_configure:prepend</code> 拷到原始碼樹命中 <code>possible_file_locations</code>。
+參照 <code>meta-dlsdk/recipes-ai/sherpa-onnx/sherpa-onnx_1.13.4.bb</code>（14 個套件的完整做法）。</p>
+<h3>5.4 無 SOVERSION 的 .so 會被打進 -dev 套件</h3>
+<p>建置全綠、套件也出了，燒到板子上就是沒有那個 .so ——它被分進了 <code>-dev</code> 套件。
+症狀離建置極遠，極難回溯。解法見 sherpa-onnx recipe 裡的 <code>SOLIBS</code>/<code>FILES</code> 處理。</p>
+<h3>5.5 映像檔整合四坑（建置成功 ≠ 功能完整）</h3>
+<p>① 兩個套件裝同一個檔案 → do_rootfs 衝突；② 兩個服務搶同一裝置（DLSDK 單行程獨佔）；
+③ 套件裝進去了但服務沒 enable（<code>SYSTEMD_AUTO_ENABLE</code> 只在 recipe 裡生效，
+<code>SYSTEMD_AUTO_ENABLE:pn-X</code> 寫在 conf 裡<strong>不生效</strong>）；④ 驗收必須用 debugfs 直讀產出的 ext4，
+別信建置清單。</p>
+<h3>5.6 核心 patch 不能用 <code>git diff</code> 產生</h3>
+<p>Yocto 的 <code>do_patch</code> 會把舊 patch commit 進 kernel-source 的 git HEAD，
+<code>git diff</code> 只會輸出<strong>增量</strong>（實測 70 行 vs 應有 248 行）。正確做法：
+對<strong>原始基線 dts</strong> 做完整 <code>diff -u</code>，然後乾跑重放驗證：</p>
+<pre><code class="language-bash"># 基線 + patch == 目前原始碼，位元組級一致才算數
+patch -p1 --dry-run &lt; 新patch &amp;&amp; patch -p1 -s &lt; 新patch &amp;&amp; cmp 打完的檔案 目前檔案
+</code></pre>
+<h3>5.7 debugfs 不跟隨符號連結</h3>
+<p>weston.ini 真身是 <code>/etc/xdg/weston/weston.ini.weston-init</code>（update-alternatives 管理）。
+用 debugfs 驗收映像檔時要查真身檔案，否則誤報「設定缺失」。</p>
+<h3>5.8 WSL 特有</h3>
+<ul>
+<li>從 Windows 呼叫 WSL 跑複雜指令，<strong>用腳本檔</strong>別用行內指令（引號會被 PowerShell/bash 兩層轉義打碎）</li>
+<li>Git Bash 會把 <code>/home/...</code> 路徑重寫成 Windows 路徑，呼叫 wsl 要從 PowerShell 走</li>
+</ul>
+<hr>
+<h2>6. 與板端的關係（團隊約定）</h2>
+<p><strong>板子是真相。</strong> 在板上直接調通的東西，必須回灌儲存庫並跑 sha256 對帳：</p>
+<pre><code class="language-bash">tools/export_live.sh        # 拉板端檔案與儲存庫比對
+</code></pre>
+<ul>
+<li>版本流水：<code>meta-dlsdk/VERSION</code>（每個里程碑一條，含板端 sha256）</li>
+<li>每里程碑：git commit + tag（v2.7、v2.8、v2.9…）</li>
+<li>逐日改動：<code>backups/CHANGELOG.md</code></li>
+</ul>
+<h2>7. 參考文件索引</h2>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>內容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SETUP_SDK.md</code></td>
+<td>四步復現的最簡版</td>
+</tr>
+<tr>
+<td><code>SL1680项目总览_2026-07-28.md</code></td>
+<td>專案頂層文件（三大成果域 + 全部專題索引）</td>
+</tr>
+<tr>
+<td><code>meta-dlsdk/VERSION</code></td>
+<td>版本流水與每版改動明細</td>
+</tr>
+<tr>
+<td><code>SL1680_故障排查实录_2026-07-28.md</code></td>
+<td>執行期問題排查實錄</td>
+</tr>
+<tr>
+<td><code>TD7800触摸根因与视觉唤醒修复_2026-07-28.md</code></td>
+<td>硬體電平域問題的完整方法論</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>本文資料取自實際建置主機（Ubuntu 22.04.5 / 24 核 / 47GB / tmp 佔 159GB），2026-08-01 核對。</em>
+<em>DLSDK 二進位檔與面板廠商資料受 NDA 約束，請勿隨文件外發。</em></p>
+</main>
+<footer>由 <code>md2html.py</code> 生成 · 源文件 <code>Astra構建環境與命令手冊_繁體_2026-08-01.md</code></footer>
+</div>
+</body>
+</html>
