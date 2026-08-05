@@ -17,6 +17,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 PORT = 8080
 ROOT = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(ROOT, "index.html")
+# /en 是给 TD7800 面板用的英文版，按 1280x720 排版（不滚动）；
+# / 是中文版，给 PC/手机用（宽屏自适应）。两版共用同一套 API。
+INDEX_EN = os.path.join(ROOT, "index_en.html")
 
 # ── 白名单 ────────────────────────────────────────────────────────────
 SERVICES = ["astra-voice", "vision-wake", "dl-face", "astra-timer", "dl-clock"]
@@ -350,9 +353,10 @@ class H(BaseHTTPRequestHandler):
         # ⚠ self.path 含查询串（/api/snapshot?t=123），路由必须先剥掉——
         # 首版用全等匹配，前端带防缓存参数后 100% 404，快照永远裂图
         path = self.path.split("?", 1)[0]
-        if path in ("/", "/index.html"):
+        if path in ("/", "/index.html", "/en", "/en/", "/index_en.html"):
+            f = INDEX_EN if path.startswith("/en") or path == "/index_en.html" else INDEX
             try:
-                b = open(INDEX, "rb").read()
+                b = open(f, "rb").read()
             except OSError:
                 self.send_error(404); return
             self.send_response(200)

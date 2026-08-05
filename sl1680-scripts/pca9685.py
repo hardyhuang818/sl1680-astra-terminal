@@ -53,9 +53,15 @@ OSC_HZ   = 25_000_000   # PCA9685 内部振荡器标称 25MHz
 
 # 寄存器
 MODE1, MODE2      = 0x00, 0x01
+SUBADR1           = 0x02      # 出厂 0xE2 ┐ 这四个是 PCA9685 的硬指纹，
+SUBADR2           = 0x03      # 出厂 0xE4 │ 用来把它和总线上别的芯片区分开，
+SUBADR3           = 0x04      # 出厂 0xE8 │ 见 _try_addr()
+ALLCALLADR        = 0x05      # 出厂 0xE0 ┘
 LED0_ON_L         = 0x06
 ALL_LED_ON_L      = 0xFA
 PRESCALE          = 0xFE
+# 出厂默认值。改过 SUBADR 的板子探测会失败 —— 用 PCA_ADDR 环境变量强制指定。
+FINGERPRINT       = {SUBADR1: 0xE2, SUBADR2: 0xE4, SUBADR3: 0xE8, ALLCALLADR: 0xE0}
 # MODE1 位
 M1_RESTART, M1_EXTCLK, M1_AI, M1_SLEEP, M1_ALLCALL = 0x80, 0x40, 0x20, 0x10, 0x01
 # MODE2 位
@@ -95,8 +101,14 @@ def die(msg, code=1):
 
 
 def _try_addr(addr):
-    """能绑上并读出像 PCA9685 的寄存器就返回 True。
-    被内核驱动占用的地址会在 ioctl 阶段 EBUSY，自然跳过（本板 0x40/0x41 是 INA3221）。"""
+    """只有读出 PCA9685 出厂指纹才算命中（纯读，无副作用）。
+    被内核驱动占用的地址会在 ioctl 阶段 EBUSY，自然跳过（本板 0x40/0x41 是 INA3221）。
+
+    ⚠ 旧判据是「PRE_SCALE 在 3~255 且 MODE1 bit1 为 0」，太松了：2026-08-05 接上
+    EB7928 EVK 后 i2c-0 上冒出 0x44/0x47/0x48，其中 0x44 读回 PRE_SCALE=0x20、
+    MODE1=0x39（bit1 恰好为 0）直接蒙混过关，舵机指令全发给了错的芯片，
+    表现为写入 Errno 121 (EREMOTEIO)。改成核对 SUBADR1/2/3 + ALLCALLADR 四个
+    出厂常量，别的芯片凑不出这个组合。"""
     path = "/dev/i2c-%d" % BUS
     try:
         fd = os.open(path, os.O_RDWR)
@@ -105,12 +117,13 @@ def _try_addr(addr):
     try:
         if _libc.ioctl(fd, ctypes.c_ulong(I2C_SLAVE), ctypes.c_ulong(addr)) < 0:
             return False
+        for reg, want in FINGERPRINT.items():
+            os.write(fd, bytes([reg]))
+            if os.read(fd, 1)[0] != want:
+                return False
         os.write(fd, bytes([PRESCALE]))
         pre = os.read(fd, 1)[0]
-        os.write(fd, bytes([MODE1]))
-        m1 = os.read(fd, 1)[0]
-        # PCA9685: PRE_SCALE 合法范围 3~255；MODE1 的 bit1 是保留位，恒 0
-        return 3 <= pre <= 255 and not (m1 & 0x02)
+        return 3 <= pre <= 255          # PCA9685 的 PRE_SCALE 合法范围
     except OSError:
         return False
     finally:
@@ -187,7 +200,13 @@ def op_scan():
         finally:
             os.close(fd)
     print("  应答的地址:", " ".join("0x%02X" % a for a in found) if found else "(无)")
-    hit = [a for a in found if 0x40 <= a <= 0x47]
+    # 「在 0x40~0x47 且有应答」不足以断定是 PCA9685 —— 必须核对出厂指纹，
+    # 否则总线上别的芯片（2026-08-05 接 EB7928 后出现的 0x44）会被认成舵机。
+    hit = [a for a in found if 0x40 <= a <= 0x47 and _try_addr(a)]
+    other = [a for a in found if 0x40 <= a <= 0x47 and a not in hit]
+    if other:
+        print("  注意: 0x%s 有应答但不是 PCA9685（出厂指纹对不上），已排除"
+              % ("/0x".join("%02X" % a for a in other)))
     if hit:
         print("  ★ PCA9685 在 0x%02X（独立地址，最理想）" % hit[0])
     elif ALLCALL in found:

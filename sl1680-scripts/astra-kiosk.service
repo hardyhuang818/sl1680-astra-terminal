@@ -14,7 +14,9 @@ Environment=COG_PLATFORM_WL_VIEW_FULLSCREEN=1
 Environment=WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
 # 等 webctl 的 8080 就绪再起浏览器，避免开机竞态白屏
 ExecStartPre=/bin/sh /home/voice/webctl/wait_port.sh
-ExecStart=/usr/bin/cog -P wl http://127.0.0.1:8080/
+# /en = 英文版，按 TD7800 的 1280x720 定死排版（整页不滚动）。
+# / 仍是中文版宽屏自适应，留给 PC/手机浏览器。两版共用同一套 API。
+ExecStart=/usr/bin/cog -P wl http://127.0.0.1:8080/en
 Restart=always
 RestartSec=5
 StandardOutput=journal
