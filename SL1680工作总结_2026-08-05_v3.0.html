@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 工作总结 —— Web 控制台 + TD7800 触摸 kiosk 上线</title>
+<style>
+:root{
+  --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+  --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+  --good:#0f7b40; --goodbg:#eaf7f0; --bad:#b91c1c; --badbg:#fdeceb;
+  --warn:#b45309; --warnbg:#fff8e6; --codebg:#0d1b2e; --codefg:#d8e4f5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.8;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+  color:#fff;border-radius:14px;padding:34px 32px;margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(7,32,74,.2)}
+header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+header.hero h1{margin:10px 0 8px;font-size:29px;line-height:1.35;font-weight:700}
+header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+  padding-top:12px;margin-top:14px}
+main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 32px 30px}
+h2{font-size:21px;margin:34px 0 12px;color:#07204a;font-weight:700;
+   padding-top:18px;border-top:1px solid var(--line)}
+main > h2:first-of-type{border-top:none;padding-top:6px;margin-top:14px}
+h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+h4{font-size:15px;margin:18px 0 6px;color:#0d2a52}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:26px}
+li{margin:6px 0}
+a{color:var(--accent)}
+code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62;
+  word-break:break-word}
+pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+  overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;word-break:normal}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfd}
+td.star{background:#fff8e6}
+blockquote{background:var(--warnbg);border:1px solid #f0d9a0;border-left:4px solid var(--warn);
+  border-radius:8px;padding:12px 18px;margin:16px 0;color:#5a4a20}
+blockquote p{margin:6px 0}
+blockquote code{background:#f6ecd5;color:#6b5320}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#0b2b5b}
+footer{margin-top:22px;padding:18px 24px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px;color:var(--sub)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  header.hero{padding:22px 18px} header.hero h1{font-size:21px}
+  main{padding:6px 16px 22px}
+}
+@media print{
+  body{background:#fff} main,footer,blockquote,table{break-inside:avoid}
+  header.hero{box-shadow:none}
+  pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">SL1680 · 工作总结 · v3.0</div>
+  <h1>SL1680 工作总结 —— Web 控制台 + TD7800 触摸 kiosk 上线</h1>
+  <div class="meta"><strong>日期</strong>：2026-08-05　<strong>版本</strong>：v3.0（tag 已打）<br><strong>提交</strong>：<code>6fa9e0e</code> @ <code>feat/pca9685-servo-driver</code>（<a href="https://github.com/hardyhuang818/sl1680-astra-terminal/pull/2">PR #2</a>，37 文件 +6504 行）<br><strong>环境变化</strong>：板子随 BE3600 到公司，全天经 WireGuard 跳板远程操作（<code>192.168.8.186</code>）</div>
+</header>
+<main>
+<h2>0. 一句话</h2>
+<p><strong>TM10.5-TD7800 触摸屏从"显示器"变成了"控制台"</strong> —— PC/手机浏览器与触摸屏共用同一套
+Web 控制台，可开关服务、调音量、试说 TTS、控舵机（含转速）、看电源轨与对话流；
+<strong>断电重启八项复验全绿，全自动恢复。</strong></p>
+<hr>
+<h2>1. 今天的主线：从方案到上屏</h2>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 学习 Robot PDF</td>
+<td>Synaptics 触觉方案（SN6012T 60 通道力觉 ASIC + CTS 模块，SPI/I2C/3.3V）。他们的灵巧手 PoC 就配 GUI 可视化——印证了做控制台的方向。资料属 NDA，要点提炼进方案文档 §5，原件已排除出仓库</td>
+</tr>
+<tr>
+<td>② GUI 方案 + 原型</td>
+<td>三路线对比选定<strong>板端零依赖 Web 服务</strong>（python3 标准库，~400 行）；可点的 UI 原型评审通过</td>
+</tr>
+<tr>
+<td>③ M1 实现</td>
+<td><code>astra_webctl.py</code>（9 个白名单 API）+ 触屏友好前端 + systemd 服务，WireGuard 远程部署</td>
+</tr>
+<tr>
+<td>④ kiosk 路线</td>
+<td>官方包源 <code>astra-packages.synaptics.com</code> 公网 <strong>NXDOMAIN</strong>（apt 捷径死）→ 接 <strong>meta-webkit（scarthgap 分支）</strong> → 构建 <strong>cog 0.18.5 + wpewebkit 2.46.7</strong>（3981 任务全绿）→ deb 手工安装（不重烧镜像）→ <code>astra-kiosk.service</code> 全屏跑在 DSI-1</td>
+</tr>
+<tr>
+<td>⑤ 上屏</td>
+<td>TD7800 显示控制台，weston 的触摸校准/180° 翻转自动继承，触摸直接可用</td>
+</tr>
+<tr>
+<td>⑥ 断电复验</td>
+<td>六服务自启 / API / kiosk 自动加载 / 触摸 / C920 / 舵机自动唤醒 / 显示 / sha256 对账 —— <strong>八项全绿</strong></td>
+</tr>
+<tr>
+<td>⑦ 提交</td>
+<td>v3.0 commit + tag + Yocto 集成 recipe（<code>recipes-connectivity/astra-webctl/</code>）</td>
+</tr>
+</tbody>
+</table>
+<h2>2. 控制台能做什么</h2>
+<ul>
+<li><strong>功能开关</strong>：语音 / 视觉唤醒 / 多屏表情 / 定时提醒 / 时钟屏（dl-face↔dl-clock 互斥服务端强制）+ 重启显示服务、面板 29h 唤醒</li>
+<li><strong>语音</strong>：音量滑块（实测 15%/85% 听感 A/B 确认闭环）、麦增益（&gt;60% 削顶标红）、<strong>TTS 试说</strong>、触发欢迎语</li>
+<li><strong>舵机</strong>：CH0/CH1 角度滑块 + <strong>转速滑块</strong>（最右=全速直达）+ 演示摆动 + 常驻红色急停</li>
+<li><strong>视觉</strong>：摄像头快照（2s 刷新）+ 实时检测框高（调阈值的标定尺）</li>
+<li><strong>仪表盘</strong>：INA3221 电源轨电压/电流、CPU/内存/磁盘/uptime、触摸中断、设备在位、<strong>实时对话流</strong></li>
+<li>特意不做：重启按钮（本板软复位不可靠）、任意命令执行（全白名单）</li>
+</ul>
+<p><strong>访问方式</strong>：TD7800 屏直接触摸 ｜ 手机连 BE3600 WiFi 开 <code>192.168.8.186:8080</code> ｜
+PC 在外 <code>ssh -N -L 18080:192.168.8.186:8080 root@192.168.5.1</code> 后开 <code>localhost:18080</code></p>
+<h2>3. 今天修掉的七个问题</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>症状</th>
+<th>根因</th>
+<th>修法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>舵机不动</td>
+<td>断电后 PCA9685 默认 <strong>SLEEP</strong>，寄存器能写 PWM 不出</td>
+<td>写输出前自动唤醒</td>
+</tr>
+<tr>
+<td>2</td>
+<td>唤醒了还不动</td>
+<td><strong>EXTCLK 粘滞位</strong>意外置 1，振荡器停转（datasheet：只有断电或 SWRST 能清）</td>
+<td>自动 General-Call <strong>SWRST</strong>（0x00 发 0x06）再初始化</td>
+</tr>
+<tr>
+<td>3</td>
+<td>音量拖到 54% 跳回 34%</td>
+<td>WPE 触摸拖动<strong>不触发 onchange</strong>（值从未提交）+ 防覆盖保护 <code>window[id+"Touched"]</code> 写 / <code>let</code> 变量读是<strong>两个绑定</strong>（保护从未生效）</td>
+<td>滑块改 input+350ms 防抖提交；统一 TOUCH 对象</td>
+</tr>
+<tr>
+<td>4</td>
+<td>摄像头快照裂图</td>
+<td>路由用全等匹配，<code>?t=</code> 防缓存参数一来 100% 404；且 <code>cp</code> 非原子可能读到半张 JPEG</td>
+<td>剥查询串再路由；JPEG 头尾校验+缓存回退；前端预加载成功才换图</td>
+</tr>
+<tr>
+<td>5</td>
+<td>C920 开机枚举失败(-71)</td>
+<td>电气层握手失败（老毛病），远程 hub 复位无效</td>
+<td>用户换口重插恢复；<strong>顺带修掉 vision_wake 兜底 video3 假跑</strong>（改为明确退出+自动重试，插回即自愈）</td>
+</tr>
+<tr>
+<td>6</td>
+<td>"依赖齐"误判两轮</td>
+<td><strong>板上没有 ldd</strong>，grep 对空输出全过</td>
+<td><code>LD_TRACE_LOADED_OBJECTS=1</code> 直调 ld.so，一轮收敛（libwpe→atk 等 12 个→gstfft）</td>
+</tr>
+<tr>
+<td>7</td>
+<td>渐移期间 MODE1 偶发读歪</td>
+<td>状态探针与舵机写并发<strong>抢 I2C 寄存器指针</strong></td>
+<td>渐移期间跳过探针</td>
+</tr>
+</tbody>
+</table>
+<h2>4. 新增能力：舵机转速</h2>
+<p>180° 位置舵机<strong>没有硬件转速</strong>（脉宽只命令位置）。实现<strong>软件匀速渐移</strong>：</p>
+<pre><code class="language-bash">python3 pca9685.py move 0 135 30    # CH0 以 30°/s 走到 135°
+</code></pre>
+<p>当前角度从 OFF 寄存器回读（免记状态）；实测 40°/s 命令，寄存器采样斜率
+10°→37°→64°→93°→121°→149° 完全吻合。UI 转速滑块 10~180°/s，最右挡=立即。</p>
+<h2>5. 沉淀的经验（已录 VERSION / 备忘）</h2>
+<ol>
+<li><strong>meta-webkit 要用 scarthgap 分支</strong> —— master 只兼容 wrynose，解析直接失败</li>
+<li><strong>deb 闭包收包要过 debian 改名映射</strong>（<code>cairo</code>→<code>libcairo2</code>），pkgdata 的 <code>PKG:</code> 字段是钥匙</li>
+<li><strong>dpkg 账实不符</strong>（库文件在、包名未注册）时 <code>--force-depends</code> 是合理手段</li>
+<li><strong>WPE 触屏</strong>：range 滑块必须 input+防抖，别依赖 onchange</li>
+<li><code>let x</code> 和 <code>window.x</code> 是两个绑定 —— 这个 JS 基础坑伪装成了"轮询覆盖"</li>
+<li>INA3221 只认带 label 的 <code>in1/2/3</code>（总线电压）；<code>in4/5/6</code> 是分流电压，会随负载大摆</li>
+<li>All Call 0x70 / General-Call SWRST 是 PCA9685 的两个免焊接救命通道</li>
+</ol>
+<h2>6. 版本与遗留</h2>
+<pre><code>main ──┬── feat/td7800-reset-level-domain   PR #1  (v2.9 电平域定性)
+       └── feat/pca9685-servo-driver        PR #2  (舵机 + v3.0 控制台/kiosk)  ← tag v3.0
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>遗留</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kiosk recipe 未跑 cleanall</td>
+<td>板子是 deb 手工装的、已验证；recipe 是照实况写的但没执行过。下次出镜像时顺路验证（低风险：最坏 dpkg 十分钟补救）</td>
+</tr>
+<tr>
+<td>第二块 PCA9685</td>
+<td>需短接 A1 → 0x42（0x40/41 被板载 INA3221 占用）</td>
+</tr>
+<tr>
+<td>M2 待做</td>
+<td>视觉唤醒阈值写回、提醒/记忆编辑进 UI</td>
+</tr>
+<tr>
+<td>老账</td>
+<td>AEC 回声消除、KWS 唤醒词、espeak-ng GPLv3、LVDS 换双绞</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>相关：<code>PC控制台GUI方案_2026-08-05.md</code>（方案与控制点清单）· <code>meta-dlsdk/VERSION</code>（v3.0 完整条目）·</em>
+<em><code>TD7800触摸根因与视觉唤醒修复_2026-07-28.md</code>（上一个里程碑）</em></p>
+</main>
+<footer>由 <code>md2html.py</code> 生成 · 源文件 <code>SL1680工作总结_2026-08-05_v3.0.md</code></footer>
+</div>
+</body>
+</html>
