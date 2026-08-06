@@ -44,6 +44,10 @@ PCA9685 and MG90S/
 # Synaptics 机器人触觉方案 PPT（页脚明标 Confidential/NDA），要点已提炼进 GUI 方案文档 §5
 Robot/
 
+# Synaptics TouchComm 驱动 release 包：源码虽为 GPL-2.0，但整包含 NDA 交付件
+# （Developer Guide PDF + tcm2_toolkit 预编译二进制）。2026-08-06 已从全部历史清除，本地留档
+synaptics_tcm2_touchcomm_tddi_*.tar.gz
+
 # EB7928/SB7900：EVK 原理图(NDA) + 客户固件 hex，不入库。
 # 升级过程/协议细节的自写文档在 Case61 目录本地，结论摘要见 SL1680工作总结_2026-08-06_v3.1
 EB7928/
