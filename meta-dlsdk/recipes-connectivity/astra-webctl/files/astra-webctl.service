@@ -1,0 +1,14 @@
+[Unit]
+Description=SL1680 Web 控制台 (PC/手机浏览器访问 :8080)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/voice/webctl/astra_webctl.py
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

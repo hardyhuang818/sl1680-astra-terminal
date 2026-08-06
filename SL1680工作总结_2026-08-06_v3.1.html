@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 工作总结 —— 控制台英文版上屏 + EB7928 SPI 升级跑通</title>
+<style>
+:root{
+  --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+  --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+  --good:#0f7b40; --goodbg:#eaf7f0; --bad:#b91c1c; --badbg:#fdeceb;
+  --warn:#b45309; --warnbg:#fff8e6; --codebg:#0d1b2e; --codefg:#d8e4f5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.8;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+  color:#fff;border-radius:14px;padding:34px 32px;margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(7,32,74,.2)}
+header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+header.hero h1{margin:10px 0 8px;font-size:29px;line-height:1.35;font-weight:700}
+header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+  padding-top:12px;margin-top:14px}
+main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 32px 30px}
+h2{font-size:21px;margin:34px 0 12px;color:#07204a;font-weight:700;
+   padding-top:18px;border-top:1px solid var(--line)}
+main > h2:first-of-type{border-top:none;padding-top:6px;margin-top:14px}
+h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+h4{font-size:15px;margin:18px 0 6px;color:#0d2a52}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:26px}
+li{margin:6px 0}
+a{color:var(--accent)}
+code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62;
+  word-break:break-word}
+pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+  overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;word-break:normal}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfd}
+td.star{background:#fff8e6}
+blockquote{background:var(--warnbg);border:1px solid #f0d9a0;border-left:4px solid var(--warn);
+  border-radius:8px;padding:12px 18px;margin:16px 0;color:#5a4a20}
+blockquote p{margin:6px 0}
+blockquote code{background:#f6ecd5;color:#6b5320}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#0b2b5b}
+footer{margin-top:22px;padding:18px 24px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px;color:var(--sub)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  header.hero{padding:22px 18px} header.hero h1{font-size:21px}
+  main{padding:6px 16px 22px}
+}
+@media print{
+  body{background:#fff} main,footer,blockquote,table{break-inside:avoid}
+  header.hero{box-shadow:none}
+  pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">SL1680 Astra Terminal · v3.1 里程碑</div>
+  <h1>SL1680 工作总结 —— 控制台英文版上屏 + EB7928 SPI 升级跑通</h1>
+  <div class="meta"><strong>日期</strong>：2026-08-06　<strong>版本</strong>：v3.1<br><strong>分支</strong>：<code>feat/pca9685-servo-driver</code>（继 v3.0 之后）<br><strong>环境</strong>：板子在公司，全程 WireGuard 远程（<code>192.168.8.186</code>）<br><blockquote>
+⚠️ <strong>定位声明：EB7928 接 SL1680 只是临时测试其 FW 升级功能</strong>，验证"用自有 Linux 主机
+</blockquote><br><blockquote>
+替代 MPC04+Studio 完成烧录"这条路可行，<strong>不是长期挂载</strong>。测试结论已沉淀成文档三部曲，
+</blockquote><br><blockquote>
+接线随时可拆（拆后跑一次 <code>git checkout</code> 无关，板子重启 pinmux 自动还原）。
+</blockquote></div>
+</header>
+<main>
+<h2>0. 一句话</h2>
+<p><strong>两条线都闭环了</strong>：TD7800 屏切到英文版 1280×720 专用排版（顺带挖出并修掉 PCA9685
+地址误判）；EB7928 固件升级在 SL1680 上走 SPI 端到端跑通——<strong>452 页 / 7.4 秒，
+比官方 MPC04+I²C 路径快约 8.5 倍</strong>。</p>
+<hr>
+<h2>1. Web 控制台英文版（commit <code>9c88f58</code>）</h2>
+<ul>
+<li>新增 <code>/en</code> 路由：英文版按 TD7800 实测 <code>Set mode: 1280x720</code> <strong>定死排版整页不滚动</strong>
+  （量化验收：docH=720 / overflow=0 / 六卡片零裁切，含 coarse-pointer 放大后）；
+  <code>/</code> 仍是中文宽屏版给 PC/手机，共用同一套 API；kiosk 的 cog 已指向 <code>/en</code></li>
+<li>仪表盘改 <strong>6 列</strong>：板上是两颗 INA3221 = 6 条电轨 + 6 项系统指标 = 12 格正好 2 行
+  （5 列会排 3 行被 <code>overflow:hidden</code> 静默裁掉）</li>
+<li>触摸命中区用 <code>::before</code> 撑到 62×34px 不占布局；<strong>垂直 pad 必须小于半个行距</strong>，
+  ±11px 时相邻行 pad 重叠、后绘制者获胜，点开关底边会误触发下一个开关（实测抓到并修复）</li>
+</ul>
+<h2>2. 修掉一个真 bug：PCA9685 地址误判（同 commit）</h2>
+<p>接上 EB7928 EVK 后 i2c-0 冒出 0x44/0x47/0x48，旧判据「PRE_SCALE∈3~255 且 MODE1 bit1=0」
+被 0x44 蒙混通过 → 舵机指令发给错的芯片 → <code>Errno 121</code>。改为核对出厂指纹
+<code>SUBADR1/2/3=E2/E4/E8 + ALLCALLADR=E0</code>（只读指纹表定性：真芯片只在 All Call 0x70）。
+<strong>经验已录</strong>：I²C 探测判据要用出厂指纹，不能用"寄存器值像不像"。</p>
+<h2>3. EB7928 FW 升级：SPI 端到端跑通（临时测试）</h2>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>升级</td>
+<td><code>PR4683565 → PR4684394</code>（Build <code>0x0047772D → 0x00477A6A</code>，identify 独立复核）</td>
+</tr>
+<tr>
+<td>耗时</td>
+<td><strong>7.4 s</strong>（452 页，≈10 ms/页；官方 MPC04+I²C 63 s，快 ~8.5×）</td>
+</tr>
+<tr>
+<td>主机侧</td>
+<td><strong>零硬件改动零重建</strong>：unbind <code>ebi2c</code> + debugfs pinmux 把 J32.24 片选还给 spi2</td>
+</tr>
+<tr>
+<td>传输层</td>
+<td><code>eb7928_spi.py</code> 约 40 行换掉 I²C 后端，协议层 100% 复用 <code>eb7928.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>三条路线的完整历程</strong>（各自死因都有价值）：
+共用 i2c-0（死于 0x40 与 INA3221 冲突）→ 私有 I²C（死于 TXB0108 锁存拗不过 10K 上拉）
+→ SPI（通，但最后一坑：<strong>主机接口类型由固件决定，不只是跳线</strong>——I²C 版固件下
+SPI 全静默，换 SPI 通信版固件后立即通）。</p>
+<p><strong>新增诊断能力</strong>：实现显示寄存器读取——<code>faildet</code>（一键读全部显示失效检测寄存器）
+和 <code>dispreg &lt;addr&gt;</code>（读任意显示寄存器），I²C/SPI 后端通用，已在板实测。
+所用命令码与寄存器地址表出自 NDA 参考资料，细节仅存 Case61 本地文档，不入本仓。</p>
+<p><strong>文档三部曲</strong>（在 <code>Case61_EB7928 Falsh 升级hex FW/</code> 本地，含 NDA 提炼内容不入仓库）：</p>
+<table>
+<thead>
+<tr>
+<th>篇</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 操作手册（08-05，已更新验证状态）</td>
+<td>协议与字节级细节：包格式/双 CRC/$43 包裹/逐步骤实例/故障排查</td>
+</tr>
+<tr>
+<td>② 数据流解析与流程图（08-05）</td>
+<td>官方工具四次抓包逐笔解析：5570 笔事务怎么来的、ATTN 没提速的原因、两种末段假失败</td>
+</tr>
+<tr>
+<td>③ SPI 实战全程（08-06，中英双语）</td>
+<td>SL1680 端到端实录：三条路线时间线、复现清单、7.4s 原始输出</td>
+</tr>
+</tbody>
+</table>
+<h2>4. 今日经验（新增三条）</h2>
+<ol>
+<li><strong>主机接口类型（I²C/SPI）由器件固件决定，不只是硬件跳线</strong>——"读全 0"排查清单第 0 条</li>
+<li>本内核 debugfs <code>pinmux-select</code> 是<strong>「组名在前 函数名在后」</strong>，与常见资料相反（EINVAL 陷阱）</li>
+<li>复位后 1-2 秒离线读全 0 是器件重启常态——重试窗口给足（前两篇从抓包推出，今日亲测闭环）</li>
+</ol>
+<h2>5. 版本与遗留</h2>
+<table>
+<thead>
+<tr>
+<th>遗留</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EB7928 测试收尾</strong></td>
+<td>验证已完成。拆线后无需任何软件回退（pinmux 是运行时态，重启自动还原 ebi2c；若连 ebi2c 也不再需要，下次镜像顺手删 DTS 节点）</td>
+</tr>
+<tr>
+<td>J32.24 归属</td>
+<td>测试期间借给 EB7928 CS；TD7800 面板 SPI 调试通道让位（显示/触摸不受影响）</td>
+</tr>
+<tr>
+<td>kiosk recipe cleanall</td>
+<td>沿袭 v3.0，下次出镜像时验证</td>
+</tr>
+<tr>
+<td>老账</td>
+<td>KWS 唤醒词、AEC、espeak-ng GPLv3、LVDS 双绞</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>相关：<code>SL1680工作总结_2026-08-05_v3.0.md</code>（上一里程碑）· <code>SL1680_Work_Summary_2026-08-05_v3.0_EN.md</code></em></p>
+</main>
+<footer>由 <code>md2html.py</code> 生成 · 源文件 <code>SL1680工作总结_2026-08-06_v3.1.md</code></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 控制台 · UI 原型</title>
+<style>
+  :root{
+    --bg:#0d1526; --panel:#141f36; --panel2:#1a2745; --line:#26355a;
+    --ink:#e8eef8; --sub:#8fa3c4; --accent:#3d8bfd; --teal:#19c6c0;
+    --good:#2ecc71; --warn:#f39c12; --bad:#e74c3c; --off:#3a4a6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;font-size:14px;line-height:1.55}
+  .top{display:flex;align-items:center;gap:14px;padding:10px 18px;
+    background:linear-gradient(90deg,#0a1f44,#123069);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  .top h1{font-size:16px;margin:0;font-weight:700}
+  .top .addr{font-size:12px;color:#9fc6f5;font-family:Consolas,monospace}
+  .lamp{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--sub);
+    background:#0f1930;border:1px solid var(--line);border-radius:14px;padding:3px 10px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 6px var(--good)}
+  .dot.off{background:var(--off);box-shadow:none}
+  .estop{margin-left:auto;background:var(--bad);color:#fff;border:none;border-radius:8px;
+    padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer}
+  .estop:active{transform:scale(.96)}
+  .proto{background:#3b2a00;color:#ffd479;font-size:11.5px;padding:4px 12px;text-align:center}
+  .wrap{display:grid;grid-template-columns:1fr 1fr 1fr 300px;gap:12px;padding:14px;max-width:1500px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .card h2{font-size:13.5px;margin:0 0 10px;color:#bcd3f5;display:flex;align-items:center;gap:8px;
+    text-transform:none;letter-spacing:.02em}
+  .card h2 .ico{font-size:15px}
+  .span2{grid-column:span 2}
+  .span3{grid-column:span 3}
+  .logcol{grid-row:span 3}
+  /* toggle */
+  .row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1c2946}
+  .row:last-child{border-bottom:none}
+  .row .name{flex:1}
+  .row .hint{font-size:11px;color:var(--sub)}
+  .tgl{position:relative;width:42px;height:22px;background:var(--off);border-radius:11px;cursor:pointer;
+    transition:background .15s;flex:none}
+  .tgl.on{background:var(--good)}
+  .tgl::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;transition:left .15s}
+  .tgl.on::after{left:22px}
+  .chip{font-size:10.5px;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--sub)}
+  /* slider */
+  .sl{display:flex;align-items:center;gap:10px;margin:9px 0}
+  .sl label{width:88px;font-size:12.5px;color:var(--sub);flex:none}
+  .sl input[type=range]{flex:1;accent-color:var(--accent)}
+  .sl .val{width:44px;text-align:right;font-family:Consolas,monospace;font-size:13px;color:var(--teal)}
+  .redzone{font-size:10.5px;color:var(--warn)}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:7px;
+    padding:6px 13px;font-size:12.5px;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent)}
+  .btn.warn{border-color:var(--warn);color:var(--warn)}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  input[type=text]{background:#0f1930;border:1px solid var(--line);color:var(--ink);
+    border-radius:7px;padding:6px 10px;font-size:13px;flex:1;min-width:0}
+  /* gauges */
+  .gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .g{background:#0f1930;border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:center}
+  .g b{display:block;font-size:15px;color:var(--teal);font-family:Consolas,monospace}
+  .g span{font-size:10.5px;color:var(--sub)}
+  /* camera */
+  .cam{background:#0a0f1d;border:1px dashed var(--line);border-radius:8px;height:110px;
+    display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:12px;margin:8px 0}
+  .meter{height:8px;background:#0f1930;border-radius:4px;overflow:hidden;margin:4px 0 8px}
+  .meter i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--teal),var(--accent))}
+  /* servos */
+  .servo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 18px}
+  /* log */
+  .log{background:#0a0f1d;border:1px solid var(--line);border-radius:8px;padding:10px;
+    font-family:Consolas,monospace;font-size:11.5px;line-height:1.7;height:520px;overflow-y:auto;color:#a9c1e8}
+  .log .u{color:#7ec8ff}.log .b{color:#8ef0c0}.log .s{color:#7d8db0}
+  .list{font-size:12.5px}
+  .list .it{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #1c2946}
+  .list .it:last-child{border:none}
+  .list .del{color:var(--bad);cursor:pointer;font-size:12px}
+  textarea{width:100%;height:80px;background:#0f1930;border:1px solid var(--line);color:var(--ink);
+    border-radius:7px;padding:8px;font-size:12.5px;font-family:inherit;resize:vertical}
+  @media (max-width:1100px){ .wrap{grid-template-columns:1fr 1fr} .span3{grid-column:span 2} .logcol{grid-row:auto} }
+  @media (max-width:680px){ .wrap{grid-template-columns:1fr} .span2,.span3{grid-column:span 1} }
+</style>
+</head>
+<body>
+
+<div class="proto">⚠ 这是 UI 原型（静态演示，数据为示意值，按钮仅本地交互）—— 用于评审布局与控制项，非最终实现</div>
+
+<div class="top">
+  <h1>SL1680 控制台</h1>
+  <span class="addr">http://192.168.5.126:8080</span>
+  <span class="lamp"><span class="dot"></span>语音</span>
+  <span class="lamp"><span class="dot"></span>视觉</span>
+  <span class="lamp"><span class="dot"></span>多屏</span>
+  <span class="lamp"><span class="dot"></span>定时</span>
+  <span class="lamp"><span class="dot off"></span>时钟屏</span>
+  <button class="estop" onclick="alert('POST /api/servo {action:alloff}\n16 路全部松力')">■ 舵机急停</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ① 功能开关 -->
+  <div class="card">
+    <h2><span class="ico">⏻</span>功能开关</h2>
+    <div class="row"><span class="name">语音助手 <span class="chip">astra-voice</span></span><div class="tgl on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="row"><span class="name">视觉唤醒 <span class="chip">vision-wake</span><br><span class="hint">与摄像头实况互斥</span></span><div class="tgl on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="row"><span class="name">多屏表情 <span class="chip">dl-face</span><br><span class="hint">与时钟屏互斥(DLSDK 单进程)</span></span><div class="tgl on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="row"><span class="name">定时提醒 <span class="chip">astra-timer</span></span><div class="tgl on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="row"><span class="name">时钟屏 <span class="chip">dl-clock</span></span><div class="tgl" onclick="this.classList.toggle('on')"></div></div>
+    <div class="btnrow">
+      <button class="btn warn" onclick="alert('systemctl restart weston\n(屏黑救急: 触发桥片重新初始化)')">重启显示服务</button>
+      <button class="btn" onclick="alert('SPI 发 29h Display-On + 11h Sleep-Out')">面板唤醒</button>
+    </div>
+  </div>
+
+  <!-- ② 语音调节 -->
+  <div class="card">
+    <h2><span class="ico">🎙️</span>语音调节</h2>
+    <div class="sl"><label>播放音量</label><input type="range" min="0" max="100" value="90" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="val">90%</span></div>
+    <div class="sl"><label>麦克风增益</label><input type="range" min="0" max="100" value="50" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="val">50%</span></div>
+    <div class="redzone">⚠ 麦增益 &gt;60% 实测会削顶（v2.8 教训），滑块超过时标红</div>
+    <div class="sl"><label>采音门槛 RMS</label><input type="range" min="300" max="3000" value="1150" oninput="this.nextElementSibling.textContent=this.value"><span class="val">1150</span></div>
+    <div class="hint" style="font-size:11px;color:var(--sub)">近 10 分钟因"太轻"被跳过: <b style="color:var(--warn)">3 次</b>（调门槛的依据）</div>
+    <div class="btnrow" style="margin-top:10px">
+      <input type="text" placeholder="输入文字让它说出来…" value="你好，我是 Astra">
+      <button class="btn primary" onclick="alert('写 /tmp/astra_say.txt + SIGUSR2')">🔊 试说</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn" onclick="alert('kill -USR1 → 触发欢迎语')">触发唤醒</button>
+      <button class="btn" onclick="alert('播放 seg_006.wav 最近录音')">听最近录音</button>
+    </div>
+  </div>
+
+  <!-- ③ 视觉唤醒 -->
+  <div class="card">
+    <h2><span class="ico">👁️</span>视觉唤醒</h2>
+    <div class="cam">📷 摄像头快照（复用 /tmp/vw_cur.jpg，2s 刷新）</div>
+    <div class="hint" style="font-size:11px;color:var(--sub)">当前检测框高</div>
+    <div class="meter"><i></i></div>
+    <div style="font-family:Consolas,monospace;font-size:12px;color:var(--teal)">62%　<span style="color:var(--sub)">（阈值 45% · armed）</span></div>
+    <div class="sl" style="margin-top:10px"><label>触发阈值</label><input type="range" min="30" max="80" value="45" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="val">45%</span></div>
+    <div class="sl"><label>防抖帧数</label><input type="range" min="1" max="5" value="2" oninput="this.nextElementSibling.textContent=this.value"><span class="val">2</span></div>
+    <div class="hint" style="font-size:11px;color:var(--sub)">改参数后自动重启 vision-wake 生效；实时框高就是标定工具</div>
+  </div>
+
+  <!-- 日志列 -->
+  <div class="card logcol">
+    <h2><span class="ico">📜</span>实时日志 / 对话流</h2>
+    <div class="log">
+      <div class="s">14:02:11 [vwake] 在跑，当前无人</div>
+      <div class="s">14:03:40 [vwake] 框高=75% → 唤醒</div>
+      <div class="b">14:03:41 [机器] 你好，欢迎回来</div>
+      <div class="u">14:03:52 [你] 深圳今天天气怎么样</div>
+      <div class="b">14:03:54 [机器] 深圳今天多云，28到33度…</div>
+      <div class="u">14:04:10 [你] 音量调到百分之六十</div>
+      <div class="b">14:04:11 [机器] 好的，音量已调到60%</div>
+      <div class="s">14:04:30 [timer] 倒计时 6:00 剩 2:41</div>
+      <div class="u">14:05:02 [你] 打开摄像头</div>
+      <div class="b">14:05:03 [机器] 已切换到摄像头画面</div>
+      <div class="s">14:05:03 [warn] vision-wake 已自动停止(互斥)</div>
+      <div class="s">14:06:55 [跳过] 太轻 RMS=489&lt;1150</div>
+      <div class="u">14:07:21 [你] 舵机转到九十度</div>
+      <div class="b">14:07:21 [机器] CH0 已转到 90 度</div>
+    </div>
+  </div>
+
+  <!-- ④ 状态仪表盘 -->
+  <div class="card span2">
+    <h2><span class="ico">📊</span>状态仪表盘 <span class="chip">2s 轮询 · 数据源全部现成</span></h2>
+    <div class="gauges">
+      <div class="g"><b>3.352 V</b><span>PWR_3V3（INA3221 实测）</span></div>
+      <div class="g"><b>1.848 V</b><span>VDDM_1V8</span></div>
+      <div class="g"><b>628 mA</b><span>VCORE 电流峰值</span></div>
+      <div class="g"><b>23%</b><span>CPU（4×A73）</span></div>
+      <div class="g"><b>1.1 / 3.4 G</b><span>内存</span></div>
+      <div class="g"><b>39%</b><span>rootfs</span></div>
+      <div class="g"><b>2 d 03 h</b><span>uptime</span></div>
+      <div class="g"><b>+357</b><span>触摸中断增量(活着)</span></div>
+      <div class="g"><b>✓ ✓ ✓</b><span>C920 · 麦 · PCA9685</span></div>
+    </div>
+    <div class="hint" style="font-size:11px;color:var(--sub);margin-top:8px">
+      I2C 总线图：<code style="color:var(--teal)">0x2C</code> 触摸 ·
+      <code style="color:var(--teal)">0x40/41</code> INA3221 ·
+      <code style="color:var(--teal)">0x70</code> PCA9685 　|
+      ⚠ 板子重启需人工断电，故不提供"重启"按钮
+    </div>
+  </div>
+
+  <!-- ⑤ 舵机 -->
+  <div class="card">
+    <h2><span class="ico">🦾</span>舵机 <span class="chip">PCA9685 @0x70</span></h2>
+    <div class="servo-grid">
+      <div class="sl"><label>CH0</label><input type="range" min="0" max="180" value="90" oninput="this.nextElementSibling.textContent=this.value+'°'"><span class="val">90°</span></div>
+      <div class="sl"><label>CH1</label><input type="range" min="0" max="180" value="90" oninput="this.nextElementSibling.textContent=this.value+'°'"><span class="val">90°</span></div>
+    </div>
+    <div class="btnrow">
+      <button class="btn" onclick="alert('pca9685.py loop 0 60')">CH0 演示摆动</button>
+      <button class="btn" onclick="alert('pca9685.py stop')">停止摆动</button>
+      <button class="btn" onclick="alert('展开 CH2-CH15')">＋ 更多通道</button>
+    </div>
+  </div>
+
+  <!-- ⑥ 提醒 -->
+  <div class="card">
+    <h2><span class="ico">⏰</span>提醒 / 倒计时 <span class="chip">timers.json · daily.json</span></h2>
+    <div class="list">
+      <div class="it"><span style="flex:1">⏳ 倒计时 6 分钟</span><span class="hint">剩 2:41</span><span class="del">✕</span></div>
+      <div class="it"><span style="flex:1">🔁 每天 22:30 提醒睡觉</span><span class="del">✕</span></div>
+      <div class="it"><span style="flex:1">🔁 每天 15:30 提醒喝水</span><span class="del">✕</span></div>
+    </div>
+    <div class="btnrow">
+      <input type="text" placeholder="如: 每天8点提醒吃药 / 倒计时10分钟">
+      <button class="btn primary">添加</button>
+    </div>
+  </div>
+
+  <!-- ⑦ 记忆 -->
+  <div class="card">
+    <h2><span class="ico">🧠</span>长期记忆 <span class="chip">memory.md 直接编辑</span></h2>
+    <textarea>- 主人叫 Hardy，喜欢喝美式
+- 办公室在 3 楼，工位靠窗
+- 每周五下午有例会</textarea>
+    <div class="btnrow"><button class="btn primary">保存并重载</button></div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+[Unit]
+Description=SL1680 触摸控制台 kiosk (cog/WPE 全屏跑 Web 控制台于 TD7800)
+# 要等 weston(合成器) 和 webctl(被显示的页面) 都起来
+After=weston.service astra-webctl.service
+Wants=astra-webctl.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=WAYLAND_DISPLAY=wayland-1
+# cog Wayland 平台全屏（0.18.x 的 wl 平台环境开关）
+Environment=COG_PLATFORM_WL_VIEW_FULLSCREEN=1
+# WebKit 在无 dbus/bwrap 的嵌入式根用户环境下的常规豁免
+Environment=WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
+# 等 webctl 的 8080 就绪再起浏览器，避免开机竞态白屏
+ExecStartPre=/bin/sh /home/voice/webctl/wait_port.sh
+ExecStart=/usr/bin/cog -P wl http://127.0.0.1:8080/
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

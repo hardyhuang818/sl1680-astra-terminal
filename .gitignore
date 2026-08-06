@@ -37,6 +37,33 @@ backups/*
 *.gguf
 *.onnx
 
+# 第三方器件原始资料（61MB/384 文件，含整套 STM32 例程与标准外设库）
+# 结论与关键参数已提炼进 PCA9685_MG90S_接入SL1680_*.md，原件不入库
+PCA9685 and MG90S/
+
+# Synaptics 机器人触觉方案 PPT（页脚明标 Confidential/NDA），要点已提炼进 GUI 方案文档 §5
+Robot/
+
+# Synaptics TouchComm 驱动 release 包：源码虽为 GPL-2.0，但整包含 NDA 交付件
+# （Developer Guide PDF + tcm2_toolkit 预编译二进制）。2026-08-06 已从全部历史清除，本地留档
+synaptics_tcm2_touchcomm_tddi_*.tar.gz
+
+# EB7928/SB7900：EVK 原理图(NDA) + 客户固件 hex，不入库。
+# 升级过程/协议细节的自写文档在 Case61 目录本地，结论摘要见 SL1680工作总结_2026-08-06_v3.1
+EB7928/
+
+# 博客翻译的原始素材抓取 + pptx 中间产物 + 临时目录
+synaptics_blog_assets_original/
+pptx_build/
+tmp/
+
+# 板端内核模块二进制（构建产物，可由 SDK 复现）
+SL1680_td7800_boot/*.ko
+
+# WSL 构建中转的二进制包
+tools/_wslout/*.tar
+tools/_wslout/*.deb
+
 # ============ 杂项 ============
 __pycache__/
 *.log

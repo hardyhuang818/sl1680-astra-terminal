@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SL1680 Work Summary — Web Console + TD7800 Touch Kiosk Live</title>
+<style>
+:root{
+  --bg:#f6f7fa; --card:#fff; --ink:#181b21; --sub:#576070;
+  --line:#e2e6ee; --accent:#0b6efd; --teal:#00a3a3;
+  --good:#0f7b40; --goodbg:#eaf7f0; --bad:#b91c1c; --badbg:#fdeceb;
+  --warn:#b45309; --warnbg:#fff8e6; --codebg:#0d1b2e; --codefg:#d8e4f5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.8;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 20px 80px}
+header.hero{background:linear-gradient(135deg,#07204a 0%,#0b6efd 58%,#00a3a3 100%);
+  color:#fff;border-radius:14px;padding:34px 32px;margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(7,32,74,.2)}
+header.hero .kicker{font-size:13px;letter-spacing:.14em;opacity:.85;text-transform:uppercase}
+header.hero h1{margin:10px 0 8px;font-size:29px;line-height:1.35;font-weight:700}
+header.hero .meta{font-size:14px;opacity:.93;border-top:1px solid rgba(255,255,255,.28);
+  padding-top:12px;margin-top:14px}
+main{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 32px 30px}
+h2{font-size:21px;margin:34px 0 12px;color:#07204a;font-weight:700;
+   padding-top:18px;border-top:1px solid var(--line)}
+main > h2:first-of-type{border-top:none;padding-top:6px;margin-top:14px}
+h3{font-size:16.5px;margin:24px 0 8px;color:#0d2a52}
+h4{font-size:15px;margin:18px 0 6px;color:#0d2a52}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:26px}
+li{margin:6px 0}
+a{color:var(--accent)}
+code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:14px;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;color:#0a3d62;
+  word-break:break-word}
+pre{background:var(--codebg);color:var(--codefg);border-radius:10px;padding:16px 18px;
+  overflow-x:auto;font-size:13.5px;line-height:1.7;margin:14px 0;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;word-break:normal}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px;
+  display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#eef3fb;color:#07204a;font-weight:600;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfd}
+td.star{background:#fff8e6}
+blockquote{background:var(--warnbg);border:1px solid #f0d9a0;border-left:4px solid var(--warn);
+  border-radius:8px;padding:12px 18px;margin:16px 0;color:#5a4a20}
+blockquote p{margin:6px 0}
+blockquote code{background:#f6ecd5;color:#6b5320}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+strong{color:#0b2b5b}
+footer{margin-top:22px;padding:18px 24px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px;color:var(--sub)}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  header.hero{padding:22px 18px} header.hero h1{font-size:21px}
+  main{padding:6px 16px 22px}
+}
+@media print{
+  body{background:#fff} main,footer,blockquote,table{break-inside:avoid}
+  header.hero{box-shadow:none}
+  pre{background:#f4f6fa;color:#12233d;border:1px solid #dde3ec}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">SL1680 Astra Terminal - Milestone v3.0</div>
+  <h1>SL1680 Work Summary — Web Console + TD7800 Touch Kiosk Live</h1>
+  <div class="meta"><strong>Date</strong>: 2026-08-05　<strong>Version</strong>: v3.0 (tagged)<br><strong>Commit</strong>: <code>6fa9e0e</code> @ <code>feat/pca9685-servo-driver</code> (<a href="https://github.com/hardyhuang818/sl1680-astra-terminal/pull/2">PR #2</a>, 37 files, +6504 lines)<br><strong>Environment change</strong>: the board moved to the office with the BE3600; all work done remotely over a WireGuard jump host (<code>192.168.8.186</code>)</div>
+</header>
+<main>
+<h2>0. One sentence</h2>
+<p><strong>The TM10.5-TD7800 touch panel went from being a "display" to being a "console"</strong> — PC/phone
+browsers and the touch panel share one Web console that can toggle services, adjust volume,
+speak test TTS, drive servos (including speed control), and watch power rails and the live
+conversation stream. <strong>All eight power-cycle re-verification checks passed green — fully
+automatic recovery.</strong></p>
+<hr>
+<h2>1. Today's main line: from plan to on-screen</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① Study the Robot PDF</td>
+<td>Synaptics tactile solution (SN6012T 60-channel force-sensing ASIC + CTS module, SPI/I2C/3.3V). Their dexterous-hand PoC ships with a GUI for visualization — which validated the console direction. The material is under NDA; key points were distilled into §5 of the plan document and the original file is excluded from the repo</td>
+</tr>
+<tr>
+<td>② GUI plan + prototype</td>
+<td>Compared three routes and settled on a <strong>zero-dependency on-board Web service</strong> (python3 stdlib, ~400 lines); the clickable UI prototype passed review</td>
+</tr>
+<tr>
+<td>③ M1 implementation</td>
+<td><code>astra_webctl.py</code> (9 whitelisted APIs) + touch-friendly frontend + systemd service, deployed remotely over WireGuard</td>
+</tr>
+<tr>
+<td>④ Kiosk route</td>
+<td>Official package feed <code>astra-packages.synaptics.com</code> is <strong>NXDOMAIN</strong> on the public net (the apt shortcut is dead) → wired up <strong>meta-webkit (scarthgap branch)</strong> → built <strong>cog 0.18.5 + wpewebkit 2.46.7</strong> (3981 tasks all green) → installed as debs by hand (no image reflash) → <code>astra-kiosk.service</code> runs full-screen on DSI-1</td>
+</tr>
+<tr>
+<td>⑤ On screen</td>
+<td>The TD7800 shows the console; weston's touch calibration / 180° rotation are inherited automatically, touch works out of the box</td>
+</tr>
+<tr>
+<td>⑥ Power-cycle re-verification</td>
+<td>Six services autostart / API / kiosk auto-load / touch / C920 / servo auto-wake / display / sha256 reconciliation — <strong>all eight green</strong></td>
+</tr>
+<tr>
+<td>⑦ Commit</td>
+<td>v3.0 commit + tag + Yocto integration recipe (<code>recipes-connectivity/astra-webctl/</code>)</td>
+</tr>
+</tbody>
+</table>
+<h2>2. What the console can do</h2>
+<ul>
+<li><strong>Service toggles</strong>: voice / vision wake / multi-screen face / timer reminders / clock screen (dl-face↔dl-clock mutual exclusion enforced server-side) + restart display service, panel 29h wake</li>
+<li><strong>Voice</strong>: volume slider (closed the loop with a 15%/85% listening A/B test), mic gain (clipping warning turns red above 60%), <strong>TTS test speech</strong>, trigger the welcome phrase</li>
+<li><strong>Servos</strong>: CH0/CH1 angle sliders + <strong>speed slider</strong> (rightmost = full-speed direct) + demo sweep + always-visible red E-stop</li>
+<li><strong>Vision</strong>: camera snapshot (2 s refresh) + live detection box height (a calibration ruler for threshold tuning)</li>
+<li><strong>Dashboard</strong>: INA3221 power-rail voltage/current, CPU/memory/disk/uptime, touch IRQ count, device presence, <strong>live conversation stream</strong></li>
+<li>Deliberately left out: a reboot button (soft reset is unreliable on this board) and arbitrary command execution (everything is whitelisted)</li>
+</ul>
+<p><strong>Access</strong>: touch the TD7800 directly ｜ phone on BE3600 Wi-Fi → <code>192.168.8.186:8080</code> ｜
+PC from outside: <code>ssh -N -L 18080:192.168.8.186:8080 root@192.168.5.1</code> then open <code>localhost:18080</code></p>
+<h2>3. Seven problems fixed today</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Symptom</th>
+<th>Root cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Servo doesn't move</td>
+<td>After power loss the PCA9685 defaults to <strong>SLEEP</strong> — registers accept writes but no PWM comes out</td>
+<td>Auto-wake before any output write</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Still doesn't move after wake</td>
+<td>The sticky <strong>EXTCLK bit</strong> got set accidentally, stopping the oscillator (datasheet: only power-off or SWRST clears it)</td>
+<td>Automatic General-Call <strong>SWRST</strong> (send 0x06 to address 0x00) then re-init</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Volume dragged to 54% snaps back to 34%</td>
+<td>WPE touch drags <strong>never fire onchange</strong> (the value was never submitted) + the anti-overwrite guard wrote <code>window[id+"Touched"]</code> but read a <code>let</code> variable — <strong>two different bindings</strong> (the guard never worked)</td>
+<td>Sliders now use input + 350 ms debounced submit; unified TOUCH object</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Camera snapshot shows broken image</td>
+<td>Route matching used strict equality, so the <code>?t=</code> cache-buster caused 100% 404s; plus non-atomic <code>cp</code> could serve a half-written JPEG</td>
+<td>Strip the query string before routing; JPEG head/tail validation + cached fallback; frontend swaps the image only after successful preload</td>
+</tr>
+<tr>
+<td>5</td>
+<td>C920 fails to enumerate at boot (-71)</td>
+<td>Electrical-level handshake failure (a known quirk); remote hub reset does nothing</td>
+<td>User re-plugged into another port; <strong>also fixed vision_wake silently falling back to video3</strong> (now exits explicitly and auto-retries — self-heals on re-plug)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>"Dependencies satisfied" misjudged twice</td>
+<td><strong>The board has no ldd</strong> — grep over empty output passes everything</td>
+<td><code>LD_TRACE_LOADED_OBJECTS=1</code> calls ld.so directly; converged in one round (libwpe → 12 more incl. atk → gstfft)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>MODE1 occasionally reads wrong during ramps</td>
+<td>The status probe and servo writes race on the <strong>I2C register pointer</strong></td>
+<td>Skip the probe while a ramp is in progress</td>
+</tr>
+</tbody>
+</table>
+<h2>4. New capability: servo speed</h2>
+<p>A 180° positional servo has <strong>no hardware speed control</strong> (pulse width only commands position).
+Implemented <strong>software constant-rate ramping</strong>:</p>
+<pre><code class="language-bash">python3 pca9685.py move 0 135 30    # CH0 moves to 135° at 30°/s
+</code></pre>
+<p>Current angle is read back from the OFF registers (no state to keep). Measured at a commanded
+40°/s, register sampling showed the slope 10°→37°→64°→93°→121°→149° — an exact match.
+The UI speed slider spans 10–180°/s; the rightmost detent = immediate.</p>
+<h2>5. Lessons learned (recorded in VERSION / notes)</h2>
+<ol>
+<li><strong>meta-webkit must use the scarthgap branch</strong> — master is wrynose-only and fails parsing outright</li>
+<li><strong>Closing the deb dependency set requires the Debian rename mapping</strong> (<code>cairo</code>→<code>libcairo2</code>); the <code>PKG:</code> field in pkgdata is the key</li>
+<li>When <strong>dpkg's books don't match reality</strong> (library present, package unregistered), <code>--force-depends</code> is a legitimate tool</li>
+<li><strong>WPE touch</strong>: range sliders must use input + debounce — never rely on onchange</li>
+<li><code>let x</code> and <code>window.x</code> are two different bindings — this JS fundamentals trap masqueraded as "polling overwrites my value"</li>
+<li>The INA3221 should only be read via the labelled <code>in1/2/3</code> (bus voltages); <code>in4/5/6</code> are shunt voltages that swing wildly with load</li>
+<li>All Call 0x70 / General-Call SWRST are the PCA9685's two no-soldering rescue channels</li>
+</ol>
+<h2>6. Versions and leftovers</h2>
+<pre><code>main ──┬── feat/td7800-reset-level-domain   PR #1  (v2.9 voltage-domain diagnosis)
+       └── feat/pca9685-servo-driver        PR #2  (servos + v3.0 console/kiosk)  ← tag v3.0
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Leftover</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kiosk recipe not yet cleanall-verified</td>
+<td>The board runs hand-installed debs, already verified; the recipe was written from the live state but never executed. Verify it at the next image build (low risk: worst case is ten minutes of dpkg remediation)</td>
+</tr>
+<tr>
+<td>Second PCA9685</td>
+<td>Needs A1 bridged → 0x42 (0x40/41 are taken by the on-board INA3221s)</td>
+</tr>
+<tr>
+<td>M2 to do</td>
+<td>Vision-wake threshold write-back; reminder/memory editing in the UI</td>
+</tr>
+<tr>
+<td>Long-standing</td>
+<td>AEC echo cancellation, KWS wake word, espeak-ng GPLv3 licensing, LVDS → twisted pair</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>Related: <code>PC控制台GUI方案_2026-08-05.md</code> (plan and control-point inventory) · <code>meta-dlsdk/VERSION</code> (full v3.0 entry) ·</em>
+<em><code>TD7800触摸根因与视觉唤醒修复_2026-07-28.md</code> (previous milestone)</em></p>
+</main>
+<footer>由 <code>md2html.py</code> 生成 · 源文件 <code>SL1680_Work_Summary_2026-08-05_v3.0_EN.md</code></footer>
+</div>
+</body>
+</html>

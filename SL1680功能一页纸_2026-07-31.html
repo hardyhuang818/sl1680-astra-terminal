@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>SL1680 边缘 AI 终端｜功能一页纸</title>
+  <style>
+    :root{--ink:#152033;--muted:#5c687a;--navy:#08234d;--blue:#0b6efd;--teal:#008f92;--line:#dce3ed;--paper:#fff;--canvas:#f4f7fb;--ok:#087443;--ok-bg:#e9f8f0;--todo:#a85a00;--todo-bg:#fff5df}
+    *{box-sizing:border-box} body{margin:0;background:var(--canvas);color:var(--ink);font:15px/1.55 "Microsoft YaHei","PingFang SC",Arial,sans-serif}
+    .page{max-width:1180px;margin:auto;padding:24px 20px 52px}.hero{color:#fff;background:linear-gradient(125deg,#061a3b,#0b6efd 62%,#009c9c);border-radius:16px;padding:29px 34px;box-shadow:0 12px 32px #09204a33}.eyebrow{font-size:12px;letter-spacing:.12em;opacity:.85}.hero h1{margin:7px 0 5px;font-size:29px;letter-spacing:.02em}.hero p{margin:0;opacity:.94}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:19px}.fact{border:1px solid #ffffff42;border-radius:9px;background:#ffffff14;padding:9px 12px}.fact b{display:block;font-size:19px}.fact span{font-size:12px;opacity:.9}
+    section{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:19px 23px;margin-top:15px;box-shadow:0 2px 6px #12213a08}h2{color:var(--navy);font-size:18px;margin:0 0 12px;display:flex;align-items:center;gap:8px}.n{width:25px;height:25px;border-radius:7px;display:inline-grid;place-items:center;background:var(--blue);color:#fff;font-size:13px}.lead{margin:0 0 10px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.card{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fbfcfe}.card h3{font-size:15px;color:var(--blue);margin:0 0 6px}.card p{margin:0;color:var(--muted);font-size:13.5px}.tag{display:inline-block;border-radius:99px;padding:2px 8px;margin:0 4px 4px 0;background:#eaf2ff;color:#0757ba;font-size:12px}.layout{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}.flow{display:flex;align-items:stretch;gap:5px;flex-wrap:wrap}.node{flex:1;min-width:116px;background:#eef4ff;border:1px solid #cbdcf8;color:#073f83;border-radius:8px;padding:8px 9px;font-size:13px;font-weight:600}.arrow{align-self:center;color:#5f7190;font-size:18px}.checks{margin:0;padding:0;list-style:none}.checks li{margin:8px 0;padding-left:25px;position:relative}.checks li:before{content:"✓";position:absolute;left:0;top:0;color:var(--ok);font-weight:800}.status{display:grid;grid-template-columns:1fr 1fr;gap:11px}.ok,.todo{border-radius:9px;padding:12px 14px;font-size:13.5px}.ok{background:var(--ok-bg);border-left:4px solid var(--ok)}.todo{background:var(--todo-bg);border-left:4px solid var(--todo)}.ok strong{color:var(--ok)}.todo strong{color:var(--todo)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 9px;border:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--navy);background:#eef3fb;white-space:nowrap}tbody tr:nth-child(even){background:#fafcff}code{background:#edf1f6;color:#0e416a;padding:1px 5px;border-radius:4px;font:12px Consolas,monospace}.note{margin:11px 0 0;padding:9px 12px;border-left:4px solid var(--teal);background:#edfafa;color:#285c63;font-size:13px}footer{color:var(--muted);font-size:12px;padding:14px 4px 0}@media(max-width:760px){.facts,.grid,.layout,.status{grid-template-columns:1fr}.hero{padding:23px 20px}.hero h1{font-size:24px}.page{padding:14px}.arrow{display:none}section{padding:17px}table{font-size:12px}}@media print{body{background:#fff}.page{max-width:none;padding:0}.hero,section{box-shadow:none}section{break-inside:avoid}}
+  </style>
+</head>
+<body><main class="page">
+  <header class="hero">
+    <div class="eyebrow">INTERNAL BRIEF · 2026-08-01 · 基于 meta-dlsdk v2.8 与项目实测记录</div>
+    <h1>SL1680 边缘 AI 终端：现在能做什么？</h1>
+    <p>把本地语音、多屏交互、视觉唤醒、LVDS 触摸与舵机执行，收进一台 Synaptics Astra SL1680 原型终端。</p>
+    <div class="facts"><div class="fact"><b>4× A73 + NPU</b><span>SL1680 / Astra Dolphin RDK</span></div><div class="fact"><b>语音全本地</b><span>ASR、TTS 不依赖 PC</span></div><div class="fact"><b>最多 4 屏</b><span>DL7400 · USB 3.0</span></div><div class="fact"><b>16 路 PWM</b><span>PCA9685 舵机扩展已跑通</span></div></div>
+  </header>
+
+  <section><h2><span class="n">1</span>核心能力</h2><div class="grid">
+    <article class="card"><h3>本地语音助手</h3><p><span class="tag">SenseVoice int8</span><span class="tag">silero VAD</span><span class="tag">matcha TTS</span><br>中英识别与合成在板端运行；音量、显示模式等设备指令可本地执行，实时天气走 Open‑Meteo，开放问答按配置调用云端模型。</p></article>
+    <article class="card"><h3>多屏对话界面</h3><p><span class="tag">DL7400</span><span class="tag">dl_face</span><span class="tag">中英字幕</span><br>USB 3.0 外接最多四屏。默认表情脸与双语字幕；屏幕可按角色切至 C920 摄像头画面。</p></article>
+    <article class="card"><h3>直驱触摸显示</h3><p><span class="tag">DSI → LVDS</span><span class="tag">1280×720</span><span class="tag">~120Hz touch</span><br>TC358775 + TM10.5‑TD7800 已实现显示、180° 旋转、多点触摸校准与上海时区集成。</p></article>
+    <article class="card"><h3>视觉唤醒</h3><p><span class="tag">C920</span><span class="tag">NPU</span><br>人体检测命中后触发欢迎语；项目记录的板端实测为 <b>25ms/帧</b>、置信度 0.94。</p></article>
+    <article class="card"><h3>舵机执行</h3><p><span class="tag">PCA9685</span><span class="tag">MG90S</span><br>通过 <code>/dev/i2c-0</code> 用户态驱动控制 16 路 12 位 PWM；MG90S 转动与供电稳定性已实测。</p></article>
+    <article class="card"><h3>交付与自恢复</h3><p><span class="tag">Yocto</span><span class="tag">systemd</span><br>v2.8 将时区、屏幕翻转、触摸校准纳入镜像构建；服务按设备条件等待，面向断电重启恢复。</p></article>
+  </div></section>
+
+  <section><h2><span class="n">2</span>系统如何协同</h2><div class="layout"><div><div class="flow"><div class="node">C920 摄像头 / 麦克风</div><div class="arrow">→</div><div class="node">SL1680<br>NPU + CPU</div><div class="arrow">→</div><div class="node">语音 / 视觉 / 控制路由</div></div><div class="flow" style="margin-top:7px"><div class="node">DL7400<br>最多 4 屏</div><div class="arrow">←</div><div class="node">SL1680 显示链</div><div class="arrow">→</div><div class="node">DSI → LVDS<br>TD7800 触摸屏</div><div class="arrow">→</div><div class="node">PCA9685 → MG90S<br>动作执行</div></div></div><div class="card"><h3>典型体验</h3><p>人走近 → 屏幕欢迎；说话 → 本地识别、回答并播报；多屏同步展示表情与字幕；语音切到摄像头实况；需要动作时再驱动舵机。</p></div></div></section>
+
+  <section><h2><span class="n">3</span>已验证的关键指标与边界</h2><table><thead><tr><th>项目</th><th>已验证结论</th><th>使用边界</th></tr></thead><tbody>
+    <tr><td>本地 ASR / TTS</td><td>ASR RTF 0.197（4 线程）；TTS RTF 约 0.37</td><td>模型约 1.9GB，未随代码仓库提交，部署镜像后需单独准备模型。</td></tr>
+    <tr><td>DL7400 四屏</td><td>4 屏可同时点亮；实测动态内容约 5.7–15.0 fps/屏（取决于分辨率）</td><td>适合状态墙、表情、字幕与静态内容；不定位为流畅全屏视频墙。</td></tr>
+    <tr><td>DL7400 服务</td><td><code>dl-face</code> 为默认生产界面；<code>dl-clock</code> / demo 可切换运行</td><td>DLSDK 单进程独占，同一时间只能运行一个 DL7400 应用。</td></tr>
+    <tr><td>舵机</td><td>PCA9685 + MG90S 已在 SL1680 上实测</td><td>逻辑 VCC 接 3.3V；舵机 V+ 必须外供 5–6V 并与板子共地。默认 0x40/0x41 与板载 INA3221 冲突。</td></tr>
+  </tbody></table><div class="note">多屏演示启动命令见《SL1680_DL7400_多屏启动命令_2026-08-01.html》；不要把 DL7400 的帧率结论外推到 SL1680 的直驱 LVDS 屏。</div></section>
+
+  <section><h2><span class="n">4</span>交付状态</h2><div class="status"><div class="ok"><strong>✓ 已完成 / 已纳入 v2.8</strong><ul class="checks"><li>本地语音链与中英字幕</li><li>DL7400 多屏、TD7800 显示与多点触摸</li><li>时区、屏幕旋转与触摸校准的 Yocto 集成</li><li>PCA9685 用户态控制脚本及 MG90S 实测</li></ul></div><div class="todo"><strong>△ 仍需推进</strong><ul class="checks"><li>KWS 唤醒词尚未接入主链路</li><li>AEC 回声消除尚未实现</li><li>DL7400 屏幕断电后不能完全自动恢复（已知 SDK 问题）</li><li>新镜像仍应在目标真板完成最终烧录验收</li></ul></div></div></section>
+
+  <section><h2><span class="n">5</span>一句话定位</h2><p class="lead"><b>SL1680 不是单一 demo 板：</b>它已经具备“感知 → 本地交互 → 多屏呈现 → 物理执行”的端侧原型闭环；下一步重点是补齐唤醒词、AEC 与最终镜像验收，把原型推进到稳定可交付的产品基线。</p></section>
+  <footer>信息来源：<code>meta-dlsdk/VERSION</code>（v2.8）、<code>SL1680项目总览_2026-07-28.md</code>、<code>SL1680_DL7400_四屏方案总结.md</code>、<code>PCA9685_MG90S_接入SL1680_2026-07-31.md</code>。本页仅陈述仓库与项目记录可核对的能力，不把计划项写成已交付能力。</footer>
+</main></body></html>
