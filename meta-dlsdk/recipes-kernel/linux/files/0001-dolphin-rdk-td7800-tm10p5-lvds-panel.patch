@@ -1,6 +1,38 @@
---- a/arch/arm64/boot/dts/synaptics/dolphin-rdk.dts
-+++ b/arch/arm64/boot/dts/synaptics/dolphin-rdk.dts
-@@ -489,6 +489,31 @@
+--- a/arch/arm64/boot/dts/synaptics/dolphin-rdk.dts	2026-07-28 20:55:18.281925329 +0800
++++ b/arch/arm64/boot/dts/synaptics/dolphin-rdk.dts	2026-07-28 20:55:18.285925332 +0800
+@@ -125,13 +125,11 @@
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&vol_key_pmux>;
+ 
+-		vol_up {
+-			label = "volume_up";
+-			gpio = <&portb 6 GPIO_ACTIVE_HIGH>;
+-			linux,code = <KEY_VOLUMEUP>;
+-			linux,can-disable;
+-			debounce-interval = <15>;
+-		};
++		/* volume_up 已移除：它占用 portb6(pad STS1_SOP = J32 pin32)，
++		 * 而本板把 J32.32 接到 TD7800 面板的 TP_RST。键被 gpio-keys 配成
++		 * 输入+中断 → TP_RST 浮空 → 触摸芯片一直处于复位/未定义态。
++		 * 本项目音量由语音控制，实体键无用。vol_down 保留。
++		 */
+ 
+ 		vol_down {
+ 			label = "volume_down";
+@@ -294,7 +292,11 @@
+ 	};
+ 
+ 	vol_key_pmux: vol-key-pmux {
+-		groups = "STS1_SOP", "STS1_CLK";
++		/* STS1_SOP  = GPIO38 = J32.32 = 面板 TP_RST   (下方 gpio-hog 常拉高)
++		 * STS1_VALD = GPIO36 = J32.33 = 面板 LCD_RESET(交给 vpp 的 mipirst)
++		 * STS1_CLK  = GPIO39 = vol_down
++		 * 三个 pad 都要复用成 gpio；本组由 gpio_keys 节点在早期应用。 */
++		groups = "STS1_SOP", "STS1_VALD", "STS1_CLK";
+ 		function = "gpio";
+ 	};
+ };
+@@ -489,6 +491,31 @@
  		gpio-controller;
  		#gpio-cells = <2>;
  	};
@@ -32,7 +64,7 @@
  };
  
  &mux0 {
-@@ -669,23 +694,27 @@
+@@ -669,23 +696,27 @@
  
  	dsi_panel {
  		status= "okay";
@@ -69,7 +101,7 @@
  		PTS_PER_4 = <6000>;
  
  		bits_per_pixel = <24>;
-@@ -701,10 +730,10 @@
+@@ -701,10 +732,10 @@
  		VB_BE = /bits/ 8 <2>;
  		VB_FP = /bits/ 8 <2>;
  		HB_FP = /bits/ 8 <10>;
@@ -83,7 +115,7 @@
  		Vid_mode = /bits/ 8 <2>;
  		virtual_chan = /bits/ 8 <0>;
  		Clk_Lane_Polarity = /bits/ 8 <0>;
-@@ -721,33 +750,45 @@
+@@ -721,33 +752,45 @@
  		Color_coding = /bits/ 8 <5>;
  		Chunks = <0>;
  		Null_Pkt = <0>;
@@ -155,7 +187,7 @@
  	};
  
  	hdmi_tx {
-@@ -1024,3 +1065,28 @@
+@@ -1024,3 +1067,58 @@
  		};
  	};
  };
@@ -184,3 +216,33 @@
 +		function = "spi2";
 +	};
 +};
++
++/* ─────────────────────────────────────────────────────────────
++ * TD7800 面板 TP_RST（J32 pin32 = portb6 = GPIO38）
++ * 用户硬件时序：3.3V 与 TP_RESET 同时上电 —— 这里用 gpio-hog 让内核
++ * 在 GPIO 控制器 probe 时立即驱动高并独占，之后谁也改不了。
++ * 参考 Case44(RK3568) 同款做法：TDDI 的复位脚不要交给触摸驱动管，
++ * 否则显示初始化时它还没拉高 → 屏和触摸互相死锁。
++ * ⚠ TD7800 是 TDDI：这根线复位的是整颗芯片(含显示驱动)。
++ * ───────────────────────────────────────────────────────────── */
++/* TD7800 复位脚已改为面板侧 3.3V 上拉，SoC 不再驱动（2026-07-28）
++ *
++ * 曾经在这里放过两个 gpio-hog：
++ *   td7800_lcd_rst_hog  portb 4 = GPIO36 = pad STS1_VALD = J32.33 = 面板 RESET_N
++ *   td7800_tp_rst_hog   portb 6 = GPIO38 = pad STS1_SOP  = J32.32 = 面板 TCH_RESET_N
++ * 实测两条 pad 电平分别是 1.57V 和 2.28V，都落在 TD7800 的禁区里：
++ *   datasheet Table 44 第6项——RESET_N / TCH_RESET_N 属 IOVCC 域；
++ *   Table 50——IOVCC = 2.7~3.6V；Table 51——VIH1 = 0.70 x IOVCC（3.3V 时 >= 2.31V）。
++ * 而 SL1680 这组 pad 是 1.8V 域，输出高最多 1.8V，物理上给不出 2.31V。
++ * 2.28V = 1.8 + 0.48 = pad 上端 ESD 二极管压降，说明面板侧 3.3V 上拉在往回灌电流。
++ * 结果：TDDI 停在不确定复位态——I2C 从机块能应答固件 ID，但触摸引擎不跑、ATTN 永不拉低。
++ * 拔掉两根线后中断立刻从 0 跳到 2626，定性确认。
++ *
++ * 现在两根杜邦线已物理拔除，复位由面板自带的 3.3V 上拉负责（上电即释放）。
++ * 显示侧的初始化由 TC358775 的 command 序列 + 面板 NVM 自初始化负责。
++ *
++ * 要恢复 SoC 控制复位，必须先加 1.8V->3.3V 电平转换（74LVC2T45 固定方向，
++ * 或每线 2N7002 + 10k 上拉到 3.3V；不要用 TXB/TXS 自动方向器件）。
++ * 装好后按 Table 57 做时序：上电复位低电平宽度 tRW1 >= 3ms，
++ * LCD_RST 比 TP_RST 延后 10ms 释放。届时把 hog 换成受控 GPIO，别再用 hog。
++ */

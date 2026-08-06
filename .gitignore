@@ -37,6 +37,12 @@ backups/*
 *.gguf
 *.onnx
 
+# ============ 构建中间产物（可重新生成，不入库） ============
+pptx_build/
+synaptics_blog_assets_original/
+tmp/
+*.ko
+
 # ============ 杂项 ============
 __pycache__/
 *.log
@@ -44,3 +50,5 @@ tools/_wslout/*.log
 NUL
 *.mkv
 .claude/
+# Office 打开文档时产生的锁文件
+~$*

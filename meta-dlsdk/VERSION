@@ -3,6 +3,54 @@
 # 这份 layer 的"真相"是板子，不是仓库 —— 历史上仓库多次落后于板端实际运行版本。
 # 每次同步到 WSL 构建树时在这里追加一条，并跑 tools/export_live.sh 核对 sha256。
 
+v2.9  2026-07-28  ★ 触摸失效定性为电平域不匹配（硬件），视觉唤醒静默失败修复
+  【结论先行】TD7800 触摸一直不报点，根因**不在软件**：
+    SL1680 的 STS1_* 是 1.8V 域 pad，而 TD7800 的 RESET_N / TCH_RESET_N 属 IOVCC 域
+    （datasheet Table 44 第6项；Table 50: IOVCC=2.7~3.6V；Table 51: VIH1 = 0.70 x IOVCC）。
+    3.3V 供电时合法高电平最低 **2.31V**，1.8V GPIO 物理上给不出来。
+    用户实测：J32.32 TP_RST = **1.57V**，J32.33 LCD_RESET = **2.28V**，
+    双双落在 VIL(0.99V) 与 VIH(2.31V) 之间的禁区。
+    2.28V = 1.8 + 0.48 正是 pad 上端 ESD 二极管压降 —— 面板侧 3.3V 上拉在倒灌。
+    决定性验证：拔掉两根杜邦线 → 触摸中断从 0 跳到 **2626**，
+    dmesg 同时出现两次 syna_dev_process_unexpected_reset（拔线产生的复位脉冲）。
+
+  【dts】移除两个复位 gpio-hog，改由面板侧上拉负责（补丁 186→248 行）
+    删 td7800_lcd_rst_hog(portb 4 = GPIO36 = STS1_VALD = J32.33 = RESET_N)
+    删 td7800_tp_rst_hog (portb 6 = GPIO38 = STS1_SOP  = J32.32 = TCH_RESET_N)
+    原位留下完整注释：电平域数据、恢复 SoC 控制所需的电平转换方案与时序要求。
+    ⚠ 曾试过 &avio/vpp 的 mipirst-gpios 接管 LCD_RESET —— 驱动确实接管了，
+      但停在 out lo + ACTIVE_LOW（复位一直按着）。我们的链路是 DSI→TC358775→LVDS，
+      走不到 VPP 调 avio_module_mipirst_set_gpio_val(0) 释放的那条路径。已回退。
+
+  【meta-tcm2-touch】首次入库（此前只有厂商 tarball，补丁不可复现）
+    recipes-kernel/linux-drivers/synaptics-tcm2/files/0001-enable-helper-and-fix-isr-deadlock.patch
+      1) syna_tcm2.h  打开 ENABLE_HELPER
+      2) syna_tcm2.c  syna_dev_process_unexpected_reset() 里 dev_set_up_app_fw()
+         原本在 ISR 线程上下文同步调用，而它要走 I2C 并拿 mutex →
+         内核报 "INFO: task irq/49-synaptic blocked for more than 983 seconds"。
+         改为有 workqueue 时交给 helper，无则保持原行为。
+    实测有效：拔线那两次意外复位就是它接住的（0 死锁告警）。
+
+  【vision_wake.sh】修掉"喂给 NPU 的帧已经被删掉"的竞态
+    症状：服务 active，但开机 30 分钟一条检测日志都没有，从不触发。
+    根因：multifilesink max-files=4 @5fps → 一帧只活 0.8 秒；
+          synap_cli_od 从 fork/exec 到读输入文件之间要先加载 30MB 模型，
+          正好卡在边界 → "Input file not found" → 静默返回空 → pct 恒 0。
+    放大它的是日志设计：心跳只在 pct>0 时打，"静默失败"和"确实没人"长得一模一样。
+    修法：先 cp 成 /tmp/vw_cur.jpg 再推理；推理报错明确打日志；无人时也定期报活。
+    修完 5 秒内即报 [vwake] 框高=75%。
+    → 教训：任何"只在成功时才打日志"的循环，都会把静默失败伪装成正常运行。
+
+  【已知未解决 / 下一步硬件】
+    复位脚硬接 3.3V 会导致上电不亮：datasheet Table 57 要求 tRW1 ≥ 3ms 的复位低电平宽度，
+    直连 VCC 时复位与电源轨同时上升，宽度≈0，NVM 加载不完成。
+    建议接法：3.3V ─[10k]─┬─ 复位脚，脚对地并 1µF（τ=10ms，爬到 VIH 约 12ms，4 倍余量）；
+    LCD_RESET 想晚 10ms 就把电容换 2.2µF。
+    要把复位交回 SoC 必须先加 1.8V→3.3V 电平转换（74LVC2T45 固定方向；
+    或每线 2N7002 + 10k 上拉。**不要用 TXB0102/TXS0102**，自动方向器件驱动弱，
+    会被面板侧上拉误判方向）。
+  【文档】新增 Synaptics 机器人高速接口博客中文版 + 代理培训包（各 html + pptx）
+
 v2.8  2026-07-28  ★ 交付级镜像 + 一天修掉 9 个真 bug
   【Yocto 集成】rootfs 三件套进镜像，两个遗留项关闭：
     recipes-extended/timezone/tzdata.bbappend       DEFAULT_TIMEZONE=Asia/Shanghai
